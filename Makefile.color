@@ -1,0 +1,39 @@
+# -*- mode: makefile -*-
+##=====================================================================
+## MyMakefile a generic Makefiles for compiling my github projects.
+## Copyright 2019 Quentin Quadrat <lecrapouille@gmail.com>
+##
+## This file is part of MyMakefile.
+##
+## MyMakefile is free software: you can redistribute it and/or modify it
+## under the terms of the GNU General Public License as published by
+## the Free Software Foundation, either version 3 of the License, or
+## (at your option) any later version.
+##
+## This program is distributed in the hope that it will be useful, but
+## WITHOUT ANY WARRANTY; without even the implied warranty of
+## MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+## General Public License for more details.
+##
+## You should have received a copy of the GNU General Public License
+## along with MyMakefile.  If not, see <http://www.gnu.org/licenses/>.
+##=====================================================================
+
+###################################################
+# Define colors
+CLR_DEFAULT = $(shell echo '\033[00m')
+CLR_RED     = $(shell echo '\033[31m')
+CLR_GREEN   = $(shell echo '\033[32m')
+CLR_YELLOW  = $(shell echo '\033[33m')
+CLR_BLUE    = $(shell echo '\033[34m')
+CLR_PURPLE  = $(shell echo '\033[35m')
+CLR_CYAN    = $(shell echo '\033[36m')
+
+###################################################
+# Display predefine colorful messages
+print-simple = \
+        @echo "$(CLR_PURPLE)*** $1:$(CLR_DEFAULT) $(CLR_CYAN)$2$(CLR_DEFAULT)"
+print-from = \
+        @echo "$(CLR_PURPLE)*** $1:$(CLR_DEFAULT) $(CLR_CYAN)$2$(CLR_DEFAULT) <= $(CLR_YELLOW)$3$(CLR_DEFAULT)"
+print-to = \
+        @echo "$(CLR_PURPLE)*** $1:$(CLR_DEFAULT) $(CLR_CYAN)$2$(CLR_DEFAULT) => $(CLR_YELLOW)$3$(CLR_DEFAULT) $4"

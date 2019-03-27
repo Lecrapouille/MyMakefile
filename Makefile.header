@@ -1,0 +1,148 @@
+# -*- mode: makefile -*-
+##=====================================================================
+## MyMakefile a generic Makefiles for compiling my github projects.
+## Copyright 2019 Quentin Quadrat <lecrapouille@gmail.com>
+##
+## This file is part of MyMakefile.
+##
+## MyMakefile is free software: you can redistribute it and/or modify it
+## under the terms of the GNU General Public License as published by
+## the Free Software Foundation, either version 3 of the License, or
+## (at your option) any later version.
+##
+## This program is distributed in the hope that it will be useful, but
+## WITHOUT ANY WARRANTY; without even the implied warranty of
+## MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+## General Public License for more details.
+##
+## You should have received a copy of the GNU General Public License
+## along with MyMakefile.  If not, see <http://www.gnu.org/licenses/>.
+##=====================================================================
+
+include $(M)/Makefile.color
+
+###################################################
+# Check if some variables have been defined
+ifndef TARGET
+$(error TARGET is not set. Give a name to the executable target.)
+endif
+
+ifndef PROJECT
+$(error PROJECT is not set. Give a name to the project.)
+endif
+
+ifndef P
+$(error P is not set. This set the project root.)
+endif
+
+ifeq ($(PROJECT_MODE),)
+PROJECT_MODE = debug
+endif
+
+###################################################
+# Detect the operating system: Unix, OSX and Windows
+# and give a shorter name if needed.
+#
+ifeq ($(OS),Windows_NT)
+ARCHI := Windows
+else
+ARCHI := $(shell uname -s)
+endif
+
+ifndef ARCHI
+$(error ARCHI cannot be set)
+endif
+
+###################################################
+# Get the project version. Can be used for creating
+# shared libraries.
+#
+TARGET_VERSION := $(shell cat $(P)/VERSION)
+TARGET_MAJOR_VERSION := $(shell cat $(P)/VERSION | cut -d"." -f1)
+TARGET_MINOR_VERSION := $(shell cat $(P)/VERSION | cut -d"." -f2)
+
+###################################################
+# Shared libraries file extension
+#
+ifeq ($(ARCHI),Darwin)
+SO="dylib"
+else ifeq ($(ARCHI),Linux)
+SO="so"
+else ifeq ($(ARCHI),Windows)
+SO="dll"
+else
+$(error Unknown shared library file extension for this architecture)
+endif
+
+###################################################
+# Define names for static and shared libraries.
+LIB_TARGET=lib$(TARGET)
+STATIC_LIB_TARGET=$(LIB_TARGET).a
+SHARED_LIB_TARGET=$(LIB_TARGET).$(SO).$(TARGET_VERSION)
+SYMBOLIC_SHARED_TARGET=$(LIB_TARGET).$(SO).$(TARGET_MAJOR_VERSION)
+
+###################################################
+# Define the directory holding compilation files
+# (*.o ...)
+#
+ifeq ($(BUILD),)
+BUILD = build
+endif
+
+###################################################
+# Define the directory holding generated documentation
+#
+ifeq ($(GENDOC),)
+GENDOC = doc
+endif
+
+ifeq ($(PREFIX),)
+PREFIX = /usr
+endif
+
+###################################################
+# Define where to install exec, data, libraries,
+# documentation ...
+#
+BINDIR = $(DESTDIR)$(PREFIX)/bin
+LIBDIR = $(DESTDIR)$(PREFIX)/lib
+DATADIR = $(DESTDIR)$(PREFIX)/share
+DOCDIR = $(DATADIR)/doc
+
+#TODO
+PROJECT_EXE = $(BINDIR)/$(TARGET)-$(TARGET_VERSION)
+PROJECT_DATA_ROOT = $(DATADIR)/$(PROJECT)/$(TARGET_VERSION)
+PROJECT_DATA_PATH = $(PROJECT_DATA_ROOT)/data
+PROJECT_DOC_PATH = $(PROJECT_DATA_ROOT)/doc
+
+###################################################
+# Define and configure the tool asan
+#
+ifeq ($(SANITIZER),)
+SANITIZER := ASAN_OPTIONS=symbolize=1 ASAN_SYMBOLIZER_PATH=$(shell which llvm-symbolizer)
+endif
+
+###################################################
+# Path where to store the generated coverage docs
+#
+COVERAGE_DIR = $(P)/$(GENDOC)/coverage
+# Path where to store lcov rapport
+COVERAGE_RAPPORT = $(BUILD)/rapport.info
+
+###################################################
+# Store files dependencies in *.d files: when a file
+# is modified this will compile others which depend
+# on it.
+#
+DEPFLAGS = -MT $@ -MMD -MP -MF $(BUILD)/$*.Td
+POSTCOMPILE = mv -f $(BUILD)/$*.Td $(BUILD)/$*.d
+
+###################################################
+# Define the list of MyMakefile files. Changing them
+# make recompile the whole project
+#
+MY_MAKEFILE_FILES = Makefile $(M)/Makefile.header			\
+	$(M)/Makefile.footer $(M)/Makefile.color $(M)/Makefile.help	\
+	$(M)/Makefile.flags
+
+include $(M)/Makefile.flags

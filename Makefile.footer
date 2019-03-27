@@ -1,0 +1,150 @@
+# -*- mode: makefile -*-
+##=====================================================================
+## MyMakefile a generic Makefiles for compiling my github projects.
+## Copyright 2019 Quentin Quadrat <lecrapouille@gmail.com>
+##
+## This file is part of MyMakefile.
+##
+## MyMakefile is free software: you can redistribute it and/or modify it
+## under the terms of the GNU General Public License as published by
+## the Free Software Foundation, either version 3 of the License, or
+## (at your option) any later version.
+##
+## This program is distributed in the hope that it will be useful, but
+## WITHOUT ANY WARRANTY; without even the implied warranty of
+## MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+## General Public License for more details.
+##
+## You should have received a copy of the GNU General Public License
+## along with MyMakefile.  If not, see <http://www.gnu.org/licenses/>.
+##=====================================================================
+
+###################################################
+# Link sources
+$(TARGET): $(OBJ)
+	@$(call print-to,"Linking","$(TARGET)","$(BUILD)/$@","$(VERSION)")
+	@cd $(BUILD) && $(CXX) $(OBJ) -o $(TARGET) $(EXTERNAL_LIBS) $(LDFLAGS)
+
+###################################################
+# Compile sources. Note: abspath is needed for gcov
+%.o: %.cpp $(BUILD)/%.d $(MY_MAKEFILE_FILES) version.h
+	@$(call print-from,"Compiling C++","$(TARGET)","$<")
+	@$(CXX) $(DEPFLAGS) $(CXXFLAGS) $(OPTIM_CXXFLAGS) $(DEFINES) $(INCLUDES) -c $(abspath $<) -o $(abspath $(BUILD)/$@)
+	@$(POSTCOMPILE)
+
+###################################################
+# Static library
+$(STATIC_LIB_TARGET): CXXFLAGS += -fPIC
+$(STATIC_LIB_TARGET): $(OBJ)
+	@$(call print-to,"Static lib","$(TARGET)","$(BUILD)/$@","$(VERSION)")
+	@cd $(BUILD) && $(AR) $(ARFLAGS) $(STATIC_LIB_TARGET) $(OBJ) $(EXTERNAL_OBJ) && ranlib $(STATIC_LIB_TARGET)
+
+###################################################
+# Shared library
+$(SHARED_LIB_TARGET): LDFLAGS += -shared
+$(SHARED_LIB_TARGET): $(OBJ)
+	@$(call print-to,"Shared lib","$(TARGET)","$(BUILD)/$@","$(VERSION)")
+	@cd $(BUILD) && $(CXX) $(LDFLAGS) $(OBJ) $(EXTERNAL_LIBS) -o $(SHARED_LIB_TARGET)
+
+###################################################
+# Download external github code source needed by this project.
+.PHONY: download-external-libs
+download-external-libs:
+	@(cd external && ./download-external-libs.sh $(ARCHI))
+
+###################################################
+# Compile external projects needed.
+.PHONY: compile-external-libs
+compile-external-libs:
+	@(cd external && ./compile-external-libs.sh $(ARCHI))
+
+###################################################
+# Create an uploadable tarball for the OpenSuse Build Service (OBS).
+.PHONY: obs
+obs:
+	@./.integration/opensuse-build-service.sh
+
+###################################################
+# Launch the executable with address sanitizer (if enabled).
+.PHONY: asan
+asan: $(TARGET)
+	@$(SANITIZER) ./build/$(TARGET) 2>&1 | ./external/asan_symbolize.py
+
+###################################################
+# Compile and launch unit tests and generate the code coverage html report.
+.PHONY: unit-tests
+unit-tests:
+	@$(call print-simple,"Compiling unit tests")
+	@make -C tests coverage
+
+###################################################
+# Generate the code coverage html rapport.
+.PHONY: coverage
+coverage: $(TARGET)
+	@$(call print-to,"Running","$(TARGET)","$(COVERAGE_RAPPORT)","")
+	@./$(BUILD)/$(TARGET) || echo ""
+	@$(call print-to,"Documentation","$(COVERAGE_RAPPORT)","$(COVERAGE_DIR)","")
+	@lcov --quiet --directory .. -c -o $(COVERAGE_RAPPORT)
+	@lcov --quiet --remove $(COVERAGE_RAPPORT) '/usr*' 'external/*' 'tests/*' -o $(COVERAGE_RAPPORT)
+	@genhtml --quiet -o $(COVERAGE_DIR) -t "$(TARGET)" $(COVERAGE_RAPPORT)
+	@xdg-open $(COVERAGE_DIR)/index.html >/dev/null
+
+###################################################
+# For using this service, you have to download and install
+# a gcc wrapper and compile your project back. A tarball
+# should be created and you have to upload it to their webpage.
+# See https://scan.coverity.com/ for more infos.
+#
+# Create a tarball for Coverity Scan a static analysis of code.
+.PHONY: coverity-scan
+coverity-scan: clean
+	@rm -fr $(TARGET).tgz cov-int 2> /dev/null
+	@cov-build --dir cov-int make -j8 && tar czvf $(TARGET).tgz cov-int
+
+###################################################
+# Generate the code source documentation with doxygen.
+.PHONY: doc
+doc:
+	@doxygen Doxyfile
+	@xdg-open $(DOC)/doxygen/index.html >/dev/null
+
+###################################################
+# Compress project sources without its .git, $BUILD
+# and $DOC generated files. Tarball name confict is
+# managed: if a tarball already exists, the older will
+# stay intact and a new one is created.
+#
+# Create a backup of the code as a tarball file.
+.PHONY: tarball
+tarball:
+	@./$(M)/targz.sh $(PWD) $(TARGET)
+
+###################################################
+# Generate a header file with the project version.
+version.h: VERSION
+	@$(call print-from,"Version","$(TARGET)","VERSION","")
+	@./$(M)/version.sh VERSION $(BUILD)/version.h
+
+###################################################
+# Display the compilator version and informations.
+.PHONY: which-gcc
+which-gcc:
+	@$(call print-simple,"Version","$(CXX)")
+	@$(CXX) --version
+
+###################################################
+# Create a temporary folder to store *.o and *.d files
+$(DEPFILES): | $(BUILD)
+$(OBJ): | $(BUILD)
+version.h: | $(BUILD)
+$(BUILD): which-gcc
+	@mkdir -p $(BUILD)
+
+###################################################
+# Auto-Dependency Generation
+$(BUILD)/%.d: ;
+.PRECIOUS: $(BUILD)/%.d
+
+-include $(patsubst %,$(BUILD)/%.d,$(basename $(OBJ)))
+
+include $(M)/Makefile.help

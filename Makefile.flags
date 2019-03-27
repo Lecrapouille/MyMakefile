@@ -1,0 +1,81 @@
+# -*- mode: makefile -*-
+##=====================================================================
+## MyMakefile a generic Makefiles for compiling my github projects.
+## Copyright 2019 Quentin Quadrat <lecrapouille@gmail.com>
+##
+## This file is part of MyMakefile.
+##
+## MyMakefile is free software: you can redistribute it and/or modify it
+## under the terms of the GNU General Public License as published by
+## the Free Software Foundation, either version 3 of the License, or
+## (at your option) any later version.
+##
+## This program is distributed in the hope that it will be useful, but
+## WITHOUT ANY WARRANTY; without even the implied warranty of
+## MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+## General Public License for more details.
+##
+## You should have received a copy of the GNU General Public License
+## along with MyMakefile.  If not, see <http://www.gnu.org/licenses/>.
+##=====================================================================
+
+ifeq ($(AR),)
+AR = ar
+endif
+
+ifeq ($(ARFLAGS),)
+ARFLAGS = crs
+endif
+
+# http://shitalshah.com/p/how-to-enable-and-use-gcc-strict-mode-compilation/
+CXX_WHOLE_FLAGS += -Wall -Wextra -Wstrict-aliasing=2 -Wunreachable-code	\
+-Wcast-align -Wcast-qual -Wsign-compare -Wsign-conversion		\
+-Wsign-promo -Wconversion
+
+# -Wctor-dtor-privacy -Wnon-virtual-dtor -Wfloat-equal
+
+CXX_WHOLE_FLAGS += -Wdisabled-optimization -Winit-self	\
+-Wlogical-op -Wmissing-include-dirs -Wnoexcept -Wold-style-cast		\
+-Woverloaded-virtual -Wredundant-decls -Wshadow				\
+-Wstrict-null-sentinel -Wstrict-overflow=5 -Wswitch-default -Wundef	\
+-Wno-unused -Wno-variadic-macros -Wno-parentheses			\
+-fdiagnostics-show-option -Winline
+
+# https://developers.redhat.com/blog/2018/03/21/compiler-and-linker-flags-gcc/
+CXX_WHOLE_FLAGS += -fasynchronous-unwind-tables -fexceptions	\
+-Werror=implicit-function-declaration
+
+CXX_WHOLE_FLAGS = -pedantic -Wno-newline-eof -pedantic-errors		\
+-Waggregate-return -Wformat=2 -Wformat-nonliteral -Wformat-security	\
+-Wformat-y2k -Wimplicit -Wimport -Winvalid-pch -Wlong-long		\
+-Wmissing-field-initializers -Wmissing-format-attribute			\
+-Wmissing-noreturn -Wpacked -Wpadded -Wpointer-arith			\
+-Wstack-protector -Wswitch-enum -Wunused -Wunused-parameter		\
+-Wvariadic-macros -Wwrite-strings
+
+# Specific for gcc-7.5, gcc-8: CXX_WHOLE_FLAGS   += -fstack-clash-protection
+
+###################################################
+# Inform Makefile where to find header files
+#
+INCLUDES += -I$(BUILD)
+
+###################################################
+# Inform Makefile where to find *.cpp and *.o files
+#
+VPATH += $(BUILD)
+
+###################################################
+# In debug mode compile with backward: an utility
+# displaying the stack trace when a segfault occured.
+#
+ifeq ($(PROJECT_MODE),debug)
+OPTIM_CXXFLAGS = -O2 -g
+OBJ += backward.o
+INCLUDES += -I$(P)/external/backward-cpp
+VPATH += $(P)/external/backward-cpp
+ifneq ($(ARCHI),Darwin)
+DEFINES += -DBACKWARD_HAS_DW=1
+EXTERNAL_LIBS += -ldw
+endif
+endif
