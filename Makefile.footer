@@ -71,13 +71,6 @@ asan: $(TARGET)
 	@$(SANITIZER) ./build/$(TARGET) 2>&1 | ./external/asan_symbolize.py
 
 ###################################################
-# Compile and launch unit tests and generate the code coverage html report.
-.PHONY: unit-tests
-unit-tests:
-	@$(call print-simple,"Compiling unit tests")
-	@make -C tests coverage
-
-###################################################
 # Generate the code coverage html rapport.
 .PHONY: coverage
 coverage: $(TARGET)
