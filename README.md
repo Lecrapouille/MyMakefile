@@ -1,4 +1,4 @@
-# MyMakfile
+# MyMakefile
 
 This repo contains a collection of Makefile rules for compiling my github projects. You can use for your project.
 
@@ -10,3 +10,8 @@ This Makefile can do the following:
 * can call gcov, asan, doxgen.
 * can compress your project in a tarball.
 * have a help.
+
+## Projects linked to this repo
+
+* https://github.com/Lecrapouille/SimTaDyn
+* https://github.com/Lecrapouille/OpenGLCppWrapper
