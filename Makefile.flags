@@ -28,14 +28,14 @@ ARFLAGS = crs
 endif
 
 # http://shitalshah.com/p/how-to-enable-and-use-gcc-strict-mode-compilation/
-CXX_WHOLE_FLAGS += -Wall -Wextra -Wstrict-aliasing=2 -Wunreachable-code	\
--Wcast-align -Wcast-qual -Wsign-compare -Wsign-conversion		\
--Wsign-promo -Wconversion
+CXX_WHOLE_FLAGS += -Wall -Wextra -Wstrict-aliasing=2		\
+-Wunreachable-code -Wcast-align -Wcast-qual -Wsign-compare	\
+-Wsign-conversion -Wsign-promo -Wconversion
 
 # -Wctor-dtor-privacy -Wnon-virtual-dtor -Wfloat-equal
 
-CXX_WHOLE_FLAGS += -Wdisabled-optimization -Winit-self	\
--Wlogical-op -Wmissing-include-dirs -Wnoexcept -Wold-style-cast		\
+CXX_WHOLE_FLAGS += -Wdisabled-optimization -Winit-self -Wlogical-op	\
+-Wmissing-include-dirs -Wnoexcept -Wold-style-cast			\
 -Woverloaded-virtual -Wredundant-decls -Wshadow				\
 -Wstrict-null-sentinel -Wstrict-overflow=5 -Wswitch-default -Wundef	\
 -Wno-unused -Wno-variadic-macros -Wno-parentheses			\
@@ -45,13 +45,16 @@ CXX_WHOLE_FLAGS += -Wdisabled-optimization -Winit-self	\
 CXX_WHOLE_FLAGS += -fasynchronous-unwind-tables -fexceptions	\
 -Werror=implicit-function-declaration
 
-CXX_WHOLE_FLAGS = -pedantic -Wno-newline-eof -pedantic-errors		\
--Waggregate-return -Wformat=2 -Wformat-nonliteral -Wformat-security	\
--Wformat-y2k -Wimplicit -Wimport -Winvalid-pch -Wlong-long		\
--Wmissing-field-initializers -Wmissing-format-attribute			\
--Wmissing-noreturn -Wpacked -Wpadded -Wpointer-arith			\
--Wstack-protector -Wswitch-enum -Wunused -Wunused-parameter		\
--Wvariadic-macros -Wwrite-strings
+CXX_WHOLE_FLAGS = -pedantic -pedantic-errors -Wformat=2			\
+-Wformat-nonliteral -Wformat-security -Wformat-y2k -Wimport		\
+-Winvalid-pch -Wmissing-field-initializers -Wmissing-format-attribute	\
+-Wmissing-noreturn -Wpacked -Wpointer-arith -Wstack-protector		\
+-fstack-protector-strong -D_FORTIFY_SOURCE=2 -Wswitch-enum -Wunused	\
+-Wunused-parameter -Wvariadic-macros -Wwrite-strings
+
+CXX_WHOLE_FLAGS += -D_GLIBCXX_ASSERTIONS -fexceptions -fasynchronous-unwind-tables
+
+# -Wpadded -Waggregate-return
 
 # Specific for gcc-7.5, gcc-8: CXX_WHOLE_FLAGS   += -fstack-clash-protection
 
