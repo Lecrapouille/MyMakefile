@@ -126,6 +126,12 @@ which-gcc:
 	@$(CXX) --version
 
 ###################################################
+.PHONY: clean
+clean:
+	@$(call print-simple,"Cleaning","$(PWD)")
+	@rm -fr $(BUILD) $(DOC) 2> /dev/null
+
+###################################################
 # Create a temporary folder to store *.o and *.d files
 $(DEPFILES): | $(BUILD)
 $(OBJ): | $(BUILD)
