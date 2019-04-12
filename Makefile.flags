@@ -79,6 +79,6 @@ INCLUDES += -I$(P)/external/backward-cpp
 VPATH += $(P)/external/backward-cpp
 ifneq ($(ARCHI),Darwin)
 DEFINES += -DBACKWARD_HAS_DW=1
-EXTERNAL_LIBS += -ldw
+LDFLAGS += -ldw
 endif
 endif
