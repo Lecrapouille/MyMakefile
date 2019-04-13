@@ -20,6 +20,12 @@
 ##=====================================================================
 
 ###################################################
+# Progress bar
+OBJS_COUNT = $(words $(OBJ))
+CUR_PERCENT = 0
+INC_PERCENT = $(shell echo 100 / $(OBJS_COUNT) | bc)
+
+###################################################
 # Link sources
 $(TARGET): $(OBJ)
 	@$(call print-to,"Linking","$(TARGET)","$(BUILD)/$@","$(VERSION)")
@@ -28,7 +34,8 @@ $(TARGET): $(OBJ)
 ###################################################
 # Compile sources. Note: abspath is needed for gcov
 %.o: %.cpp $(BUILD)/%.d $(MY_MAKEFILE_FILES) version.h
-	@$(call print-from,"Compiling C++","$(TARGET)","$<")
+	@$(eval CUR_PERCENT=$(shell echo $$((($(CUR_PERCENT) + $(INC_PERCENT))))))
+	@$(call print-from,"[$(CUR_PERCENT)%] Compiling C++","$(TARGET)","$<")
 	@$(CXX) $(DEPFLAGS) $(CXXFLAGS) $(OPTIM_CXXFLAGS) $(DEFINES) $(INCLUDES) -c $(abspath $<) -o $(abspath $(BUILD)/$@)
 	@$(POSTCOMPILE)
 
