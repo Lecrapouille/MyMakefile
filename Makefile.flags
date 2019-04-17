@@ -19,13 +19,24 @@
 ## along with MyMakefile.  If not, see <http://www.gnu.org/licenses/>.
 ##=====================================================================
 
-ifeq ($(AR),)
-AR = ar
+###################################################
+# Define if the binary is compiled in release or debug mode
+PROJECT_MODE ?= debug
+
+###################################################
+# The file suffix of source files, can be .c or .cpp
+SUFFIX ?= .cpp
+
+ifeq "$(SUFFIX)" ".cpp"
+    COMPILER := $(CXX)
+else ifeq "$(SUFFIX)" ".c"
+    COMPILER := $(CC)
 endif
 
-ifeq ($(ARFLAGS),)
-ARFLAGS = crs
-endif
+###################################################
+#
+AR ?= ar
+ARFLAGS ?= crs
 
 # http://shitalshah.com/p/how-to-enable-and-use-gcc-strict-mode-compilation/
 CXX_WHOLE_FLAGS += -Wall -Wextra -Wstrict-aliasing=2		\

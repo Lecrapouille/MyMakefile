@@ -20,23 +20,16 @@
 ##=====================================================================
 
 ###################################################
-# Progress bar
-OBJS_COUNT = $(words $(OBJ))
-CUR_PERCENT = 0
-INC_PERCENT = $(shell echo 100 / $(OBJS_COUNT) | bc)
-
-###################################################
 # Link sources
 $(TARGET): $(OBJ)
 	@$(call print-to,"Linking","$(TARGET)","$(BUILD)/$@","$(VERSION)")
-	@cd $(BUILD) && $(CXX) $(OBJ) -o $(TARGET) $(EXTERNAL_LIBS) $(LDFLAGS)
+	@cd $(BUILD) && $(COMPILER) $(OBJ) -o $(TARGET) $(EXTERNAL_LIBS) $(LDFLAGS)
 
 ###################################################
 # Compile sources. Note: abspath is needed for gcov
-%.o: %.cpp $(BUILD)/%.d $(MY_MAKEFILE_FILES) version.h
-	@$(eval CUR_PERCENT=$(shell echo $$((($(CUR_PERCENT) + $(INC_PERCENT))))))
-	@$(call print-from,"[$(CUR_PERCENT)%] Compiling C++","$(TARGET)","$<")
-	@$(CXX) $(DEPFLAGS) $(CXXFLAGS) $(OPTIM_CXXFLAGS) $(DEFINES) $(INCLUDES) -c $(abspath $<) -o $(abspath $(BUILD)/$@)
+%.o: %$(SUFFIX) $(BUILD)/%.d $(MY_MAKEFILE_FILES) version.h
+	@$(call print-progress,"Compiling","$(TARGET)","$<")
+	@$(COMPILER) $(DEPFLAGS) $(CXXFLAGS) $(OPTIM_CXXFLAGS) $(DEFINES) $(INCLUDES) -c $(abspath $<) -o $(abspath $(BUILD)/$@)
 	@$(POSTCOMPILE)
 
 ###################################################
@@ -48,10 +41,11 @@ $(STATIC_LIB_TARGET): $(OBJ)
 
 ###################################################
 # Shared library
+$(SHARED_LIB_TARGET): CXXFLAGS += -fPIC
 $(SHARED_LIB_TARGET): LDFLAGS += -shared
 $(SHARED_LIB_TARGET): $(OBJ)
 	@$(call print-to,"Shared lib","$(TARGET)","$(BUILD)/$@","$(VERSION)")
-	@cd $(BUILD) && $(CXX) $(LDFLAGS) $(OBJ) $(EXTERNAL_LIBS) -o $(SHARED_LIB_TARGET)
+	@cd $(BUILD) && $(COMPILER) $(LDFLAGS) $(OBJ) $(EXTERNAL_LIBS) -o $(SHARED_LIB_TARGET)
 
 ###################################################
 # Download external github code source needed by this project.
@@ -129,10 +123,11 @@ version.h: VERSION
 # Display the compilator version and informations.
 .PHONY: which-gcc
 which-gcc:
-	@$(call print-simple,"Version","$(CXX)")
-	@$(CXX) --version
+	@$(call print-simple,"Version","$(COMPILER)")
+	@$(COMPILER) --version
 
 ###################################################
+# Clean the project
 .PHONY: clean
 clean:
 	@$(call print-simple,"Cleaning","$(PWD)")

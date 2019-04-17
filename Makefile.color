@@ -30,10 +30,23 @@ CLR_PURPLE  = $(shell echo '\033[35m')
 CLR_CYAN    = $(shell echo '\033[36m')
 
 ###################################################
+# Progress bar
+OBJS_COUNT = $(words $(OBJ))
+CUR_PERCENT = 0
+INC_PERCENT = $(shell echo "100 / $(OBJS_COUNT)" | bc -l)
+define UPDATE_PERCENT
+$(eval CUR_PERCENT=$(shell echo "$(CUR_PERCENT) + $(INC_PERCENT)" | bc -l))
+$(eval DISP_PERCENT=$(shell echo "($(CUR_PERCENT) + 0.5) / 1" | bc))
+endef
+
+###################################################
 # Display predefine colorful messages
 print-simple = \
-        @echo "$(CLR_PURPLE)*** $1:$(CLR_DEFAULT) $(CLR_CYAN)$2$(CLR_DEFAULT)"
+        echo "$(CLR_PURPLE)*** $1:$(CLR_DEFAULT) $(CLR_CYAN)$2$(CLR_DEFAULT)"
 print-from = \
-        @echo "$(CLR_PURPLE)*** $1:$(CLR_DEFAULT) $(CLR_CYAN)$2$(CLR_DEFAULT) <= $(CLR_YELLOW)$3$(CLR_DEFAULT)"
+        echo "$(CLR_PURPLE)*** $1:$(CLR_DEFAULT) $(CLR_CYAN)$2$(CLR_DEFAULT) <= $(CLR_YELLOW)$3$(CLR_DEFAULT)"
 print-to = \
-        @echo "$(CLR_PURPLE)*** $1:$(CLR_DEFAULT) $(CLR_CYAN)$2$(CLR_DEFAULT) => $(CLR_YELLOW)$3$(CLR_DEFAULT) $4"
+        echo "$(CLR_PURPLE)*** $1:$(CLR_DEFAULT) $(CLR_CYAN)$2$(CLR_DEFAULT) => $(CLR_YELLOW)$3$(CLR_DEFAULT) $4"
+print-progress = \
+	$(call UPDATE_PERCENT) \
+        echo "$(CLR_PURPLE)$1 [$(DISP_PERCENT)%]$(CLR_DEFAULT) $(CLR_CYAN)$2$(CLR_DEFAULT) <= $(CLR_YELLOW)$3$(CLR_DEFAULT)"
