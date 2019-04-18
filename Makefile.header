@@ -71,15 +71,28 @@ $(error Unknown shared library file extension for this architecture)
 endif
 
 ###################################################
+# Get project and target names in lower case
+PROJECT_LOWER_CASE = $(shell echo $(PROJECT) | tr A-Z a-z)
+TARGET_LOWER_CASE = $(shell echo $(TARGET) | tr A-Z a-z)
+
+###################################################
 # Define names for static and shared libraries.
-LIB_TARGET = $(shell echo lib$(TARGET) | tr A-Z a-z)
+LIB_TARGET = lib$(TARGET_LOWER_CASE)
 SYMBOLIC_SHARED_LIB_TARGET = $(LIB_TARGET).$(SO).$(TARGET_MAJOR_VERSION)
 SHARED_LIB_TARGET = $(SYMBOLIC_SHARED_LIB_TARGET).$(TARGET_MINOR_VERSION)
 STATIC_LIB_TARGET = $(LIB_TARGET).a
 
 ###################################################
+# Define names for pkg-config file
+PKG_FILE = $(TARGET_LOWER_CASE)-$(TARGET_VERSION).pc
+
+###################################################
 # Define the directory holding compilation files (*.o ...).
 BUILD ?= build
+
+###################################################
+# Define the directory holding third part libraries that shall be compiled
+THIRDPART ?= external
 
 ###################################################
 # Define the directory holding generated documentation.
@@ -96,8 +109,7 @@ PREFIX ?= /usr
 BINDIR = $(DESTDIR)$(PREFIX)/bin
 LIBDIR = $(DESTDIR)$(PREFIX)/lib
 DATADIR = $(DESTDIR)$(PREFIX)/share
-INCLDIR = $(shell echo $(PROJECT)-$(TARGET_VERSION)/$(PROJECT) | tr A-Z a-z)
-INCLDIR := $(DESTDIR)$(PREFIX)/include/$(INCLDIR)
+INCLDIR = $(DESTDIR)$(PREFIX)/include/$(PROJECT_LOWER_CASE)-$(TARGET_VERSION)/$(PROJECT_LOWER_CASE)
 
 ###################################################
 #TODO to be cleaned
@@ -152,6 +164,31 @@ define RULE_INSTALL_HEADER_FILES
 	@$(call print-to,"Installing","headers","$(INCLDIR)","")
 	@cd include && for d in `find . -type d`; do install -d --mode 755 "$$d" "$(INCLDIR)/$$d"; done
 	@cd include && for f in `find . -type f`; do install -D --mode 644 "$$f" "$(INCLDIR)/$$f"; done
+endef
+
+###################################################
+# Install the pkg-config file
+define RULE_INSTALL_PKG_CONFIG
+	@$(call print-to,"Installing","pkg-config","$(INCLDIR)","")
+	@install -m 644 $(BUILD)/$(PKG_FILE) /usr/lib/pkgconfig
+endef
+
+###################################################
+# Generate the pkg-config file
+define RULE_GENERATE_PKG_CONFIG
+	@cat << EOF > $(BUILD)/$(PKG_FILE) \
+prefix=$(DESTDIR)$(PREFIX) \
+exec_prefix=$(BINDIR) \
+libdir=$(LIBDIR) \
+includedir=$(INCLDIR) \
+\
+Name: $(PROJECT) \
+Description: $(DESCRIPTION) \
+Version: $(TARGET_VERSION) \
+\
+Libs: -L${libdir} $(EXTERNAL_LIBS) \
+Cflags: -I${includedir} \
+EOF
 endef
 
 ###################################################

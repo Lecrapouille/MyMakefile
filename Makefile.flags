@@ -86,8 +86,8 @@ VPATH += $(BUILD)
 ifeq ($(PROJECT_MODE),debug)
 OPTIM_CXXFLAGS = -O2 -g
 OBJ += backward.o
-INCLUDES += -I$(P)/external/backward-cpp
-VPATH += $(P)/external/backward-cpp
+INCLUDES += -I$(P)/$(THIRDPART)/backward-cpp
+VPATH += $(P)/$(THIRDPART)/backward-cpp
 ifneq ($(ARCHI),Darwin)
 DEFINES += -DBACKWARD_HAS_DW=1
 LDFLAGS += -ldw
