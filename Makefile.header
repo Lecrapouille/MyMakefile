@@ -109,7 +109,8 @@ PREFIX ?= /usr
 BINDIR = $(DESTDIR)$(PREFIX)/bin
 LIBDIR = $(DESTDIR)$(PREFIX)/lib
 DATADIR = $(DESTDIR)$(PREFIX)/share
-INCLDIR = $(DESTDIR)$(PREFIX)/include/$(PROJECT_LOWER_CASE)-$(TARGET_VERSION)/$(PROJECT_LOWER_CASE)
+INCLDIR = $(DESTDIR)$(PREFIX)/include/$(PROJECT_LOWER_CASE)-$(TARGET_VERSION)
+HEADERDIR = $(INCLDIR)/$(PROJECT_LOWER_CASE)
 
 ###################################################
 #TODO to be cleaned
@@ -161,34 +162,16 @@ endef
 ###################################################
 # Install .h and .hpp include files
 define RULE_INSTALL_HEADER_FILES
-	@$(call print-to,"Installing","headers","$(INCLDIR)","")
-	@cd include && for d in `find . -type d`; do install -d --mode 755 "$$d" "$(INCLDIR)/$$d"; done
-	@cd include && for f in `find . -type f`; do install -D --mode 644 "$$f" "$(INCLDIR)/$$f"; done
+	@$(call print-to,"Installing","headers","$(HEADERDIR)","")
+	@cd include && for d in `find . -type d`; do install -d --mode 755 "$$d" "$(HEADERDIR)/$$d"; done
+	@cd include && for f in `find . -type f`; do install -D --mode 644 "$$f" "$(HEADERDIR)/$$f"; done
 endef
 
 ###################################################
 # Install the pkg-config file
 define RULE_INSTALL_PKG_CONFIG
-	@$(call print-to,"Installing","pkg-config","$(INCLDIR)","")
+	@$(call print-to,"Installing","pkg-config","/usr/lib/pkgconfig","")
 	@install -m 644 $(BUILD)/$(PKG_FILE) /usr/lib/pkgconfig
-endef
-
-###################################################
-# Generate the pkg-config file
-define RULE_GENERATE_PKG_CONFIG
-	@cat << EOF > $(BUILD)/$(PKG_FILE) \
-prefix=$(DESTDIR)$(PREFIX) \
-exec_prefix=$(BINDIR) \
-libdir=$(LIBDIR) \
-includedir=$(INCLDIR) \
-\
-Name: $(PROJECT) \
-Description: $(DESCRIPTION) \
-Version: $(TARGET_VERSION) \
-\
-Libs: -L${libdir} $(EXTERNAL_LIBS) \
-Cflags: -I${includedir} \
-EOF
 endef
 
 ###################################################

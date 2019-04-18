@@ -48,6 +48,20 @@ $(SHARED_LIB_TARGET): $(OBJ)
 	@cd $(BUILD) && $(COMPILER) $(LDFLAGS) $(OBJ) $(EXTERNAL_LIBS) -o $(SHARED_LIB_TARGET)
 
 ###################################################
+# Generate the pkg-config file
+$(PKG_FILE): $(MY_MAKEFILE_FILES) VERSION
+	@$(call print-to,"Generating","$(TARGET)","$@","")
+	@echo "prefix=$(DESTDIR)$(PREFIX)" > $(BUILD)/$@
+	@echo "exec_prefix=$(BINDIR)" >> $(BUILD)/$@
+	@echo "libdir=$(LIBDIR)" >> $(BUILD)/$@
+	@echo "includedir=$(INCLDIR)" >> $(BUILD)/$@
+	@echo "Name: $(PROJECT)" >> $(BUILD)/$@
+	@echo "Description: $(DESCRIPTION)" >> $(BUILD)/$@
+	@echo "Version: $(TARGET_VERSION)" >> $(BUILD)/$@
+	@echo "Libs: -L$$""{libdir} $(SYMBOLIC_SHARED_LIB_TARGET).$(TARGET_MINOR_VERSION)" >> $(BUILD)/$@
+	@echo "Cflags: -I$$""{includedir}" >> $(BUILD)/$@
+
+###################################################
 # Download external github code source needed by this project.
 .PHONY: download-external-libs
 download-external-libs:
@@ -136,6 +150,7 @@ clean:
 ###################################################
 # Create a temporary folder to store *.o and *.d files
 $(DEPFILES): | $(BUILD)
+$(PKG_FILE): | $(BUILD)
 $(OBJ): | $(BUILD)
 version.h: | $(BUILD)
 $(BUILD): which-gcc
