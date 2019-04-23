@@ -117,7 +117,7 @@ HEADERDIR = $(INCLDIR)/$(PROJECT_LOWER_CASE)
 PROJECT_EXE = $(BINDIR)/$(TARGET)-$(TARGET_VERSION)
 PROJECT_DATA_ROOT = $(DATADIR)/$(PROJECT)/$(TARGET_VERSION)
 PROJECT_DATA_PATH = $(PROJECT_DATA_ROOT)/data
-PROJECT_DOC_PATH = $(PROJECT_DATA_ROOT)/doc
+PROJECT_DOC_PATH = $(PROJECT_DATA_ROOT)/$(GENDOC)
 
 ###################################################
 # Define and configure the tool asan
@@ -145,8 +145,8 @@ POSTCOMPILE = mv -f $(BUILD)/$*.Td $(BUILD)/$*.d
 # Install documentation
 define RULE_INSTALL_DOC
 	@$(call print-to,"Installing","doc","$(PROJECT_DATA_ROOT)","")
-	@cd doc && for d in `find . -type d`; do install -d --mode 755 "$$d" "$(PROJECT_DATA_ROOT)/doc/$$d"; done
-	@cd doc && for f in `find . -type f`; do install -D --mode 644 "$$f" "$(PROJECT_DATA_ROOT)/doc/$$f"; done
+	@cd $(GENDOC) && for d in `find . -type d`; do install -d --mode 755 "$$d" "$(PROJECT_DOC_PATH)/$$d"; done
+	@cd $(GENDOC) && for f in `find . -type f`; do install -D --mode 644 "$$f" "$(PROJECT_DOC_PATH)/$$f"; done
 	@install -m 644 AUTHORS LICENSE README.md ChangeLog $(PROJECT_DATA_ROOT)
 endef
 

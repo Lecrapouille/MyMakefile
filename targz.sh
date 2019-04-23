@@ -57,7 +57,7 @@ echo -e "\033[35m*** Tarball:\033[00m \033[36m""${TARGET_TGZ}""\033[00m <= \033[
 ### Compress ../$PROJECT in /tmp, append the version number to the name and move the
 ### created tarball from /tmp into the project root directory.
 (cd .. && tar --transform s/${PROJECT}/${PROJECT}${VERSION}/ \
-              --exclude='.git' --exclude="${PROJECT}-*.tar.gz" --exclude="doc/coverage" \
+              --exclude='.git' --exclude="${PROJECT}-*.tar.gz" --exclude="doc/html" \
               --exclude "doc/coverage" --exclude "*/build" -czvf /tmp/$TARGET_TGZ $HERE \
               > /dev/null && mv /tmp/$TARGET_TGZ $HERE)
 

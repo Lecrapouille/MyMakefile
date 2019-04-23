@@ -110,15 +110,16 @@ coverity-scan: clean
 	@cov-build --dir cov-int make -j8 && tar czvf $(TARGET).tgz cov-int
 
 ###################################################
+# Note: Please be sure Doxyfile use the same output directory than $(GENDOC)
 # Generate the code source documentation with doxygen.
 .PHONY: doc
 doc:
 	@doxygen Doxyfile
-	@xdg-open $(DOC)/doxygen/index.html >/dev/null
+	@xdg-open $(GENDOC)/html/index.html >/dev/null
 
 ###################################################
 # Compress project sources without its .git, $BUILD
-# and $DOC generated files. Tarball name confict is
+# and $GENDOC generated files. Tarball name confict is
 # managed: if a tarball already exists, the older will
 # stay intact and a new one is created.
 #
@@ -145,7 +146,7 @@ which-gcc:
 .PHONY: clean
 clean:
 	@$(call print-simple,"Cleaning","$(PWD)")
-	@rm -fr $(BUILD) $(DOC) 2> /dev/null
+	@rm -fr $(BUILD) $(GENDOC)/coverage $(GENDOC)/html 2> /dev/null
 
 ###################################################
 # Create a temporary folder to store *.o and *.d files
