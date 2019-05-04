@@ -61,7 +61,7 @@ CXX_WHOLE_FLAGS = -pedantic -pedantic-errors -Wformat=2			\
 -Winvalid-pch -Wmissing-field-initializers -Wmissing-format-attribute	\
 -Wmissing-noreturn -Wpacked -Wpointer-arith -Wstack-protector		\
 -fstack-protector-strong -D_FORTIFY_SOURCE=2 -Wswitch-enum -Wunused	\
--Wunused-parameter -Wvariadic-macros -Wwrite-strings
+-Wunused-parameter -Wvariadic-macros -Wwrite-strings -Werror=return-type
 
 CXX_WHOLE_FLAGS += -D_GLIBCXX_ASSERTIONS -fexceptions -fasynchronous-unwind-tables
 
