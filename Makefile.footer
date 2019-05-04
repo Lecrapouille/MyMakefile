@@ -107,7 +107,7 @@ coverage: $(TARGET)
 .PHONY: coverity-scan
 coverity-scan: clean
 	@rm -fr $(TARGET).tgz cov-int 2> /dev/null
-	@cov-build --dir cov-int make -j8 && tar czvf $(TARGET).tgz cov-int
+	@cov-build --dir cov-int $(MAKE) && tar czvf $(TARGET).tgz cov-int
 
 ###################################################
 # Note: Please be sure Doxyfile use the same output directory than $(GENDOC)
