@@ -109,7 +109,7 @@ PREFIX ?= /usr
 BINDIR = $(DESTDIR)$(PREFIX)/bin
 LIBDIR = $(DESTDIR)$(PREFIX)/lib
 DATADIR = $(DESTDIR)$(PREFIX)/share
-INCLDIR = $(DESTDIR)$(PREFIX)/include/$(PROJECT_LOWER_CASE)-$(TARGET_VERSION)
+INCLDIR = $(DESTDIR)$(PREFIX)/include/$(PROJECT)-$(TARGET_VERSION)
 
 ###################################################
 #TODO to be cleaned
@@ -161,7 +161,7 @@ endef
 ###################################################
 # Install .h and .hpp include files
 define RULE_INSTALL_HEADER_FILES
-	@$(call print-to,"Installing","headers","$(HEADERDIR)","")
+	@$(call print-to,"Installing","headers","$(INCLDIR)","")
 	@cd include && for d in `find . -type d`; do install -d --mode 755 "$$d" "$(INCLDIR)/$$d"; done
 	@cd include && for f in `find . -type f`; do install -D --mode 644 "$$f" "$(INCLDIR)/$$f"; done
 endef
