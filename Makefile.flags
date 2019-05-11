@@ -90,6 +90,6 @@ INCLUDES += -I$(P)/$(THIRDPART)/backward-cpp
 VPATH += $(P)/$(THIRDPART)/backward-cpp
 ifneq ($(ARCHI),Darwin)
 DEFINES += -DBACKWARD_HAS_DW=1
-LDFLAGS += -ldw
+PKG_LIBS += `pkg-config libdw --libs`
 endif
 endif

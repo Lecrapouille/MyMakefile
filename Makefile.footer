@@ -23,7 +23,7 @@
 # Link sources
 $(TARGET): $(OBJ)
 	@$(call print-to,"Linking","$(TARGET)","$(BUILD)/$@","$(VERSION)")
-	@cd $(BUILD) && $(COMPILER) $(OBJ) -o $(TARGET) $(EXTERNAL_LIBS) $(LDFLAGS)
+	@cd $(BUILD) && $(COMPILER) $(OBJ) -o $(TARGET) $(EXTERNAL_LIBS) $(PKG_LIBS) $(LDFLAGS)
 
 ###################################################
 # Compile sources. Note: abspath is needed for gcov
@@ -45,7 +45,7 @@ $(SHARED_LIB_TARGET): CXXFLAGS += -fPIC
 $(SHARED_LIB_TARGET): LDFLAGS += -shared
 $(SHARED_LIB_TARGET): $(OBJ)
 	@$(call print-to,"Shared lib","$(TARGET)","$(BUILD)/$@","$(VERSION)")
-	@cd $(BUILD) && $(COMPILER) $(LDFLAGS) $(OBJ) $(EXTERNAL_LIBS) -o $(SHARED_LIB_TARGET)
+	@cd $(BUILD) && $(COMPILER) $(LDFLAGS) $(OBJ) $(EXTERNAL_OBJ) $(EXTERNAL_LIBS) -o $(SHARED_LIB_TARGET)
 
 ###################################################
 # Generate the pkg-config file
@@ -58,7 +58,7 @@ $(PKG_FILE): $(MY_MAKEFILE_FILES) VERSION
 	@echo "Name: $(PROJECT)" >> $(BUILD)/$@
 	@echo "Description: $(DESCRIPTION)" >> $(BUILD)/$@
 	@echo "Version: $(TARGET_VERSION)" >> $(BUILD)/$@
-	@echo "Libs: -L$$""{libdir} $(SYMBOLIC_SHARED_LIB_TARGET).$(TARGET_MINOR_VERSION)" >> $(BUILD)/$@
+	@echo "Libs: -L$$""{libdir} $(SHORT_LIB_TARGET) $(PKG_LIBS)" >> $(BUILD)/$@
 	@echo "Cflags: -I$$""{includedir}" >> $(BUILD)/$@
 
 ###################################################

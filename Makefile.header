@@ -78,9 +78,11 @@ TARGET_LOWER_CASE = $(shell echo $(TARGET) | tr A-Z a-z)
 ###################################################
 # Define names for static and shared libraries.
 LIB_TARGET = lib$(TARGET_LOWER_CASE)
+SHORT_LIB_TARGET = -l$(TARGET_LOWER_CASE)
 SYMBOLIC_SHARED_LIB_TARGET = $(LIB_TARGET).$(SO).$(TARGET_MAJOR_VERSION)
 SHARED_LIB_TARGET = $(SYMBOLIC_SHARED_LIB_TARGET).$(TARGET_MINOR_VERSION)
-STATIC_LIB_TARGET = $(LIB_TARGET).a
+SYMBOLIC_STATIC_LIB_TARGET = $(LIB_TARGET).a
+STATIC_LIB_TARGET = $(SYMBOLIC_STATIC_LIB_TARGET).$(TARGET_VERSION)
 
 ###################################################
 # Define names for pkg-config file
@@ -154,8 +156,10 @@ endef
 define RULE_INSTALL_LIBRARIES
 	@$(call print-to,"Installing","libs","$(LIBDIR)","")
 	@install -m 644 $(BUILD)/$(STATIC_LIB_TARGET) $(LIBDIR)
+	@ln -snf $(LIBDIR)/$(STATIC_LIB_TARGET) $(LIBDIR)/$(SYMBOLIC_STATIC_LIB_TARGET)
 	@install -m 644 $(BUILD)/$(SHARED_LIB_TARGET) $(LIBDIR)
 	@ln -snf $(LIBDIR)/$(SHARED_LIB_TARGET) $(LIBDIR)/$(SYMBOLIC_SHARED_LIB_TARGET)
+	@ln -snf $(LIBDIR)/$(SYMBOLIC_SHARED_LIB_TARGET) $(LIBDIR)/$(LIB_TARGET).$(SO)
 endef
 
 ###################################################
