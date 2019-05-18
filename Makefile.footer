@@ -19,37 +19,44 @@
 ## along with MyMakefile.  If not, see <http://www.gnu.org/licenses/>.
 ##=====================================================================
 
+CXXFLAGS := $(CXXFLAGS) `pkg-config $(PKG_LIBS) --cflags` $(OVERRIDE_CXXFLAGS)
+LDFLAGS := $(LDFLAGS) $(THIRDPART_LIBS) `pkg-config $(PKG_LIBS) --libs` $(OVERRIDE_LDFLAGS)
+
 ###################################################
 # Link sources
-$(TARGET): $(OBJ)
+$(TARGET): $(OBJS) $(THIRDPART_OBJS) $(THIRDPART_LIBS)
 	@$(call print-to,"Linking","$(TARGET)","$(BUILD)/$@","$(VERSION)")
-	@cd $(BUILD) && $(COMPILER) $(OBJ) -o $(TARGET) $(EXTERNAL_LIBS) $(PKG_LIBS) $(LDFLAGS)
+	$(Q)cd $(BUILD) && $(COMPILER) $? -o $@ $(LDFLAGS)
+ifeq ($(BUILD_TYPE),debug)
+	@# http://reverse.lostrealm.com/protect/strip.html
+	@cd $(BUILD) && strip -R .comment -R .note -R .note.ABI-tag $@
+endif
 
 ###################################################
 # Compile sources. Note: abspath is needed for gcov
-%.o: %$(SUFFIX) $(BUILD)/%.d $(MY_MAKEFILE_FILES) version.h
+%.o: %$(SUFFIX) $(BUILD)/%.d $(MYMAKEFILES) version.h
 	@$(call print-progress,"Compiling","$(TARGET)","$<")
-	@$(COMPILER) $(DEPFLAGS) $(CXXFLAGS) $(OPTIM_CXXFLAGS) $(DEFINES) $(INCLUDES) -c $(abspath $<) -o $(abspath $(BUILD)/$@)
+	$(Q)$(COMPILER) $(DEPFLAGS) $(CXXFLAGS) $(DEFINES) $(INCLUDES) -c $(abspath $<) -o $(abspath $(BUILD)/$@)
 	@$(POSTCOMPILE)
 
 ###################################################
 # Static library
 $(STATIC_LIB_TARGET): CXXFLAGS += -fPIC
-$(STATIC_LIB_TARGET): $(OBJ)
+$(STATIC_LIB_TARGET): $(OBJS) $(THIRDPART_OBJS) $(THIRDPART_LIBS)
 	@$(call print-to,"Static lib","$(TARGET)","$(BUILD)/$@","$(VERSION)")
-	@cd $(BUILD) && $(AR) $(ARFLAGS) $(STATIC_LIB_TARGET) $(OBJ) $(EXTERNAL_OBJ) && ranlib $(STATIC_LIB_TARGET)
+	$(Q)cd $(BUILD) && $(AR) $(ARFLAGS) $@ $? && ranlib $@
 
 ###################################################
 # Shared library
 $(SHARED_LIB_TARGET): CXXFLAGS += -fPIC
 $(SHARED_LIB_TARGET): LDFLAGS += -shared
-$(SHARED_LIB_TARGET): $(OBJ)
+$(SHARED_LIB_TARGET): $(OBJS) $(THIRDPART_OBJS) $(THIRDPART_LIBS)
 	@$(call print-to,"Shared lib","$(TARGET)","$(BUILD)/$@","$(VERSION)")
-	@cd $(BUILD) && $(COMPILER) $(LDFLAGS) $(OBJ) $(EXTERNAL_OBJ) $(EXTERNAL_LIBS) -o $(SHARED_LIB_TARGET)
+	$(Q)cd $(BUILD) && $(COMPILER) $(LDFLAGS) -o $@ $?
 
 ###################################################
 # Generate the pkg-config file
-$(PKG_FILE): $(MY_MAKEFILE_FILES) VERSION
+$(PKG_FILE): $(MYMAKEFILES) VERSION
 	@$(call print-to,"Generating","$(TARGET)","$@","")
 	@echo "prefix=$(DESTDIR)$(PREFIX)" > $(BUILD)/$@
 	@echo "exec_prefix=$(BINDIR)" >> $(BUILD)/$@
@@ -152,7 +159,7 @@ clean:
 # Create a temporary folder to store *.o and *.d files
 $(DEPFILES): | $(BUILD)
 $(PKG_FILE): | $(BUILD)
-$(OBJ): | $(BUILD)
+$(OBJS): | $(BUILD)
 version.h: | $(BUILD)
 $(BUILD): which-gcc
 	@mkdir -p $(BUILD)
@@ -162,6 +169,6 @@ $(BUILD): which-gcc
 $(BUILD)/%.d: ;
 .PRECIOUS: $(BUILD)/%.d
 
--include $(patsubst %,$(BUILD)/%.d,$(basename $(OBJ)))
+-include $(patsubst %,$(BUILD)/%.d,$(basename $(OBJS)))
 
 include $(M)/Makefile.help

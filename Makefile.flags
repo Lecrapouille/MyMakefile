@@ -20,76 +20,44 @@
 ##=====================================================================
 
 ###################################################
-# Define if the binary is compiled in release or debug mode
-PROJECT_MODE ?= debug
-
-###################################################
-# The file suffix of source files, can be .c or .cpp
-SUFFIX ?= .cpp
-
-ifeq "$(SUFFIX)" ".cpp"
-    COMPILER := $(CXX)
-else ifeq "$(SUFFIX)" ".c"
-    COMPILER := $(CC)
-endif
-
-###################################################
-#
-AR ?= ar
-ARFLAGS ?= crs
+# GCC compilation flags.
 
 # http://shitalshah.com/p/how-to-enable-and-use-gcc-strict-mode-compilation/
-CXX_WHOLE_FLAGS += -Wall -Wextra -Wstrict-aliasing=2		\
--Wunreachable-code -Wcast-align -Wcast-qual -Wsign-compare	\
--Wsign-conversion -Wsign-promo -Wconversion
+# https://developers.redhat.com/blog/2018/03/21/compiler-and-linker-flags-gcc/
 
-# -Wctor-dtor-privacy -Wnon-virtual-dtor -Wfloat-equal
-
-CXX_WHOLE_FLAGS += -Wdisabled-optimization -Winit-self -Wlogical-op	\
+CXX_WHOLE_FLAGS += -Wno-unknown-warning-option -Wall -Wextra		\
+-Wstrict-aliasing=2 -Wunreachable-code -Wcast-align -Wcast-qual		\
+-Wsign-compare -Wsign-conversion -Wsign-promo -Wconversion		\
+-Wdisabled-optimization -Winit-self -Wlogical-op			\
 -Wmissing-include-dirs -Wnoexcept -Wold-style-cast			\
 -Woverloaded-virtual -Wredundant-decls -Wshadow				\
 -Wstrict-null-sentinel -Wstrict-overflow=5 -Wswitch-default -Wundef	\
 -Wno-unused -Wno-variadic-macros -Wno-parentheses			\
--fdiagnostics-show-option -Winline
+-fdiagnostics-show-option -Winline -fasynchronous-unwind-tables		\
+-fexceptions -Werror=implicit-function-declaration -pedantic		\
+-pedantic-errors -Wformat=2 -Wformat-nonliteral -Wformat-security	\
+-Wformat-y2k -Wimport -Winvalid-pch -Wmissing-field-initializers	\
+-Wmissing-format-attribute -Wmissing-noreturn -Wpacked			\
+-Wpointer-arith -Wstack-protector -fstack-protector-strong		\
+-D_FORTIFY_SOURCE=2 -Wswitch-enum -Wunused -Wunused-parameter		\
+-Wvariadic-macros -Wwrite-strings -Werror=return-type			\
+-D_GLIBCXX_ASSERTIONS -fexceptions -fasynchronous-unwind-tables		\
+-Wctor-dtor-privacy -Wnon-virtual-dtor -Wfloat-equal
 
-# https://developers.redhat.com/blog/2018/03/21/compiler-and-linker-flags-gcc/
-CXX_WHOLE_FLAGS += -fasynchronous-unwind-tables -fexceptions	\
--Werror=implicit-function-declaration
-
-CXX_WHOLE_FLAGS = -pedantic -pedantic-errors -Wformat=2			\
--Wformat-nonliteral -Wformat-security -Wformat-y2k -Wimport		\
--Winvalid-pch -Wmissing-field-initializers -Wmissing-format-attribute	\
--Wmissing-noreturn -Wpacked -Wpointer-arith -Wstack-protector		\
--fstack-protector-strong -D_FORTIFY_SOURCE=2 -Wswitch-enum -Wunused	\
--Wunused-parameter -Wvariadic-macros -Wwrite-strings -Werror=return-type
-
-CXX_WHOLE_FLAGS += -D_GLIBCXX_ASSERTIONS -fexceptions -fasynchronous-unwind-tables
-
-# -Wpadded -Waggregate-return
-
-# Specific for gcc-7.5, gcc-8: CXX_WHOLE_FLAGS   += -fstack-clash-protection
-
-###################################################
-# Inform Makefile where to find header files
-#
-INCLUDES += -I$(BUILD)
-
-###################################################
-# Inform Makefile where to find *.cpp and *.o files
-#
-VPATH += $(BUILD)
+# -Waggregate-return -Wpadded
+# -fstack-clash-protection
 
 ###################################################
 # In debug mode compile with backward: an utility
 # displaying the stack trace when a segfault occured.
 #
-ifeq ($(PROJECT_MODE),debug)
-OPTIM_CXXFLAGS = -O2 -g
+ifeq ($(BUILD_TYPE),debug)
+OVERRIDE_CXXFLAGS = -O2 -g
 OBJ += backward.o
 INCLUDES += -I$(P)/$(THIRDPART)/backward-cpp
 VPATH += $(P)/$(THIRDPART)/backward-cpp
 ifneq ($(ARCHI),Darwin)
 DEFINES += -DBACKWARD_HAS_DW=1
-PKG_LIBS += `pkg-config libdw --libs`
+PKG_LIBS += libdw
 endif
 endif

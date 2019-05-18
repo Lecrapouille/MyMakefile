@@ -22,6 +22,51 @@
 include $(M)/Makefile.color
 
 ###################################################
+# Define the directory holding compilation files (*.o ...).
+BUILD ?= build
+INCLUDES += -I$(BUILD)
+VPATH += $(BUILD)
+
+###################################################
+# Define the directory holding third part libraries that shall be compiled.
+THIRDPART ?= external
+
+###################################################
+# Define the directory holding generated documentation.
+GENDOC ?= doc
+
+###################################################
+# Prefix to the path that the "install" target will install into: libs to $(DESTDIR)$(PREFIX)/lib, executables to $(DESTDIR)$(PREFIX)/bin
+PREFIX ?= /usr
+
+###################################################
+# Define if the binary is compiled in release (with stripped symbols) or debug mode (with debug symbols)
+BUILD_TYPE ?= debug
+
+###################################################
+# Select either a C++ project or a C project.
+#
+SUFFIX ?= .cpp
+
+###################################################
+# Select the C++ standard.
+STANDARD ?= --std=c++11
+
+ifeq ($(SUFFIX),.cpp)
+    COMPILER := $(CXX) $(STANDARD)
+else ifeq ($(SUFFIX),.c)
+    COMPILER := $(CC)
+else
+$(error Supported SUFFIX are .c or .cpp)
+endif
+
+###################################################
+# Static library
+#
+AR ?= ar
+ARFLAGS ?= crs
+
+###################################################
 # Check if some variables have been defined
 ifndef TARGET
 $(error TARGET is not set. Give a name to the executable target.)
@@ -87,22 +132,6 @@ STATIC_LIB_TARGET = $(SYMBOLIC_STATIC_LIB_TARGET).$(TARGET_VERSION)
 ###################################################
 # Define names for pkg-config file
 PKG_FILE = $(TARGET_LOWER_CASE)-$(TARGET_VERSION).pc
-
-###################################################
-# Define the directory holding compilation files (*.o ...).
-BUILD ?= build
-
-###################################################
-# Define the directory holding third part libraries that shall be compiled
-THIRDPART ?= external
-
-###################################################
-# Define the directory holding generated documentation.
-GENDOC ?= doc
-
-###################################################
-# Prefix to the path that the "install" target will install into: libs to $(DESTDIR)$(PREFIX)/lib, executables to $(DESTDIR)$(PREFIX)/bin
-PREFIX ?= /usr
 
 ###################################################
 # Define where to install exec, data, libraries,
@@ -181,8 +210,7 @@ endef
 # Define the list of MyMakefile files. Changing them
 # make recompile the whole project
 #
-MY_MAKEFILE_FILES = Makefile $(M)/Makefile.header			\
-	$(M)/Makefile.footer $(M)/Makefile.color $(M)/Makefile.help	\
-	$(M)/Makefile.flags
+MYMAKEFILES = Makefile $(M)/Makefile.header $(M)/Makefile.footer	\
+	$(M)/Makefile.color $(M)/Makefile.help $(M)/Makefile.flags
 
 include $(M)/Makefile.flags

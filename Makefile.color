@@ -31,7 +31,7 @@ CLR_CYAN    = $(shell echo '\033[36m')
 
 ###################################################
 # Progress bar
-OBJS_COUNT = $(words $(OBJ))
+OBJS_COUNT = $(words $(OBJS))
 CUR_PERCENT = 0
 INC_PERCENT = $(shell echo "100 / $(OBJS_COUNT)" | bc -l)
 define UPDATE_PERCENT
@@ -50,3 +50,11 @@ print-to = \
 print-progress = \
 	$(call UPDATE_PERCENT) \
         echo "$(CLR_PURPLE)$1 [$(DISP_PERCENT)%]$(CLR_DEFAULT) $(CLR_CYAN)$2$(CLR_DEFAULT) <= $(CLR_YELLOW)$3$(CLR_DEFAULT)"
+
+###################################################
+# Change the verbosity of the makefile.
+ifeq ($(VERBOSE),1)
+Q :=
+else
+Q := @
+endif
