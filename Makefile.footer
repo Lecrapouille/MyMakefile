@@ -19,8 +19,9 @@
 ## along with MyMakefile.  If not, see <http://www.gnu.org/licenses/>.
 ##=====================================================================
 
+ALL_NEEDED_LIBS=$(NOT_PKG_LIBS) `pkg-config $(PKG_LIBS) --libs`
 CXXFLAGS := $(CXXFLAGS) `pkg-config $(PKG_LIBS) --cflags` $(OVERRIDE_CXXFLAGS)
-LDFLAGS := $(LDFLAGS) $(THIRDPART_LIBS) `pkg-config $(PKG_LIBS) --libs` $(OVERRIDE_LDFLAGS)
+LDFLAGS := $(LDFLAGS) $(THIRDPART_LIBS) $(ALL_NEEDED_LIBS) $(OVERRIDE_LDFLAGS)
 
 ###################################################
 # Link sources
@@ -65,7 +66,7 @@ $(PKG_FILE): $(MYMAKEFILES) VERSION
 	@echo "Name: $(PROJECT)" >> $(BUILD)/$@
 	@echo "Description: $(DESCRIPTION)" >> $(BUILD)/$@
 	@echo "Version: $(TARGET_VERSION)" >> $(BUILD)/$@
-	@echo "Libs: -L$$""{libdir} $(SHORT_LIB_TARGET) $(PKG_LIBS)" >> $(BUILD)/$@
+	@echo "Libs: -L$$""{libdir} $(SHORT_LIB_TARGET) $(ALL_NEEDED_LIBS)" >> $(BUILD)/$@
 	@echo "Cflags: -I$$""{includedir}" >> $(BUILD)/$@
 
 ###################################################
