@@ -131,7 +131,9 @@ STATIC_LIB_TARGET = $(SYMBOLIC_STATIC_LIB_TARGET).$(TARGET_VERSION)
 
 ###################################################
 # Define names for pkg-config file
+PKG_DIR = /usr/lib/pkgconfig
 PKG_FILE = $(TARGET_LOWER_CASE)-$(TARGET_VERSION).pc
+SYMBOLIC_PKG_FILE = $(TARGET_LOWER_CASE).pc
 
 ###################################################
 # Define where to install exec, data, libraries,
@@ -203,7 +205,8 @@ endef
 # Install the pkg-config file
 define RULE_INSTALL_PKG_CONFIG
 	@$(call print-to,"Installing","pkg-config","/usr/lib/pkgconfig","")
-	@install -m 644 $(BUILD)/$(PKG_FILE) /usr/lib/pkgconfig
+	@install -m 644 $(BUILD)/$(PKG_FILE) $(PKG_DIR)
+	@ln -snf $(PKG_DIR)/$(PKG_FILE) $(PKG_DIR)/$(SYMBOLIC_PKG_FILE)
 endef
 
 ###################################################
