@@ -48,11 +48,18 @@ CXX_WHOLE_FLAGS += -Wno-unknown-warning-option -Wall -Wextra		\
 # -fstack-clash-protection
 
 ###################################################
+# Activate AddressSanitizer. TODO move this outside but not very easy to enable it from Makefile
+ifeq ($(USE_ASAN),1)
+OVERRIDE_CXXFLAGS += -fsanitize=address -fno-omit-frame-pointer
+LDFLAGS += -fsanitize=address -static-libasan
+endif
+
+###################################################
 # In debug mode compile with backward: an utility
 # displaying the stack trace when a segfault occured.
 #
 ifeq ($(BUILD_TYPE),debug)
-OVERRIDE_CXXFLAGS = -O2 -g
+OVERRIDE_CXXFLAGS += -O0 -g
 OBJ += backward.o
 INCLUDES += -I$(P)/$(THIRDPART)/backward-cpp
 VPATH += $(P)/$(THIRDPART)/backward-cpp
