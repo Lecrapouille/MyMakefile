@@ -19,7 +19,7 @@
 ## along with MyMakefile.  If not, see <http://www.gnu.org/licenses/>.
 ##=====================================================================
 
-ALL_NEEDED_LIBS=$(NOT_PKG_LIBS) `pkg-config $(PKG_LIBS) --libs`
+ALL_NEEDED_LIBS := $(NOT_PKG_LIBS) `pkg-config $(PKG_LIBS) --libs`
 CXXFLAGS := $(CXXFLAGS) `pkg-config $(PKG_LIBS) --cflags` $(OVERRIDE_CXXFLAGS)
 LDFLAGS := $(LDFLAGS) $(THIRDPART_LIBS) $(ALL_NEEDED_LIBS) $(OVERRIDE_LDFLAGS)
 

@@ -53,9 +53,9 @@ SUFFIX ?= .cpp
 STANDARD ?= --std=c++11
 
 ifeq ($(SUFFIX),.cpp)
-    COMPILER := $(CXX) $(STANDARD)
+COMPILER := $(CXX) $(STANDARD)
 else ifeq ($(SUFFIX),.c)
-    COMPILER := $(CC)
+COMPILER := $(CC)
 else
 $(error Supported SUFFIX are .c or .cpp)
 endif
@@ -106,50 +106,50 @@ TARGET_MINOR_VERSION := $(shell cat $(P)/VERSION | cut -d"." -f2)
 # Shared libraries file extension
 #
 ifeq ($(ARCHI),Darwin)
-SO=dylib
+SO := dylib
 else ifeq ($(ARCHI),Linux)
-SO=so
+SO := so
 else ifeq ($(ARCHI),Windows)
-SO=dll
+SO := dll
 else
 $(error Unknown shared library file extension for this architecture)
 endif
 
 ###################################################
 # Get project and target names in lower case
-PROJECT_LOWER_CASE = $(shell echo $(PROJECT) | tr A-Z a-z)
-TARGET_LOWER_CASE = $(shell echo $(TARGET) | tr A-Z a-z)
+PROJECT_LOWER_CASE := $(shell echo $(PROJECT) | tr A-Z a-z)
+TARGET_LOWER_CASE := $(shell echo $(TARGET) | tr A-Z a-z)
 
 ###################################################
 # Define names for static and shared libraries.
-LIB_TARGET = lib$(TARGET_LOWER_CASE)
-SHORT_LIB_TARGET = -l$(TARGET_LOWER_CASE)
-SYMBOLIC_SHARED_LIB_TARGET = $(LIB_TARGET).$(SO).$(TARGET_MAJOR_VERSION)
-SHARED_LIB_TARGET = $(SYMBOLIC_SHARED_LIB_TARGET).$(TARGET_MINOR_VERSION)
-SYMBOLIC_STATIC_LIB_TARGET = $(LIB_TARGET).a
-STATIC_LIB_TARGET = $(SYMBOLIC_STATIC_LIB_TARGET).$(TARGET_VERSION)
+LIB_TARGET := lib$(TARGET_LOWER_CASE)
+SHORT_LIB_TARGET := -l$(TARGET_LOWER_CASE)
+SYMBOLIC_SHARED_LIB_TARGET := $(LIB_TARGET).$(SO).$(TARGET_MAJOR_VERSION)
+SHARED_LIB_TARGET := $(SYMBOLIC_SHARED_LIB_TARGET).$(TARGET_MINOR_VERSION)
+SYMBOLIC_STATIC_LIB_TARGET := $(LIB_TARGET).a
+STATIC_LIB_TARGET := $(SYMBOLIC_STATIC_LIB_TARGET).$(TARGET_VERSION)
 
 ###################################################
 # Define names for pkg-config file
-PKG_DIR = /usr/lib/pkgconfig
-PKG_FILE = $(TARGET_LOWER_CASE)-$(TARGET_VERSION).pc
-SYMBOLIC_PKG_FILE = $(TARGET_LOWER_CASE).pc
+PKG_DIR := /usr/lib/pkgconfig
+PKG_FILE := $(TARGET_LOWER_CASE)-$(TARGET_VERSION).pc
+SYMBOLIC_PKG_FILE := $(TARGET_LOWER_CASE).pc
 
 ###################################################
 # Define where to install exec, data, libraries,
 # documentation ...
 #
-BINDIR = $(DESTDIR)$(PREFIX)/bin
-LIBDIR = $(DESTDIR)$(PREFIX)/lib
-DATADIR = $(DESTDIR)$(PREFIX)/share
-INCLDIR = $(DESTDIR)$(PREFIX)/include/$(PROJECT)-$(TARGET_VERSION)
+BINDIR := $(DESTDIR)$(PREFIX)/bin
+LIBDIR := $(DESTDIR)$(PREFIX)/lib
+DATADIR := $(DESTDIR)$(PREFIX)/share
+INCLDIR := $(DESTDIR)$(PREFIX)/include/$(PROJECT)-$(TARGET_VERSION)
 
 ###################################################
 #TODO to be cleaned
-PROJECT_EXE = $(BINDIR)/$(TARGET)-$(TARGET_VERSION)
-PROJECT_DATA_ROOT = $(DATADIR)/$(PROJECT)/$(TARGET_VERSION)
-PROJECT_DATA_PATH = $(PROJECT_DATA_ROOT)/data
-PROJECT_DOC_PATH = $(PROJECT_DATA_ROOT)/$(GENDOC)
+PROJECT_EXE := $(BINDIR)/$(TARGET)-$(TARGET_VERSION)
+PROJECT_DATA_ROOT := $(DATADIR)/$(PROJECT)/$(TARGET_VERSION)
+PROJECT_DATA_PATH := $(PROJECT_DATA_ROOT)/data
+PROJECT_DOC_PATH := $(PROJECT_DATA_ROOT)/$(GENDOC)
 
 ###################################################
 # Define and configure the tool asan
@@ -161,9 +161,9 @@ endif
 ###################################################
 # Path where to store the generated coverage docs
 #
-COVERAGE_DIR = $(P)/$(GENDOC)/coverage
+COVERAGE_DIR := $(P)/$(GENDOC)/coverage
 # Path where to store lcov rapport
-COVERAGE_RAPPORT = $(BUILD)/rapport.info
+COVERAGE_RAPPORT := $(BUILD)/rapport.info
 
 ###################################################
 # Store files dependencies in *.d files: when a file
@@ -213,7 +213,7 @@ endef
 # Define the list of MyMakefile files. Changing them
 # make recompile the whole project
 #
-MYMAKEFILES = Makefile $(M)/Makefile.header $(M)/Makefile.footer	\
+MYMAKEFILES := Makefile $(M)/Makefile.header $(M)/Makefile.footer	\
 	$(M)/Makefile.color $(M)/Makefile.help $(M)/Makefile.flags
 
 include $(M)/Makefile.flags

@@ -21,13 +21,13 @@
 
 ###################################################
 # Define colors
-CLR_DEFAULT = $(shell echo '\033[00m')
-CLR_RED     = $(shell echo '\033[31m')
-CLR_GREEN   = $(shell echo '\033[32m')
-CLR_YELLOW  = $(shell echo '\033[33m')
-CLR_BLUE    = $(shell echo '\033[34m')
-CLR_PURPLE  = $(shell echo '\033[35m')
-CLR_CYAN    = $(shell echo '\033[36m')
+CLR_DEFAULT := $(shell echo '\033[00m')
+CLR_RED     := $(shell echo '\033[31m')
+CLR_GREEN   := $(shell echo '\033[32m')
+CLR_YELLOW  := $(shell echo '\033[33m')
+CLR_BLUE    := $(shell echo '\033[34m')
+CLR_PURPLE  := $(shell echo '\033[35m')
+CLR_CYAN    := $(shell echo '\033[36m')
 
 ###################################################
 # Progress bar
