@@ -60,7 +60,7 @@ endif
 #
 ifeq ($(BUILD_TYPE),debug)
 OVERRIDE_CXXFLAGS += -O0 -g
-OBJ += backward.o
+OBJS += backward.o
 INCLUDES += -I$(P)/$(THIRDPART)/backward-cpp
 VPATH += $(P)/$(THIRDPART)/backward-cpp
 ifneq ($(ARCHI),Darwin)
