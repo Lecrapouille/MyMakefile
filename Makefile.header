@@ -63,7 +63,7 @@ endif
 ###################################################
 # Determine compiler name
 #
-COMPILER_NAME := $(shell $(COMPILER) --version | head -1 | cut -d" " -f1)
+COMPILER_NAME := $(shell $(COMPILER) --version | head -1 | cut -d" " -f1 | cut -d"-" -f1)
 
 ###################################################
 # Determine compiler version
@@ -77,6 +77,9 @@ COMPILER_VERSION := $(shell $(COMPILER) -dumpversion)
 else
 COMPILER_VERSION :=
 endif
+
+# Convert version number into a integer (ie g++-4.9.2 will return 40902)
+COMPILER_VERSION := $(shell echo $(COMPILER_VERSION) | sed -e 's/\.\([0-9][0-9]\)/\1/g' -e 's/\.\([0-9]\)/0\1/g' -e 's/^[0-9]\{3,4\}$$//')
 
 ###################################################
 # Static library
