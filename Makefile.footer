@@ -19,8 +19,17 @@
 ## along with MyMakefile.  If not, see <http://www.gnu.org/licenses/>.
 ##=====================================================================
 
-ALL_NEEDED_LIBS := $(NOT_PKG_LIBS) `pkg-config --libs $(PKG_LIBS)`
-CXXFLAGS := $(CXXFLAGS) `pkg-config $(PKG_LIBS) --cflags` $(OVERRIDE_CXXFLAGS)
+###################################################
+# pkg-config does not like when PKG_LIBS is empty
+ifdef PKG_LIBS
+PKG_LIBS_LIBS := `pkg-config --libs $(PKG_LIBS)`
+PKG_LIBS_CFLAGS := `pkg-config --cflags $(PKG_LIBS)`
+endif
+
+###################################################
+# Concat list of compiler flags and linker flags
+ALL_NEEDED_LIBS := $(NOT_PKG_LIBS) $(PKG_LIBS_LIBS)
+CXXFLAGS := $(CXXFLAGS) $(PKG_LIBS_CFLAGS) $(OVERRIDE_CXXFLAGS)
 LDFLAGS := $(LDFLAGS) $(THIRDPART_LIBS) $(ALL_NEEDED_LIBS) $(OVERRIDE_LDFLAGS)
 
 ###################################################
