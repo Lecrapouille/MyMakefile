@@ -35,7 +35,7 @@ CXX_WHOLE_FLAGS += -Wno-unknown-warning-option -Wall -Wextra		\
 -Wno-unused -Wno-variadic-macros -Wno-parentheses			\
 -fdiagnostics-show-option -Winline -fasynchronous-unwind-tables		\
 -fexceptions -Werror=implicit-function-declaration -pedantic		\
--pedantic-errors -Wformat=2 -Wformat-nonliteral -Wformat-security	\
+ -Wformat=2 -Wformat-nonliteral -Wformat-security	\
 -Wformat-y2k -Wimport -Winvalid-pch -Wmissing-field-initializers	\
 -Wmissing-format-attribute -Wmissing-noreturn -Wpacked			\
 -Wpointer-arith -Wstack-protector -fstack-protector-strong		\
