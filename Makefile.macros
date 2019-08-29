@@ -31,11 +31,13 @@ TARGET_MINOR_VERSION := $(shell cat $(P)/VERSION | cut -d"." -f2)
 
 ###################################################
 # Get project and target names in lower case
+#
 PROJECT_LOWER_CASE := $(shell echo $(PROJECT) | tr A-Z a-z)
 TARGET_LOWER_CASE := $(shell echo $(TARGET) | tr A-Z a-z)
 
 ###################################################
 # Define names for static and shared libraries.
+#
 LIB_TARGET := lib$(TARGET_LOWER_CASE)
 SHORT_LIB_TARGET := -l$(TARGET_LOWER_CASE)
 SYMBOLIC_SHARED_LIB_TARGET := $(LIB_TARGET).$(SO).$(TARGET_MAJOR_VERSION)
@@ -45,6 +47,7 @@ STATIC_LIB_TARGET := $(SYMBOLIC_STATIC_LIB_TARGET).$(TARGET_VERSION)
 
 ###################################################
 # Define names for pkg-config file
+#
 PKG_DIR := /usr/lib/pkgconfig
 PKG_FILE := $(TARGET_LOWER_CASE)-$(TARGET_VERSION).pc
 SYMBOLIC_PKG_FILE := $(TARGET_LOWER_CASE).pc
@@ -59,7 +62,8 @@ DATADIR := $(DESTDIR)$(PREFIX)/share
 INCLDIR := $(DESTDIR)$(PREFIX)/include/$(PROJECT)-$(TARGET_VERSION)
 
 ###################################################
-#TODO to be cleaned
+# TODO to be cleaned
+#
 PROJECT_EXE := $(BINDIR)/$(TARGET)-$(TARGET_VERSION)
 PROJECT_DATA_ROOT := $(DATADIR)/$(PROJECT)/$(TARGET_VERSION)
 PROJECT_DATA_PATH := $(PROJECT_DATA_ROOT)/data
@@ -76,7 +80,10 @@ endif
 # Path where to store the generated coverage docs
 #
 COVERAGE_DIR := $(P)/$(GENDOC)/coverage
+
+###################################################
 # Path where to store lcov rapport
+#
 COVERAGE_RAPPORT := $(BUILD)/rapport.info
 
 ###################################################
@@ -89,6 +96,7 @@ POSTCOMPILE = mv -f $(BUILD)/$*.Td $(BUILD)/$*.d
 
 ###################################################
 # Install documentation
+#
 define RULE_INSTALL_DOC
 	@$(call print-to,"Installing","doc","$(PROJECT_DATA_ROOT)","")
 	@cd $(GENDOC) && for d in `find . -type d`; do install -d --mode 755 "$$d" "$(PROJECT_DOC_PATH)/$$d"; done
@@ -98,6 +106,7 @@ endef
 
 ###################################################
 # Install static and dynamic libraries
+#
 define RULE_INSTALL_LIBRARIES
 	@$(call print-to,"Installing","libs","$(LIBDIR)","")
 	@install -m 644 $(BUILD)/$(STATIC_LIB_TARGET) $(LIBDIR)
@@ -109,6 +118,7 @@ endef
 
 ###################################################
 # Install .h and .hpp include files
+#
 define RULE_INSTALL_HEADER_FILES
 	@$(call print-to,"Installing","headers","$(INCLDIR)","")
 	@cd include && for d in `find . -type d`; do install -d --mode 755 "$$d" "$(INCLDIR)/$$d"; done
@@ -117,6 +127,7 @@ endef
 
 ###################################################
 # Install the pkg-config file
+#
 define RULE_INSTALL_PKG_CONFIG
 	@$(call print-to,"Installing","pkg-config","/usr/lib/pkgconfig","")
 	@install -m 644 $(BUILD)/$(PKG_FILE) $(PKG_DIR)

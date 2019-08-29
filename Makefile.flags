@@ -20,8 +20,8 @@
 ##=====================================================================
 
 ###################################################
-# clang and gcc common compilation flags.
-
+# clang and GCC common compilation flags.
+#
 ifeq ($(COMPIL_FLAGS),)
 
   # Warms about C
@@ -80,13 +80,13 @@ DEFINES +=
 endif
 
 ###################################################
-# gcc and clang Optimization flags
+# TODO: -O1 is needed for hardening
+# GCC and clang Optimization flags
 #
 ifeq ($(BUILD_TYPE),debug)
 OPTIM_FLAGS := -O2 -g
 DEFINES += -DNDEBUG
 else ifeq ($(BUILD_TYPE),release)
-# TODO: -O1 is needed for hardening
 OPTIM_FLAGS ?= -O2
 else
 $(error BUILD_TYPE shall be debug or release)
@@ -101,13 +101,15 @@ PKGCFG_CFLAGS := `pkg-config --cflags $(PKG_LIBS)`
 endif
 
 ###################################################
-# Prepend the build directory. This allows to find generated files.
+# Place the build directory in first position.
+# This allows to locate generated files first
+# and object files too (while not recommended).
 #
 VPATH := $(BUILD) $(VPATH)
 INCLUDES := -I$(BUILD) $(INCLUDES)
 
 ###################################################
-# Final c++ and c compilation and linker flags
+# Finalize c++ and c compilation and linker flags
 #
 CXXFLAGS := $(COMPIL_FLAGS) $(PKGCFG_CFLAGS) $(OPTIM_FLAGS) $(DEFINES) $(INCLUDES) $(CXXFLAGS)
 LDFLAGS := $(LINKER_FLAGS) $(THIRDPART_LIBS) $(NOT_PKG_LIBS) $(PKGCFG_LIBS) $(LDFLAGS)

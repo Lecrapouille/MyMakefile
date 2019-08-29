@@ -1,11 +1,11 @@
 # -*- mode: makefile -*-
 ##=====================================================================
-## SimTaDyn: A GIS in a spreadsheet.
-## Copyright 2018 Quentin Quadrat <lecrapouille@gmail.com>
+## MyMakefile a generic Makefiles for compiling my github projects.
+## Copyright 2019 Quentin Quadrat <lecrapouille@gmail.com>
 ##
-## This file is part of SimTaDyn.
+## This file is part of MyMakefile.
 ##
-## SimTaDyn is free software: you can redistribute it and/or modify it
+## MyMakefile is free software: you can redistribute it and/or modify it
 ## under the terms of the GNU General Public License as published by
 ## the Free Software Foundation, either version 3 of the License, or
 ## (at your option) any later version.
@@ -16,7 +16,7 @@
 ## General Public License for more details.
 ##
 ## You should have received a copy of the GNU General Public License
-## along with GNU Emacs.  If not, see <http://www.gnu.org/licenses/>.
+## along with MyMakefile.  If not, see <http://www.gnu.org/licenses/>.
 ##=====================================================================
 
 ###################################################
@@ -28,6 +28,14 @@ ARCHI := Windows
 else
 ARCHI := $(shell uname -s)
 endif
+
+###################################################
+# Define your C++ compilator
+CXX ?=
+
+###################################################
+# Define your C compilator
+CXX ?=
 
 ###################################################
 # Define the directory holding compilation files (*.o ...).
@@ -42,33 +50,29 @@ THIRDPART ?= $(P)/external
 GENDOC ?= doc
 
 ###################################################
-# Prefix to the path that the "install" target will install into: libs to $(DESTDIR)$(PREFIX)/lib, executables to $(DESTDIR)$(PREFIX)/bin
+# Prefix to the path that the "install" target will install into: libraries to $(DESTDIR)$(PREFIX)/lib, binaries to $(DESTDIR)$(PREFIX)/bin
 PREFIX ?= /usr
 
 ###################################################
 # Select the C++ standard.
-#
 STANDARD ?= --std=c++11
 
 ###################################################
 # Select either a C++ project or a C project.
-#
 SUFFIX ?= .cpp
 
 ###################################################
 # Static library
-#
 AR ?= ar
 ARFLAGS ?= crs
 
 ###################################################
 # Use Backward library for tracing the stack in case of crash
-#
 USE_BACKWARD ?= 1
 
 ###################################################
 # Check if some variables have been defined
-
+#
 ifndef PROJECT
 $(error PROJECT is not set before including Makefile.header. Give a name to the project.)
 endif
