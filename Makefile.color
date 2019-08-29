@@ -53,8 +53,12 @@ print-progress = \
 
 ###################################################
 # Change the verbosity of the makefile.
-ifeq ($(VERBOSE),1)
-Q :=
+ifeq ($(VERBOSE),)
+  ifeq ($(V),)
+    Q := @
+  else
+    Q :=
+  endif
 else
-Q := @
+Q :=
 endif

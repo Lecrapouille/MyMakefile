@@ -20,53 +20,94 @@
 ##=====================================================================
 
 ###################################################
-# GCC compilation flags.
+# clang and gcc common compilation flags.
 
-# http://shitalshah.com/p/how-to-enable-and-use-gcc-strict-mode-compilation/
-# https://developers.redhat.com/blog/2018/03/21/compiler-and-linker-flags-gcc/
+ifeq ($(COMPIL_FLAGS),)
 
-CXX_WHOLE_FLAGS += -Wno-unknown-warning-option -Wall -Wextra		\
--Wstrict-aliasing=2 -Wunreachable-code -Wcast-align -Wcast-qual		\
--Wsign-compare -Wsign-conversion -Wsign-promo -Wconversion		\
--Wdisabled-optimization -Winit-self -Wlogical-op			\
--Wmissing-include-dirs -Wnoexcept -Wold-style-cast			\
--Woverloaded-virtual -Wredundant-decls -Wshadow				\
--Wstrict-null-sentinel -Wstrict-overflow=5 -Wswitch-default -Wundef	\
--Wno-unused -Wno-variadic-macros -Wno-parentheses			\
--fdiagnostics-show-option -Winline -fasynchronous-unwind-tables		\
--fexceptions -Werror=implicit-function-declaration -pedantic		\
- -Wformat=2 -Wformat-nonliteral -Wformat-security	\
--Wformat-y2k -Wimport -Winvalid-pch -Wmissing-field-initializers	\
--Wmissing-format-attribute -Wmissing-noreturn -Wpacked			\
--Wpointer-arith -Wstack-protector -fstack-protector-strong		\
--D_FORTIFY_SOURCE=2 -Wswitch-enum -Wunused -Wunused-parameter		\
--Wvariadic-macros -Wwrite-strings -Werror=return-type			\
--D_GLIBCXX_ASSERTIONS -fexceptions -fasynchronous-unwind-tables		\
--Wctor-dtor-privacy -Wnon-virtual-dtor -Wfloat-equal
+  # Warms about C
+  ifeq ($(SUFFIX),.c)
+     COMPIL_FLAGS += -Weffc++ -Wstrict-selector-match -Wstrict-prototypes
+  endif
 
-# -Waggregate-return -Wpadded
-# -fstack-clash-protection
+  # Clang and GCC common flags
+  COMPIL_FLAGS += -Wall -Wextra -Wuninitialized -Wundef -Wunused		\
+  -Wunused-result -Wunused-parameter -Wunused-const-variable -Wtype-limits	\
+  -Wtautological-compare -Wcast-align -Wcast-qual -Wconversion -Wfloat-equal	\
+  -Wpointer-arith -Wswitch-enum -pedantic -Wpacked -Wold-style-cast		\
+  -Wdeprecated -Wvariadic-macros -Wvla
 
-###################################################
-# Activate AddressSanitizer. TODO move this outside but not very easy to enable it from Makefile
-ifeq ($(USE_ASAN),1)
-OVERRIDE_CXXFLAGS += -fsanitize=address -fno-omit-frame-pointer
-LDFLAGS += -fsanitize=address -static-libasan
+  # Clang specific
+  ifeq ($(COMPILER_NAME),clang)
+    COMPIL_FLAGS += -Wconditional-uninitialized -Wundefined-reinterpret-cast	\
+    -Wused-but-marked-unused -Wunused-member-function				\
+    -Wunused-getter-return-value -Wunused-exception-parameter			\
+    -Wunneeded-member-function -Wunneeded-internal-declaration -Wshadow-all	\
+    -Wunreachable-code-aggressive -Wvector-conversion -Wzero-length-array	\
+    -Wthread-safety -Wsuper-class-method-mismatch
+  else ifeq ($(COMPILER_NAME),$(filter $(COMPILER_NAME),g++ gcc))
+     COMPIL_FLAGS +=
+  endif
+
+  # Flags for hardening the binary
+  COMPIL_FLAGS += -fstack-protector-strong -Wformat -Werror=format-security	\
+  -D_FORTIFY_SOURCE=2 -fPIE
+  LINKER_FLAGS += -pie
+
 endif
 
 ###################################################
-# In debug mode compile with backward: an utility
-# displaying the stack trace when a segfault occured.
+# Use AddressSanitizer.
 #
-ifeq ($(BUILD_TYPE),debug)
-OVERRIDE_CXXFLAGS += -O0 -g
-OBJS += backward.o
-INCLUDES += -I$(P)/$(THIRDPART)/backward-cpp
-VPATH += $(P)/$(THIRDPART)/backward-cpp
+ifeq ($(USE_ASAN),1)
+COMPIL_FLAGS += -fsanitize=address -fno-omit-frame-pointer
+LINKER_FLAGS += -fsanitize=address -static-libasan
+endif
+
+###################################################
+# Use Backward for tracing the stack when a crash occured.
+#
+ifeq ($(USE_BACKWARD),1)
+OBJS := backward.o $(OBJS)
+INCLUDES += -I$(THIRDPART)/backward-cpp
+VPATH += $(THIRDPART)/backward-cpp
 ifneq ($(ARCHI),Darwin)
 DEFINES += -DBACKWARD_HAS_DW=1 -DBACKWARD_HAS_BFD=0 -DBACKWARD_HAS_DWARF=0
 DEFINES += -DBACKWARD_HAS_UNWIND=1 -DBACKWARD_HAS_BACKTRACE=0
 DEFINES += -DBACKWARD_HAS_BACKTRACE_SYMBOL=1
 PKG_LIBS += libdw
 endif
+DEFINES +=
 endif
+
+###################################################
+# gcc and clang Optimization flags
+#
+ifeq ($(BUILD_TYPE),debug)
+OPTIM_FLAGS := -O2 -g
+DEFINES += -DNDEBUG
+else ifeq ($(BUILD_TYPE),release)
+# TODO: -O1 is needed for hardening
+OPTIM_FLAGS ?= -O2
+else
+$(error BUILD_TYPE shall be debug or release)
+endif
+
+###################################################
+# Use ifdef because pkg-config does not like empty argument
+#
+ifdef PKG_LIBS
+PKGCFG_LIBS := `pkg-config --libs $(PKG_LIBS)`
+PKGCFG_CFLAGS := `pkg-config --cflags $(PKG_LIBS)`
+endif
+
+###################################################
+# Prepend the build directory. This allows to find generated files.
+#
+VPATH := $(BUILD) $(VPATH)
+INCLUDES := -I$(BUILD) $(INCLUDES)
+
+###################################################
+# Final c++ and c compilation and linker flags
+#
+CXXFLAGS := $(COMPIL_FLAGS) $(PKGCFG_CFLAGS) $(OPTIM_FLAGS) $(DEFINES) $(INCLUDES) $(CXXFLAGS)
+LDFLAGS := $(LINKER_FLAGS) $(THIRDPART_LIBS) $(NOT_PKG_LIBS) $(PKGCFG_LIBS) $(LDFLAGS)

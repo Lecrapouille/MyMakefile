@@ -19,18 +19,7 @@
 ## along with MyMakefile.  If not, see <http://www.gnu.org/licenses/>.
 ##=====================================================================
 
-###################################################
-# pkg-config does not like when PKG_LIBS is empty
-ifdef PKG_LIBS
-PKG_LIBS_LIBS := `pkg-config --libs $(PKG_LIBS)`
-PKG_LIBS_CFLAGS := `pkg-config --cflags $(PKG_LIBS)`
-endif
-
-###################################################
-# Concat list of compiler flags and linker flags
-ALL_NEEDED_LIBS := $(NOT_PKG_LIBS) $(PKG_LIBS_LIBS)
-CXXFLAGS := $(CXXFLAGS) $(PKG_LIBS_CFLAGS) $(OVERRIDE_CXXFLAGS)
-LDFLAGS := $(LDFLAGS) $(THIRDPART_LIBS) $(ALL_NEEDED_LIBS) $(OVERRIDE_LDFLAGS)
+include $(M)/Makefile.flags
 
 ###################################################
 # Link sources
@@ -38,7 +27,7 @@ $(TARGET): $(OBJS) $(THIRDPART_OBJS) $(THIRDPART_LIBS)
 	@$(call print-to,"Linking","$(TARGET)","$(BUILD)/$@","$(VERSION)")
 	$(Q)cd $(BUILD) && $(COMPILER) $(OBJS) $(THIRDPART_OBJS) -o $@ $(LDFLAGS)
 ifeq ($(BUILD_TYPE),release)
-	@# http://reverse.lostrealm.com/protect/strip.html
+	@# See http://reverse.lostrealm.com/protect/strip.html
 	@cd $(BUILD) && strip -R .comment -R .note -R .note.ABI-tag $@
 endif
 
@@ -46,7 +35,7 @@ endif
 # Compile sources. Note: abspath is needed for gcov
 %.o: %$(SUFFIX) $(BUILD)/%.d $(MYMAKEFILES) version.h
 	@$(call print-progress,"Compiling","$(TARGET)","$<")
-	$(Q)$(COMPILER) $(DEPFLAGS) $(CXXFLAGS) $(DEFINES) $(INCLUDES) -c $(abspath $<) -o $(abspath $(BUILD)/$@)
+	$(Q)$(COMPILER) $(DEPFLAGS) $(CXXFLAGS) -c $(abspath $<) -o $(abspath $(BUILD)/$@)
 	@$(POSTCOMPILE)
 
 ###################################################
@@ -75,7 +64,7 @@ $(PKG_FILE): $(MYMAKEFILES) VERSION
 	@echo "Name: $(PROJECT)" >> $(BUILD)/$@
 	@echo "Description: $(DESCRIPTION)" >> $(BUILD)/$@
 	@echo "Version: $(TARGET_VERSION)" >> $(BUILD)/$@
-	@echo "Libs: -L$$""{libdir} $(SHORT_LIB_TARGET) $(ALL_NEEDED_LIBS)" >> $(BUILD)/$@
+	@echo "Libs: -L$$""{libdir} $(SHORT_LIB_TARGET) $(NOT_PKG_LIBS) $(PKGCFG_LIBS)" >> $(BUILD)/$@
 	@echo "Cflags: -I$$""{includedir}" >> $(BUILD)/$@
 
 ###################################################
@@ -95,6 +84,12 @@ compile-external-libs:
 .PHONY: obs
 obs:
 	@./.integration/opensuse-build-service.sh
+
+###################################################
+# Check if your project is harden
+.PHONY: check-harden
+check-harden: $(TARGET)
+	@hardening-check ./build/$(TARGET); echo ""
 
 ###################################################
 # Launch the executable with address sanitizer (if enabled).
