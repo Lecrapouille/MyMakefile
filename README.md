@@ -95,7 +95,7 @@ include $(M)/Makefile.header
 OBJS += file1.o file2.o
 
 DEFINES += -DFOOBAR -UFOO
-VPATH += $(P)/src:$(P)/src/foo
+VPATH += $(P)/src $(P)/src/foo
 INCLUDES += -I$(P)/src -I$(P)/include/foobar
 
 THIRDPART_LIBS += $(THIRDPART)/foo/libfoo.a
@@ -122,11 +122,13 @@ Explanations:
 (git cloned from GitHub for example). In my case, in debug mode, I compile my project against the https://github.com/bombela/backward-cpp (placed in `$(THIRDPART)` directory) for displaying the stack trace when a segfault occurred.
 * **[Mandatory]** `OBJS` is the list of object files.
 * **[Optional]** `VPATH` and `INCLUDES` allow to find cpp and hpp files. Use the macro P. This can save you in the case of multiple Makefiles and Makefile.common.
-* **[Optional]** `COMPIL_FLAGS` if set it will override default compilation values (else if empty it will use `$(CXX_WHOLE_FLAGS)`). It will feed the Makefile variable `CXXFLAGS`.
+* **[Optional]** `COMPIL_FLAGS` if set it will had extra compilation to `CXXFLAGS`. By default `CXXFLAGS` is set with plenty of good compilation flags for clang and gcc.
+* **[Optional]** `LINKER_FLAGS` if set it will had extra compilation to `LDFLAGS`. By default `LDFLAGS` is set with plenty of good linker flags for clang and gcc.
+* **[Optional]** `CXXFLAGS` and `LDFLAGS` if you do not want to have default compilation/linker flags you can use yours by setting thess variables.
 * **[Mandatory]** `Makefile.header` is mandatory. Beware of placing it correctly else some variables maybe not initialized and MyMakefile will detect it.
 * **[Optional]** `DEFINES` store macro definitions.
-* **[Optional]** `PKG_CONFIG` defines system libraries known by the command `pkg-config` which will add parameters to COMPIL_FLAGS` and `LINKER_FLAGS`.
-* **[Optional]** `NOT_PKG_CONFIG` defines system libraries unknown from the command `pkg-config`. This will add parameters to `LINKER_FLAGS`.
+* **[Optional]** `PKG_CONFIG` defines system libraries known by the command `pkg-config` which will add parameters to `CXXFLAGS` and `LDFLAGS`.
+* **[Optional]** `NOT_PKG_CONFIG` defines system libraries unknown from the command `pkg-config`. This will add parameters to `LDFLAGS`.
 * **[Optional]** `THIRDPART_OBJS` and `THIRDPART_LIBS` define third part object files and static/shared libraries from the compilation of external libraries placed inside the `$(THIRDPART)` folder.
 * **[Mandatory]** `all:` tell Makefile what to compile. In this case the binary `$(TARGET)` its libraries `$(STATIC_LIB_TARGET)`, `$(SHARED_LIB_TARGET)` and the pkg-config file `$(PKG_FILE)` (when typing `make install`).
 * Including `Makefile.footer` is mandatory.

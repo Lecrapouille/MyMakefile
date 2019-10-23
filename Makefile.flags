@@ -26,15 +26,15 @@
 ###################################################
 # clang and GCC common compilation flags.
 #
-ifeq ($(COMPIL_FLAGS),)
+ifeq ($(CXXFLAGS),)
 
   # Warms about C
   ifeq ($(SUFFIX),.c)
-     COMPIL_FLAGS += -Weffc++ -Wstrict-selector-match -Wstrict-prototypes
+     CXXFLAGS += -Weffc++ -Wstrict-selector-match -Wstrict-prototypes
   endif
 
   # Clang and GCC common flags
-  COMPIL_FLAGS += -Wall -Wextra -Wuninitialized -Wundef -Wunused		\
+  CXXFLAGS += -Wall -Wextra -Wuninitialized -Wundef -Wunused		\
   -Wunused-result -Wunused-parameter -Wunused-const-variable -Wtype-limits	\
   -Wtautological-compare -Wcast-align -Wcast-qual -Wconversion -Wfloat-equal	\
   -Wpointer-arith -Wswitch-enum -pedantic -Wpacked -Wold-style-cast		\
@@ -42,20 +42,23 @@ ifeq ($(COMPIL_FLAGS),)
 
   # Clang specific
   ifeq ($(COMPILER_NAME),clang)
-    COMPIL_FLAGS += -Wconditional-uninitialized -Wundefined-reinterpret-cast	\
+    CXXFLAGS += -Wconditional-uninitialized -Wundefined-reinterpret-cast	\
     -Wused-but-marked-unused -Wunused-member-function				\
     -Wunused-getter-return-value -Wunused-exception-parameter			\
     -Wunneeded-member-function -Wunneeded-internal-declaration -Wshadow-all	\
     -Wunreachable-code-aggressive -Wvector-conversion -Wzero-length-array	\
     -Wthread-safety -Wsuper-class-method-mismatch
   else ifeq ($(COMPILER_NAME),$(filter $(COMPILER_NAME),g++ gcc))
-     COMPIL_FLAGS +=
+     CXXFLAGS +=
   endif
 
   # Flags for hardening the binary
-  COMPIL_FLAGS += -fstack-protector-strong -Wformat -Werror=format-security	\
+  CXXFLAGS += -fstack-protector-strong -Wformat -Werror=format-security	\
   -D_FORTIFY_SOURCE=2 -fPIE
-  LINKER_FLAGS += -pie
+  LDFLAGS += -pie
+else
+
+$(warning "You are not replacing recommended CXXFLAGS by your flags")
 
 endif
 
@@ -63,8 +66,8 @@ endif
 # Use AddressSanitizer.
 #
 ifeq ($(USE_ASAN),1)
-COMPIL_FLAGS += -fsanitize=address -fno-omit-frame-pointer
-LINKER_FLAGS += -fsanitize=address -static-libasan
+CXXFLAGS += -fsanitize=address -fno-omit-frame-pointer
+LDFLAGS += -fsanitize=address -static-libasan
 endif
 
 ###################################################
@@ -115,5 +118,5 @@ INCLUDES := -I$(BUILD) $(INCLUDES)
 ###################################################
 # Finalize c++ and c compilation and linker flags
 #
-CXXFLAGS := $(COMPIL_FLAGS) $(PKGCFG_CFLAGS) $(OPTIM_FLAGS) $(DEFINES) $(INCLUDES) $(CXXFLAGS)
-LDFLAGS := $(LINKER_FLAGS) $(THIRDPART_LIBS) $(NOT_PKG_LIBS) $(PKGCFG_LIBS) $(LDFLAGS)
+CXXFLAGS := $(CXXFLAGS) $(PKGCFG_CFLAGS) $(OPTIM_FLAGS) $(DEFINES) $(INCLUDES) $(COMPIL_FLAGS)
+LDFLAGS := $(LDFLAGS) $(THIRDPART_LIBS) $(NOT_PKG_LIBS) $(PKGCFG_LIBS) $(LINKER_FLAGS)
