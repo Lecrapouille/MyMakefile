@@ -135,6 +135,7 @@ coverity-scan: clean
 # Generate the code source documentation with doxygen.
 .PHONY: doc
 doc:
+	@$(call RULE_CREATE_DOXYFILES)
 	@doxygen Doxyfile
 	@xdg-open $(GENDOC)/html/index.html >/dev/null
 

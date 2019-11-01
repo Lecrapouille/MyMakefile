@@ -139,6 +139,19 @@ define RULE_INSTALL_PKG_CONFIG
 endef
 
 ###################################################
+# Create Doxyfile files (TODO: update license in footer.html)
+#
+define RULE_CREATE_DOXYFILES
+	cp -r $(M)/doxygen $(P)/$(GENDOC)
+	find $(P)/$(GENDOC)/doxygen -type f -exec sed -i 's/%VERSION/$(TARGET_VERSION)/g' {} \;
+	find $(P)/$(GENDOC)/doxygen -type f -exec sed -i 's/%TARGET/$(TARGET)/g' {} \;
+	find $(P)/$(GENDOC)/doxygen -type f -exec sed -i 's/%PROJECT/$(PROJECT)/g' {} \;
+	find $(P)/$(GENDOC)/doxygen -type f -exec sed -i 's/%DESCRIPTION/$(DESCRIPTION)/g' {} \;
+	find $(P)/$(GENDOC)/doxygen -type f -exec sed -i 's/%GENDOC/$(P)\/$(GENDOC)/g' {} \;
+	mv $(P)/$(GENDOC)/doxygen/Doxyfile $(P)/Doxyfile
+endef
+
+###################################################
 # Define the list of MyMakefile files. Changing them
 # make recompile the whole project
 #
