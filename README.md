@@ -16,6 +16,7 @@ with the percentage of compiled files (in the way of a progress bar).
 * Compiled files are placed in a `build/` directory instead of being created within source files.
 * Generate .d files inside the `build/` directory holding dependencies files (when one header file is modified, dependent source files are also compiled).
 * Have utility rules like gcov (code coverage report), Coverity Scan (static analyzer of code), doxgen (documentation generator), asan (AddressSanitizer), check for hardened target.
+* Manage automatically the macro for enabling/disabling assertions.
 * Have a rule for compressing your project (without .git or generated documentation) in a tar.gz tarball with the date and the version. Name collision of tarballs are managed.
 * Generate a Doxygen files with project parameters (such as project name, version ...)
 * Can display the auto-generated help of your makefile rules.

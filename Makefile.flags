@@ -63,6 +63,21 @@ $(warning "You are not replacing recommended CXXFLAGS by your flags")
 endif
 
 ###################################################
+# TODO: -O1 is needed for hardening
+# GCC and clang Optimization flags
+#
+ifeq ($(BUILD_TYPE),debug)
+OPTIM_FLAGS := -O2 -g
+DEFINES += -UNDEBUG
+else ifeq ($(BUILD_TYPE),release)
+OPTIM_FLAGS ?= -O2
+DEFINES += -DNDEBUG
+USE_BACKWARD := 0
+else
+$(error BUILD_TYPE shall be debug or release)
+endif
+
+###################################################
 # Use AddressSanitizer.
 #
 ifeq ($(USE_ASAN),1)
@@ -84,19 +99,6 @@ DEFINES += -DBACKWARD_HAS_BACKTRACE_SYMBOL=1
 PKG_LIBS += libdw
 endif
 DEFINES +=
-endif
-
-###################################################
-# TODO: -O1 is needed for hardening
-# GCC and clang Optimization flags
-#
-ifeq ($(BUILD_TYPE),debug)
-OPTIM_FLAGS := -O2 -g
-DEFINES += -DNDEBUG
-else ifeq ($(BUILD_TYPE),release)
-OPTIM_FLAGS ?= -O2
-else
-$(error BUILD_TYPE shall be debug or release)
 endif
 
 ###################################################
