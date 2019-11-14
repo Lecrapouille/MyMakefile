@@ -28,6 +28,9 @@
 #
 ifeq ($(CXXFLAGS),)
 
+  # Avoid temporary files, speeding up builds
+  CXXFLAGS += -pipe
+
   # Warms about C
   ifeq ($(SUFFIX),.c)
      CXXFLAGS += -Weffc++ -Wstrict-selector-match -Wstrict-prototypes
@@ -49,12 +52,12 @@ ifeq ($(CXXFLAGS),)
     -Wunreachable-code-aggressive -Wvector-conversion -Wzero-length-array	\
     -Wthread-safety -Wsuper-class-method-mismatch
   else ifeq ($(COMPILER_NAME),$(filter $(COMPILER_NAME),g++ gcc))
-     CXXFLAGS +=
+     CXXFLAGS += -Werror=implicit-function-declaration
   endif
 
   # Flags for hardening the binary
   CXXFLAGS += -fstack-protector-strong -Wformat -Werror=format-security	\
-  -D_FORTIFY_SOURCE=2 -fPIE
+  -D_FORTIFY_SOURCE=2 -fPIE -fexceptions
   LDFLAGS += -pie
 else
 
@@ -64,15 +67,19 @@ endif
 
 ###################################################
 # TODO: -O1 is needed for hardening
+# TODO: -O0 seems better for debuging with g++
 # GCC and clang Optimization flags
 #
 ifeq ($(BUILD_TYPE),debug)
-OPTIM_FLAGS := -O2 -g
-DEFINES += -UNDEBUG
+OPTIM_FLAGS := -O0 -g3 -fasynchronous-unwind-tables
+DEFINES += -UNDEBUG -D_GLIBCXX_ASSERTIONS
 else ifeq ($(BUILD_TYPE),release)
 OPTIM_FLAGS ?= -O2
 DEFINES += -DNDEBUG
 USE_BACKWARD := 0
+else ifeq ($(BUILD_TYPE),normal)
+OPTIM_FLAGS := -O2 -g
+DEFINES += -UNDEBUG -D_GLIBCXX_ASSERTIONS
 else
 $(error BUILD_TYPE shall be debug or release)
 endif
