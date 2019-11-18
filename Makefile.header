@@ -47,7 +47,7 @@ BUILD ?= build
 
 ###################################################
 # Define the directory holding third part libraries that shall be compiled.
-THIRDPART ?= $(P)/external
+THIRDPART ?= external
 
 ###################################################
 # Define the directory holding generated documentation.
@@ -69,10 +69,6 @@ SUFFIX ?= .cpp
 # Static library
 AR ?= ar
 ARFLAGS ?= crs
-
-###################################################
-# Use Backward library for tracing the stack in case of crash
-USE_BACKWARD ?= 1
 
 ###################################################
 # Check if some variables have been defined
