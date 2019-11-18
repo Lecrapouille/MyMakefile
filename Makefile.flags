@@ -98,6 +98,7 @@ endif
 # Use Backward for tracing the stack when a crash occured.
 #
 ifeq ($(USE_BACKWARD),1)
+GITCLONES = $(THIRDPART)/backward-cpp/.git/config
 OBJS := backward.o $(OBJS)
 INCLUDES += -I$(THIRDPART)/backward-cpp
 VPATH += $(THIRDPART)/backward-cpp

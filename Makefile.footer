@@ -28,7 +28,7 @@ include $(M)/Makefile.flags
 ###################################################
 # Link sources
 #
-$(TARGET): $(OBJS) $(THIRDPART_OBJS) $(THIRDPART_LIBS)
+$(TARGET): $(GITCLONES) $(OBJS) $(THIRDPART_OBJS) $(THIRDPART_LIBS)
 	@$(call print-to,"Linking","$(TARGET)","$(BUILD)/$@","$(VERSION)")
 	$(Q)cd $(BUILD) && $(COMPILER) $(OBJS) $(THIRDPART_OBJS) -o $@ $(LDFLAGS)
 ifeq ($(BUILD_TYPE),release)
