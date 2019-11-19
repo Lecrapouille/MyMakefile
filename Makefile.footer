@@ -50,7 +50,7 @@ endif
 $(STATIC_LIB_TARGET): CXXFLAGS += -fPIC
 $(STATIC_LIB_TARGET): $(OBJS) $(THIRDPART_OBJS) $(THIRDPART_LIBS)
 	@$(call print-to,"Static lib","$(TARGET)","$(BUILD)/$@","$(VERSION)")
-	$(Q)cd $(BUILD) && $(AR) $(ARFLAGS) $@ $? && ranlib $@
+	$(Q)cd $(BUILD) && $(AR) $(ARFLAGS) $@ $(OBJS) $(THIRDPART_OBJS) && ranlib $@
 
 ###################################################
 # Shared library
@@ -59,7 +59,7 @@ $(SHARED_LIB_TARGET): CXXFLAGS += -fPIC
 $(SHARED_LIB_TARGET): LDFLAGS += -shared
 $(SHARED_LIB_TARGET): $(OBJS) $(THIRDPART_OBJS) $(THIRDPART_LIBS)
 	@$(call print-to,"Shared lib","$(TARGET)","$(BUILD)/$@","$(VERSION)")
-	$(Q)cd $(BUILD) && $(COMPILER) $(LDFLAGS) -o $@ $?
+	$(Q)cd $(BUILD) && $(COMPILER) $(LDFLAGS) -o $@ $(OBJS) $(THIRDPART_OBJS)
 
 ###################################################
 # Generate the pkg-config file
