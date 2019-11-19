@@ -77,6 +77,14 @@ $(PKG_FILE): $(MYMAKEFILES) VERSION
 	@echo "Cflags: -I$$""{includedir}" >> $(BUILD)/$@
 
 ###################################################
+# Download Backward for tracing the stack when a crash occured.
+#
+$(THIRDPART)/backward-cpp/backward.cpp: $(THIRDPART)/backward-cpp/.git/config
+$(THIRDPART)/backward-cpp/.git/config: | $(BUILD)
+	@$(call print-to,"Downloading","backward-cpp","$(TARGET)","")
+	@mkdir -p $(THIRDPART) && cd $(THIRDPART) && git clone https://github.com/Lecrapouille/backward-cpp.git --depth=1 > /dev/null 2> /dev/null
+
+###################################################
 # Download external github code source needed by this project.
 .PHONY: download-external-libs
 download-external-libs:

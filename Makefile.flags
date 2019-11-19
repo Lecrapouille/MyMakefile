@@ -71,13 +71,15 @@ endif
 # GCC and clang Optimization flags
 #
 ifeq ($(BUILD_TYPE),debug)
+USE_BACKWARD := 1
 OPTIM_FLAGS := -O0 -g3 -fasynchronous-unwind-tables
 DEFINES += -UNDEBUG -D_GLIBCXX_ASSERTIONS
 else ifeq ($(BUILD_TYPE),release)
+USE_BACKWARD ?= 0
 OPTIM_FLAGS ?= -O2
 DEFINES += -DNDEBUG
-USE_BACKWARD := 0
 else ifeq ($(BUILD_TYPE),normal)
+USE_BACKWARD := 1
 OPTIM_FLAGS := -O2 -g
 DEFINES += -UNDEBUG -D_GLIBCXX_ASSERTIONS
 else
