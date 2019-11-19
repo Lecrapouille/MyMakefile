@@ -47,7 +47,7 @@ BUILD ?= build
 
 ###################################################
 # Define the directory holding third part libraries that shall be compiled.
-THIRDPART ?= $(P)/external
+THIRDPART ?= external
 
 ###################################################
 # Define the directory holding generated documentation.
