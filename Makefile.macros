@@ -153,8 +153,13 @@ endef
 
 ###################################################
 # Define the list of MyMakefile files. Changing them
-# make recompile the whole project
+# make recompile the whole project $(P)/Makefile.common
+# is optional.
 #
-MYMAKEFILES := ./Makefile $(P)/Makefile $(P)/Makefile.common $(M)/Makefile.header \
-$(M)/Makefile.footer $(M)/Makefile.color $(M)/Makefile.help $(M)/Makefile.flags	  \
+MYMAKEFILES := ./Makefile $(P)/Makefile $(M)/Makefile.header			\
+$(M)/Makefile.footer $(M)/Makefile.color $(M)/Makefile.help $(M)/Makefile.flags	\
 $(M)/Makefile.macros
+
+ifneq (,$(wildcard $(P)/Makefile.common))
+MYMAKEFILES += $(P)/Makefile.common
+endif
