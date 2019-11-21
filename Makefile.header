@@ -138,11 +138,11 @@ COMPILER_NAME := $(shell $(COMPILER) --version | head -1 | cut -d" " -f1 | cut -
 ifeq ("$(COMPILER_NAME)","clang")
 COMPILER_VERSION := $(shell $(COMPILER) --version | head -1 | grep -o -E '[0-9]+\.[0-9]+\.[0-9]+' | head -1)
 else ifeq ("$(COMPILER_NAME)","g++")
-COMPILER_VERSION := $(shell $(COMPILER) -dumpversion)
+COMPILER_VERSION := $(shell $(COMPILER) --version | head -1 | grep -o -E '[0-9]+\.[0-9]+\.[0-9]+' | head -1)
 else ifeq ("$(COMPILER_NAME)","gcc")
-COMPILER_VERSION := $(shell $(COMPILER) -dumpversion)
+COMPILER_VERSION := $(shell $(COMPILER) --version | head -1 | grep -o -E '[0-9]+\.[0-9]+\.[0-9]+' | head -1)
 else
-COMPILER_VERSION :=
+COMPILER_VERSION := 0
 endif
 
 ###################################################

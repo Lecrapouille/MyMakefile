@@ -59,6 +59,9 @@ ifeq ($(CXXFLAGS),)
   CXXFLAGS += -fstack-protector-strong -Wformat -Werror=format-security	\
   -D_FORTIFY_SOURCE=2 -fPIE -fexceptions
   LDFLAGS += -pie
+
+  # Compiler version
+  CXXFLAGS += -DCOMPILER_VERSION=$(COMPILER_VERSION)
 else
 
 $(warning CXXFLAGS: You have replaced default compilation flags by your own flags)
