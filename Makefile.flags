@@ -61,7 +61,7 @@ ifeq ($(CXXFLAGS),)
   LDFLAGS += -pie
 else
 
-$(warning "You are not replacing recommended CXXFLAGS by your flags")
+$(warning CXXFLAGS: You have replaced default compilation flags by your own flags)
 
 endif
 
