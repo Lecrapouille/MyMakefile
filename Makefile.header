@@ -46,6 +46,8 @@ CXX ?=
 BUILD ?= build
 
 ###################################################
+# Note: do not use $(P)/external VPATH seems not linking that.
+#
 # Define the directory holding third part libraries that shall be compiled.
 THIRDPART ?= external
 
