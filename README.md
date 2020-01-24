@@ -6,6 +6,7 @@ Two choices: -- simply copy/paste it inside your project -- or, better, use it a
 Here, my personal projects using this repo as a git submodule:
 
 * https://github.com/Lecrapouille/SimTaDyn
+* https://github.com/Lecrapouille/SimForth
 * https://github.com/Lecrapouille/OpenGLCppWrapper
 * https://github.com/Lecrapouille/ChessNeuNeu
 
@@ -217,7 +218,7 @@ to have one Makefile file for each target (this is not a major problem if your c
 * **[Optional]** `CXXFLAGS` and `LDFLAGS` allow to replace default values by your own flags (in the case you do not desire to use default compilation/linker flags).
 * **[Mandatory]** `Makefile.header` is mandatory else MyMakefile will not be called. Beware of placing it correctly (some variables are nevertheless checked by MyMakefile).
 * **[Optional]** `DEFINES` hold your macro definitions.
-* **[Optional]** `PKG_LIBS` defines system libraries known by the command `pkg-config` which will add extra flags to `CXXFLAGS` and `LDFLAGS`.
+* **[Optional]** `PKG_LIBS` defines system libraries known by the command `pkg-config` which will add extra flags to `CXXFLAGS` and `LDFLAGS`. In the case you want to force using static library you can add `--static` before the library name. For example: `PKG_LIBS += glew --static glfw3`.
 * **[Optional]** `NOT_PKG_CONFIG` defines system libraries unknown from the command `pkg-config`. This will add  extra flags to `CXXFLAGS` and `LDFLAGS`.
 * **[Optional]** `THIRDPART_OBJS` and `THIRDPART_LIBS` define .o, .a or .so (.dll or .dylib) files once your third part have been compiled. I personally add in `THIRDPART` shell scripts such as
  `download-external-libs.sh` (called by `make download-external-libs`) and `compile-external-libs.sh` (called by `make compile-external-libs`) to allow to git clone github projects and compile them.
