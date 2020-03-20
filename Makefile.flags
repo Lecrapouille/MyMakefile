@@ -41,7 +41,7 @@ ifeq ($(CXXFLAGS),)
   -Wunused-result -Wunused-parameter -Wunused-const-variable -Wtype-limits	\
   -Wtautological-compare -Wcast-align -Wcast-qual -Wconversion -Wfloat-equal	\
   -Wpointer-arith -Wswitch-enum -pedantic -Wpacked -Wold-style-cast		\
-  -Wdeprecated -Wvariadic-macros -Wvla
+  -Wdeprecated -Wvariadic-macros -Wvla -Wsign-conversion
 
   # Clang specific
   ifeq ($(COMPILER_NAME),clang)
@@ -50,9 +50,12 @@ ifeq ($(CXXFLAGS),)
     -Wunused-getter-return-value -Wunused-exception-parameter			\
     -Wunneeded-member-function -Wunneeded-internal-declaration -Wshadow-all	\
     -Wunreachable-code-aggressive -Wvector-conversion -Wzero-length-array	\
-    -Wthread-safety -Wsuper-class-method-mismatch
+    -Wthread-safety -Wsuper-class-method-mismatch -Werror=implicit-function-declaration
   else ifeq ($(COMPILER_NAME),$(filter $(COMPILER_NAME),g++ gcc))
-     CXXFLAGS += -Werror=implicit-function-declaration
+    GCC_GREATER_V9 := $(shell expr $(COMPILER_VERSION) \>= 90000)
+    ifeq "$(GCC_GREATER_V9)" "1"
+      CXXFLAGS += -Wpessimizzing-move
+    endif
   endif
 
   # Flags for hardening the binary
@@ -65,7 +68,6 @@ ifeq ($(CXXFLAGS),)
 else
 
 $(warning CXXFLAGS: You have replaced default compilation flags by your own flags)
-
 endif
 
 ###################################################
