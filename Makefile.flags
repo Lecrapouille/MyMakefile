@@ -38,8 +38,8 @@ ifeq ($(CXXFLAGS),)
 
   # Clang and GCC common flags
   CXXFLAGS += -Wall -Wextra -Wuninitialized -Wundef -Wunused		\
-  -Wunused-result -Wunused-parameter -Wunused-const-variable -Wtype-limits	\
-  -Wtautological-compare -Wcast-align -Wcast-qual -Wconversion -Wfloat-equal	\
+  -Wunused-result -Wunused-parameter -Wtype-limits	\
+  -Wcast-align -Wcast-qual -Wconversion -Wfloat-equal	\
   -Wpointer-arith -Wswitch-enum -pedantic -Wpacked -Wold-style-cast		\
   -Wdeprecated -Wvariadic-macros -Wvla -Wsign-conversion
 
@@ -50,17 +50,28 @@ ifeq ($(CXXFLAGS),)
     -Wunused-getter-return-value -Wunused-exception-parameter			\
     -Wunneeded-member-function -Wunneeded-internal-declaration -Wshadow-all	\
     -Wunreachable-code-aggressive -Wvector-conversion -Wzero-length-array	\
-    -Wthread-safety -Wsuper-class-method-mismatch -Werror=implicit-function-declaration
+    -Wthread-safety -Wsuper-class-method-mismatch -Werror=implicit-function-declaration \
+    -Wunused-const-variable -Wtautological-compare
+  # GCC specific
   else ifeq ($(COMPILER_NAME),$(filter $(COMPILER_NAME),g++ gcc))
+    GCC_GREATER_V4_8 := $(shell expr $(COMPILER_VERSION) \>= 40800)
+    GCC_GREATER_V4_9 := $(shell expr $(COMPILER_VERSION) \>= 40900)
+    GCC_GREATER_V6 := $(shell expr $(COMPILER_VERSION) \>= 60000)
     GCC_GREATER_V9 := $(shell expr $(COMPILER_VERSION) \>= 90000)
-    ifeq "$(GCC_GREATER_V9)" "1"
+    ifeq "$(GCC_GREATER_V6)" "1"
+      CXXFLAGS += -Wunused-const-variable -Wtautological-compare
+    else ifeq "$(GCC_GREATER_V9)" "1"
       CXXFLAGS += -Wpessimizzing-move
     endif
   endif
 
   # Flags for hardening the binary
-  CXXFLAGS += -fstack-protector-strong -Wformat -Werror=format-security	\
-  -D_FORTIFY_SOURCE=2 -fPIE -fexceptions
+  CXXFLAGS += -Wformat -Werror=format-security -D_FORTIFY_SOURCE=2 -fPIE -fexceptions
+  ifeq ($(COMPILER_NAME),$(filter $(COMPILER_NAME),g++ gcc))
+    ifeq "$(GCC_GREATER_V4_9)" "1"
+      CXXFLAGS += -fstack-protector-strong
+    endif
+  endif
   LDFLAGS += -pie
 
   # Compiler version
