@@ -104,7 +104,6 @@ POSTCOMPILE = mv -f $(BUILD)/$*.Td $(BUILD)/$*.d
 # desired files.
 #
 define INSTALL_FOLDER
-#	echo "install folder $(1) -> $(2)"; \
 	if [ -d $(1) ]; then \
 		cd $(1); \
 		for d in `find . -type d`; do install -d --mode 755 "$$d" "$(2)/$$d"; done; \
@@ -117,7 +116,6 @@ endef
 # Optionaly add a filter $3 for selecting desired files.
 #
 define INSTALL_FILES
-#	echo "install file $(1) -> $(2)"; \
 	if [ -d $(1) ]; then \
 		cd $(1); \
 		for f in `find . $3 -type f`; do install -D --mode 644 "$$f" "$(2)/$$f"; done; \
@@ -165,7 +163,7 @@ endef
 define INSTALL_PROJECT_HEADERS
 	@$(call print-to,"Installing","headers","$(INCLDIR)","")
 	@$(call INSTALL_FOLDER,include,$(INCLDIR))
-	@$(call INSTALL_FOLDER,src,$(INCLDIR),-name "*.[hi]pp")
+	@$(call INSTALL_FOLDER,src,$(INCLDIR),-name "*.[hit]pp")
 	@$(call INSTALL_FOLDER,src,$(INCLDIR),-name "*.incl")
 endef
 
