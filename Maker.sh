@@ -1,0 +1,42 @@
+FILENAME=$0
+
+function BUILD_EXECUTABLE()
+{
+FULL_BUILD=$BUILD/_$PROJECT/_$TARGET
+mkdir -p $FULL_BUILD
+MAKEFILE=$FULL_BUILD/Makefile
+
+# Regenerate the Makefile if
+if [ "$FILENAME" -nt "$MAKEFILE" ];
+then
+cat << EOF > $MAKEFILE
+PROJECT=$PROJECT
+TARGET=$TARGET
+DESCRIPTION=$DESCRIPTION
+COMPIL_FLAGS=$COMPIL_FLAGS
+BUILD_TYPE=$BUILD_TYPE
+BUILD=$FULL_BUILD
+OBJS=$OBJS
+
+P := .
+M := \$(P)/.makefile
+include \$(M)/Makefile.header
+
+all: \$(TARGET)
+
+include \$(M)/Makefile.footer
+EOF
+fi
+
+echo "Compiling $PROJECT::$TARGET"
+make -f ./$MAKEFILE
+cp $FULL_BUILD/$TARGET $BUILD/$TARGET 2> /dev/null
+}
+
+PROJECT=
+TARGET=
+DESCRIPTION=
+COMPIL_FLAGS=
+BUILD_TYPE=
+BUILD=
+OBJS=
