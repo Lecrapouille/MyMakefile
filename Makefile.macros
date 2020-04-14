@@ -99,47 +99,87 @@ DEPFLAGS = -MT $@ -MMD -MP -MF $(BUILD)/$*.Td
 POSTCOMPILE = mv -f $(BUILD)/$*.Td $(BUILD)/$*.d
 
 ###################################################
-# Install documentation
+# Macro for installing a folder $1 and all its files
+# into $2. Optionaly add a filter $3 for selecting
+# desired files.
 #
-define RULE_INSTALL_DOC
+define INSTALL_FOLDER
+#	echo "install folder $(1) -> $(2)"; \
+	if [ -d $(1) ]; then \
+		cd $(1); \
+		for d in `find . -type d`; do install -d --mode 755 "$$d" "$(2)/$$d"; done; \
+		for f in `find . $3 -type f`; do install -D --mode 644 "$$f" "$(2)/$$f"; done; \
+	fi
+endef
+
+###################################################
+# Install files present in the folder $1 to destination $2.
+# Optionaly add a filter $3 for selecting desired files.
+#
+define INSTALL_FILES
+#	echo "install file $(1) -> $(2)"; \
+	if [ -d $(1) ]; then \
+		cd $(1); \
+		for f in `find . $3 -type f`; do install -D --mode 644 "$$f" "$(2)/$$f"; done; \
+	fi
+endef
+
+###################################################
+# Install documentation.
+# TODO INSTALL_FOLDER,examples to remove .git build external
+#
+define INSTALL_DOCUMENTATION
 	@$(call print-to,"Installing","doc","$(PROJECT_DATA_ROOT)","")
 	@install -d --mode 755 $(PROJECT_DATA_ROOT)
 	@install -m 644 AUTHORS LICENSE README.md ChangeLog $(PROJECT_DATA_ROOT)
-	if [ -d $(GENDOC) ]; then \
-		cd $(GENDOC); \
-		for d in `find . -type d`; do install -d --mode 755 "$$d" "$(PROJECT_DOC_PATH)/$$d"; done; \
-		for f in `find . -type f`; do install -D --mode 644 "$$f" "$(PROJECT_DOC_PATH)/$$f"; done; \
-	fi
+	@$(call INSTALL_FOLDER,$(GENDOC),$(PROJECT_DATA_ROOT)/doc)
+	@$(call INSTALL_FOLDER,examples,$(PROJECT_DATA_ROOT)/examples)
+	@$(call INSTALL_FOLDER,data,$(PROJECT_DATA_ROOT)/data)
+endef
+
+###################################################
+# Install the pkg-config file
+#
+define INSTALL_PKG_CONFIG
+	@$(call print-to,"Installing","pkg-config","/usr/lib/pkgconfig","")
+	@install -m 644 $(BUILD)/$(PKG_FILE) $(PKG_DIR)
+	@ln -snf $(PKG_DIR)/$(PKG_FILE) $(PKG_DIR)/$(SYMBOLIC_PKG_FILE)
 endef
 
 ###################################################
 # Install static and dynamic libraries
 #
-define RULE_INSTALL_LIBRARIES
+define INSTALL_PROJECT_LIBRARIES
 	@$(call print-to,"Installing","libs","$(LIBDIR)","")
 	@install -m 644 $(BUILD)/$(STATIC_LIB_TARGET) $(LIBDIR)
 	@ln -snf $(LIBDIR)/$(STATIC_LIB_TARGET) $(LIBDIR)/$(SYMBOLIC_STATIC_LIB_TARGET)
 	@install -m 644 $(BUILD)/$(SHARED_LIB_TARGET) $(LIBDIR)
 	@ln -snf $(LIBDIR)/$(SHARED_LIB_TARGET) $(LIBDIR)/$(SYMBOLIC_SHARED_LIB_TARGET)
 	@ln -snf $(LIBDIR)/$(SYMBOLIC_SHARED_LIB_TARGET) $(LIBDIR)/$(LIB_TARGET).$(SO)
+	@$(call INSTALL_PKG_CONFIG)
 endef
 
 ###################################################
-# Install .h and .hpp include files
+# Install .hpp files inside the include folder
 #
-define RULE_INSTALL_HEADER_FILES
+define INSTALL_PROJECT_HEADERS
 	@$(call print-to,"Installing","headers","$(INCLDIR)","")
-	@cd include && for d in `find . -type d`; do install -d --mode 755 "$$d" "$(INCLDIR)/$$d"; done
-	@cd include && for f in `find . -type f`; do install -D --mode 644 "$$f" "$(INCLDIR)/$$f"; done
+	@$(call INSTALL_FOLDER,include,$(INCLDIR))
+	@$(call INSTALL_FOLDER,src,$(INCLDIR)/$(PROJECT),-name "*.hpp")
 endef
 
 ###################################################
-# Install the pkg-config file
+# Install folder and files of third part libraries
 #
-define RULE_INSTALL_PKG_CONFIG
-	@$(call print-to,"Installing","pkg-config","/usr/lib/pkgconfig","")
-	@install -m 644 $(BUILD)/$(PKG_FILE) $(PKG_DIR)
-	@ln -snf $(PKG_DIR)/$(PKG_FILE) $(PKG_DIR)/$(SYMBOLIC_PKG_FILE)
+define INSTALL_THIRDPART_FOLDER
+	@$(call INSTALL_FOLDER,$(THIRDPART)/$(1),$(INCLDIR)/$(PROJECT)/$(2),$(3))
+endef
+
+###################################################
+# Install files of third part libraries
+#
+define INSTALL_THIRDPART_FILES
+	@$(call INSTALL_FILES,$(THIRDPART)/$(1),$(INCLDIR)/$(PROJECT)/$(2),-maxdepth 1 -mindepth 1 $(3))
 endef
 
 ###################################################
