@@ -24,6 +24,12 @@
 ##==================================================================================
 
 ###################################################
+# Uncomment these two commands for enabling debuging
+#
+#OLD_SHELL := $(SHELL)
+#SHELL = $(warning [$@])$(OLD_SHELL) -x
+
+###################################################
 # Detect the operating system: Unix, OSX and Windows
 # and give a shorter name if needed.
 #
