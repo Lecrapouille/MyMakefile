@@ -105,9 +105,13 @@ POSTCOMPILE = mv -f $(BUILD)/$*.Td $(BUILD)/$*.d
 #
 define RULE_INSTALL_DOC
 	@$(call print-to,"Installing","doc","$(PROJECT_DATA_ROOT)","")
-	@cd $(GENDOC) && for d in `find . -type d`; do install -d --mode 755 "$$d" "$(PROJECT_DOC_PATH)/$$d"; done
-	@cd $(GENDOC) && for f in `find . -type f`; do install -D --mode 644 "$$f" "$(PROJECT_DOC_PATH)/$$f"; done
+	@install -d --mode 755 $(PROJECT_DATA_ROOT)
 	@install -m 644 AUTHORS LICENSE README.md ChangeLog $(PROJECT_DATA_ROOT)
+	if [ -d $(GENDOC) ]; then \
+		cd $(GENDOC); \
+		for d in `find . -type d`; do install -d --mode 755 "$$d" "$(PROJECT_DOC_PATH)/$$d"; done; \
+		for f in `find . -type f`; do install -D --mode 644 "$$f" "$(PROJECT_DOC_PATH)/$$f"; done; \
+	fi
 endef
 
 ###################################################
