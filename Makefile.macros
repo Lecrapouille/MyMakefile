@@ -165,21 +165,22 @@ endef
 define INSTALL_PROJECT_HEADERS
 	@$(call print-to,"Installing","headers","$(INCLDIR)","")
 	@$(call INSTALL_FOLDER,include,$(INCLDIR))
-	@$(call INSTALL_FOLDER,src,$(INCLDIR)/$(PROJECT),-name "*.hpp")
+	@$(call INSTALL_FOLDER,src,$(INCLDIR),-name "*.[hi]pp")
+	@$(call INSTALL_FOLDER,src,$(INCLDIR),-name "*.incl")
 endef
 
 ###################################################
 # Install folder and files of third part libraries
 #
 define INSTALL_THIRDPART_FOLDER
-	@$(call INSTALL_FOLDER,$(THIRDPART)/$(1),$(INCLDIR)/$(PROJECT)/$(2),$(3))
+	@$(call INSTALL_FOLDER,$(THIRDPART)/$(1),$(INCLDIR)/$(THIRDPART)/$(2),$(3))
 endef
 
 ###################################################
 # Install files of third part libraries
 #
 define INSTALL_THIRDPART_FILES
-	@$(call INSTALL_FILES,$(THIRDPART)/$(1),$(INCLDIR)/$(PROJECT)/$(2),-maxdepth 1 -mindepth 1 $(3))
+	@$(call INSTALL_FILES,$(THIRDPART)/$(1),$(INCLDIR)/$(THIRDPART)/$(2),-maxdepth 1 -mindepth 1 $(3))
 endef
 
 ###################################################
