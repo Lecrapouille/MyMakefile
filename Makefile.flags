@@ -51,7 +51,7 @@ ifeq ($(CXXFLAGS),)
     -Wunneeded-member-function -Wunneeded-internal-declaration -Wshadow-all	\
     -Wunreachable-code-aggressive -Wvector-conversion -Wzero-length-array	\
     -Wthread-safety -Wsuper-class-method-mismatch -Werror=implicit-function-declaration \
-    -Wunused-const-variable -Wtautological-compare
+    -Wtautological-compare
   # GCC specific
   else ifeq ($(COMPILER_NAME),$(filter $(COMPILER_NAME),g++ gcc))
     GCC_GREATER_V4_8 := $(shell expr $(COMPILER_VERSION) \>= 40800)
@@ -59,7 +59,7 @@ ifeq ($(CXXFLAGS),)
     GCC_GREATER_V6 := $(shell expr $(COMPILER_VERSION) \>= 60000)
     GCC_GREATER_V9 := $(shell expr $(COMPILER_VERSION) \>= 90000)
     ifeq "$(GCC_GREATER_V6)" "1"
-      CXXFLAGS += -Wunused-const-variable -Wtautological-compare
+      CXXFLAGS += -Wtautological-compare
     else ifeq "$(GCC_GREATER_V9)" "1"
       CXXFLAGS += -Wpessimizzing-move
     endif
