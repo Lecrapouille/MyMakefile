@@ -127,6 +127,15 @@ coverage: $(TARGET)
 	@xdg-open $(COVERAGE_DIR)/index.html >/dev/null
 
 ###################################################
+# Generate the code coverage html rapport.
+.PHONY: coverall
+coverall: $(TARGET)
+	@$(call print-to,"Coveralls","$(COVERAGE_RAPPORT)","$(COVERAGE_DIR)","")
+	@lcov --quiet --directory .. -c -o $(COVERAGE_RAPPORT)
+	@lcov --quiet --remove $(COVERAGE_RAPPORT) '/usr*' 'external/*' 'tests/*' -o $(COVERAGE_RAPPORT)
+	@coveralls-lcov --source-encoding=ISO-8859-1 $(COVERAGE_RAPPORT)
+
+###################################################
 # For using this service, you have to download and install
 # a gcc wrapper and compile your project back. A tarball
 # should be created and you have to upload it to their webpage.
