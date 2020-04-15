@@ -99,44 +99,53 @@ DEPFLAGS = -MT $@ -MMD -MP -MF $(BUILD)/$*.Td
 POSTCOMPILE = mv -f $(BUILD)/$*.Td $(BUILD)/$*.d
 
 ###################################################
-# Macro for installing a folder $1 and all its files
-# into $2. Optionaly add a filter $3 for selecting
+# Install files present in the folder $1 in the the
+# folder $2. Optionaly add a filter $3 for selecting
 # desired files.
-#
-define INSTALL_FOLDER
-	if [ -d $(1) ]; then \
-		cd $(1); \
-		for d in `find . -type d`; do install -d --mode 755 "$$d" "$(2)/$$d"; done; \
-		for f in `find . $3 -type f`; do install -D --mode 644 "$$f" "$(2)/$$f"; done; \
-	fi
-endef
-
-###################################################
-# Install files present in the folder $1 to destination $2.
-# Optionaly add a filter $3 for selecting desired files.
 #
 define INSTALL_FILES
 	if [ -d $(1) ]; then \
 		cd $(1); \
-		for f in `find . $3 -type f`; do install -D --mode 644 "$$f" "$(2)/$$f"; done; \
+		for f in `find . $(3) -type f`; do install -D --mode 644 "$$f" "$(2)/$$f"; done; \
 	fi
 endef
 
 ###################################################
-# Install documentation.
-# TODO INSTALL_FOLDER,examples to remove .git build external
+# Universal macro for installing a folder $1 and all
+# its files in the folder $2. Optionaly a file filter
+# can be adding in $3 for installing desired files.
 #
-define INSTALL_DOCUMENTATION
-	@$(call print-to,"Installing","doc","$(PROJECT_DATA_ROOT)","")
-	@install -d --mode 755 $(PROJECT_DATA_ROOT)
-	@install -m 644 AUTHORS LICENSE README.md ChangeLog $(PROJECT_DATA_ROOT)
-	@$(call INSTALL_FOLDER,$(GENDOC),$(PROJECT_DATA_ROOT)/doc)
-	@$(call INSTALL_FOLDER,examples,$(PROJECT_DATA_ROOT)/examples)
-	@$(call INSTALL_FOLDER,data,$(PROJECT_DATA_ROOT)/data)
+define INSTALL_FOLDER
+	if [ -d $(1) ]; then \
+		$(call print-to,"Installing","$(1)","$(2)",""); \
+		cd $(1); \
+		for d in `find . -type d`; do install -d --mode 755 "$$d" "$(2)/$$d"; done; \
+		for f in `find . $(3) -type f`; do install -D --mode 644 "$$f" "$(2)/$$f"; done; \
+	fi
 endef
 
 ###################################################
-# Install the pkg-config file
+# Install a folder $1 and all its files in the folder
+# $(PROJECT_DATA_ROOT).
+#
+define INSTALL_PROJECT_FOLDER
+	@$(call INSTALL_FOLDER,$(1),$(PROJECT_DATA_ROOT)/$(1))
+endef
+
+###################################################
+# Install the project documentation.
+# TODO (call INSTALL_FOLDER,examples) to remove .git build external
+#
+define INSTALL_DOCUMENTATION
+	@install -d --mode 755 $(PROJECT_DATA_ROOT)
+	@install -m 644 AUTHORS LICENSE README.md ChangeLog $(PROJECT_DATA_ROOT)
+	@$(call INSTALL_PROJECT_FOLDER,$(GENDOC))
+	@$(call INSTALL_PROJECT_FOLDER,examples)
+	@$(call INSTALL_PROJECT_FOLDER,data)
+endef
+
+###################################################
+# Install the pkg-config file (if the project is a library)
 #
 define INSTALL_PKG_CONFIG
 	@$(call print-to,"Installing","pkg-config","/usr/lib/pkgconfig","")
@@ -145,7 +154,8 @@ define INSTALL_PKG_CONFIG
 endef
 
 ###################################################
-# Install static and dynamic libraries
+# Install static and dynamic libraries (if the project
+# is not an application)
 #
 define INSTALL_PROJECT_LIBRARIES
 	@$(call print-to,"Installing","libs","$(LIBDIR)","")
@@ -158,13 +168,17 @@ define INSTALL_PROJECT_LIBRARIES
 endef
 
 ###################################################
-# Install .hpp files inside the include folder
+# Install .hpp files to the $(INCLDIR) folder
+# TODO need glob regex
 #
 define INSTALL_PROJECT_HEADERS
 	@$(call print-to,"Installing","headers","$(INCLDIR)","")
 	@$(call INSTALL_FOLDER,include,$(INCLDIR))
 	@$(call INSTALL_FOLDER,src,$(INCLDIR),-name "*.[hit]pp")
 	@$(call INSTALL_FOLDER,src,$(INCLDIR),-name "*.incl")
+	@$(call INSTALL_FOLDER,src,$(INCLDIR),-name "*.h")
+	@$(call INSTALL_FOLDER,src,$(INCLDIR),-name "*.hh")
+	@$(call INSTALL_FOLDER,src,$(INCLDIR),-name "*.hxx")
 endef
 
 ###################################################
