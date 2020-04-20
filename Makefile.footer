@@ -123,17 +123,12 @@ coverage: $(TARGET)
 	@$(call print-to,"Documentation","$(COVERAGE_RAPPORT)","$(COVERAGE_DIR)","")
 	@lcov --quiet --directory .. -c -o $(COVERAGE_RAPPORT)
 	@lcov --quiet --remove $(COVERAGE_RAPPORT) '/usr*' 'external/*' 'tests/*' -o $(COVERAGE_RAPPORT)
+ifeq ($(TRAVIS),true)
+	@coveralls-lcov --source-encoding=ISO-8859-1 $(COVERAGE_RAPPORT)
+else
 	@genhtml --quiet -o $(COVERAGE_DIR) -t "$(TARGET)" $(COVERAGE_RAPPORT)
 	@xdg-open $(COVERAGE_DIR)/index.html >/dev/null
-
-###################################################
-# Generate the code coverage html rapport.
-.PHONY: coverall
-coverall: $(TARGET)
-	@$(call print-to,"Coveralls","$(COVERAGE_RAPPORT)","$(COVERAGE_DIR)","")
-	@lcov --quiet --directory .. -c -o $(COVERAGE_RAPPORT)
-	@lcov --quiet --remove $(COVERAGE_RAPPORT) '/usr*' 'external/*' 'tests/*' -o $(COVERAGE_RAPPORT)
-	@coveralls-lcov --source-encoding=ISO-8859-1 $(COVERAGE_RAPPORT)
+endif
 
 ###################################################
 # For using this service, you have to download and install
