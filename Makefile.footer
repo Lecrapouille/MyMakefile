@@ -106,13 +106,21 @@ obs:
 # Check if your project is harden
 .PHONY: check-harden
 check-harden: $(TARGET)
-	@hardening-check ./build/$(TARGET); echo ""
+	@hardening-check ./$(BUILD)/$(TARGET); echo ""
 
 ###################################################
 # Launch the executable with address sanitizer (if enabled).
 .PHONY: asan
 asan: $(TARGET)
-	@$(SANITIZER) ./build/$(TARGET) 2>&1 | ./$(THIRDPART)/asan_symbolize.py
+	@$(SANITIZER) ./$(BUILD)/$(TARGET) 2>&1 | ./$(THIRDPART)/asan_symbolize.py
+
+###################################################
+# Launch the executable with gprof.
+.PHONY: gprof
+gprof: $(TARGET)
+	@mkdir -p $(GENDOC)/gprof
+	$(Q)./$(BUILD)/$(TARGET); gprof ./$(BUILD)/$(TARGET) gmon.out > $(GENDOC)/gprof/analysis.txt && \
+	echo "You can read the report: $(GENDOC)/gprof/analysis.txt"
 
 ###################################################
 # Generate the code coverage html rapport.
@@ -180,7 +188,7 @@ which-compiler:
 .PHONY: clean
 clean:
 	@$(call print-simple,"Cleaning","$(PWD)")
-	@rm -fr $(BUILD) $(GENDOC)/coverage $(GENDOC)/html 2> /dev/null
+	@rm -fr $(BUILD) $(GENDOC)/coverage $(GENDOC)/html $(GENDOC)/gprof 2> /dev/null
 
 ###################################################
 # Create a temporary folder to store *.o and *.d files

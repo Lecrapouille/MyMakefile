@@ -122,7 +122,8 @@ Note:
 - `make clean` remove `$(BUILD)` `$(GENDOC)/coverage`, `$(GENDOC)/html` folders.
 - `make doc` generate Doxyfile and call doxygen. The report is generated inside `$(GENDOC)/html`.
 - `check-harden` check if you code is hardening.
-- `asan` use asan (Address Sanitizer).
+- `asan` use Address Sanitizer (USE_ASAN shall be set to 1).
+- `gprof` use GNU profiler (USE_GPROF shall be set to 1).
 - `coverage` call gcov against your code and generate a code coverage report inside `$(GENDOC)/coverage`.
 - `coverity-scan` static analyzer of code (only if you have install coverity-scan): a tarball is created that you have to manually upload on their server
 for obtaining the report.
@@ -205,8 +206,10 @@ for the same project, you may want several binaries and therefore several Makefi
 When typing `make install` resources files will be install in their sub-folders (such as PROJECT/PROJECT_VERSION/TARGET/TARGET_VERSION/). The current constraint is
 to have one Makefile file for each target (this is not a major problem if your create one folder by sub-project).
 * **[Mandatory]** `DESCRIPTION` explain your target in few words. This information is used for pkg-config file when `TARGET` is a library (or soon for [Open Build Service](https://openbuildservice.org/)).
-* **[Mandatory]** `BUILD_TYPE` allow compile the project either in `release` mode (compiled with -O2 and no gdb symbols) or `debug` mode (compiled with -O0 -g3 and extra compilation flags and use [backward-cpp](https://github.com/bombela/backward-cpp)) or `normal` mode (compiled -O2 -g).
-* **[Optional]** when `BUILD_TYPE=release` [backward-cpp](https://github.com/bombela/backward-cpp) is disabled but you can force using it by adding `USE_BACKWARD=1`.
+* **[Mandatory]** `BUILD_TYPE` allow compile the project either in `release` mode (compiled with -O2 and no gdb symbols) or `debug` mode (compiled with -O0 -g3 and extra compilation flags and use [backward-cpp](https://github.com/bombela/backward-cpp)) or `normal` mode (compiled -O2 -g). This mode is very slow and generates bigger executable size but nice for developement.
+* **[Optional]** when `BUILD_TYPE=release` [backward-cpp](https://github.com/bombela/backward-cpp) is disabled.
+* **[Optional]** You can activate gprof with `USE_GPROF=1` and `make gprof` rule.
+* **[Optional]** You can activate address sanitizer with `USE_ASAN=1` and `make asan` rule.
 * **[Default=.cpp]** `SUFFIX` allows choosing between a c++ or a c project.
 * **[Default=--std=c++11]** `STANDARD` is only used for c++ projects. It defines the c++ standard (gnu++11, std++14, etc).
 * **[Default=external/]** `THIRDPART` refers to the folder containing thirdpart libraries
