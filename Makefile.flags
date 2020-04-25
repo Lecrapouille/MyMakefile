@@ -102,23 +102,13 @@ LDFLAGS += -fsanitize=address -static-libasan
 endif
 
 ###################################################
-# Use Backward for tracing the stack when a crash occured.
+# Activate debug if Backward is set
 #
 ifeq ($(USE_BACKWARD),1)
-OBJS := backward.o $(OBJS)
-INCLUDES += -I$(THIRDPART)/backward-cpp
-VPATH += $(THIRDPART)/backward-cpp
 ifeq ($(BUILD_TYPE),release)
 BUILD_TYPE = debug
 $(warning Release mode desired but USE_BACKWARD will force debug mode)
 endif
-ifneq ($(ARCHI),Darwin)
-DEFINES += -DBACKWARD_HAS_DW=1 -DBACKWARD_HAS_BFD=0 -DBACKWARD_HAS_DWARF=0
-DEFINES += -DBACKWARD_HAS_UNWIND=1 -DBACKWARD_HAS_BACKTRACE=0
-DEFINES += -DBACKWARD_HAS_BACKTRACE_SYMBOL=1
-PKG_LIBS += libdw
-endif
-DEFINES +=
 endif
 
 ###################################################
@@ -140,6 +130,31 @@ OPTIM_FLAGS := -O2 -g
 DEFINES += -UNDEBUG -D_GLIBCXX_ASSERTIONS
 else
 $(error BUILD_TYPE shall be debug or release)
+endif
+
+###################################################
+# Disable Backward when using gprof or ASAN
+ifeq ($(USE_GPROF),1)
+USE_BACKWARD := 0
+endif
+ifeq ($(USE_ASAN),1)
+USE_BACKWARD := 0
+endif
+
+###################################################
+# Use Backward for tracing the stack when a crash occured.
+#
+ifeq ($(USE_BACKWARD),1)
+OBJS := backward.o $(OBJS)
+INCLUDES += -I$(THIRDPART)/backward-cpp
+VPATH += $(THIRDPART)/backward-cpp
+ifneq ($(ARCHI),Darwin)
+DEFINES += -DBACKWARD_HAS_DW=1 -DBACKWARD_HAS_BFD=0 -DBACKWARD_HAS_DWARF=0
+DEFINES += -DBACKWARD_HAS_UNWIND=1 -DBACKWARD_HAS_BACKTRACE=0
+DEFINES += -DBACKWARD_HAS_BACKTRACE_SYMBOL=1
+PKG_LIBS += libdw
+endif
+DEFINES +=
 endif
 
 ###################################################
