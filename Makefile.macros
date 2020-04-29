@@ -29,7 +29,9 @@ include $(M)/Makefile.color
 # Get the project version. Can be used for creating
 # shared libraries.
 #
-TARGET_VERSION := $(shell cat $(P)/VERSION)
+TARGET_VERSION := $(shell \
+  if [ ! -f $(P)/VERSION ]; then echo "0.1.0" > $(P)/VERSION; fi; \
+  cat $(P)/VERSION)
 TARGET_MAJOR_VERSION := $(shell cat $(P)/VERSION | cut -d"." -f1)
 TARGET_MINOR_VERSION := $(shell cat $(P)/VERSION | cut -d"." -f2)
 

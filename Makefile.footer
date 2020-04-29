@@ -174,7 +174,13 @@ tarball:
 # Generate a header file with the project version.
 version.h: VERSION
 	@$(call print-from,"Version","$(TARGET)","VERSION","")
-	@./$(M)/version.sh VERSION $(BUILD)/version.h
+	@./$(M)/version.sh $(P)/VERSION $(BUILD)/version.h
+
+###################################################
+# Create a Version file if not present
+#
+VERSION:
+	echo "0.1.0" > VERSION
 
 ###################################################
 # Display the compiler version and information.
@@ -199,12 +205,6 @@ $(OBJS): | $(BUILD)
 version.h: | $(BUILD) VERSION
 $(BUILD): which-compiler
 	@mkdir -p $(BUILD)
-
-###################################################
-# Create a Version file if not present
-#
-VERSION:
-	echo "0.1.0" > VERSION
 
 ###################################################
 # Auto-Dependency Generation
