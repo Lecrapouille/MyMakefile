@@ -135,6 +135,14 @@ define INSTALL_PROJECT_FOLDER
 endef
 
 ###################################################
+# Install the project binary
+#
+define INSTALL_BINARY
+	@$(call print-to,"Installing","$(BUILD)/$(TARGET)","$(PROJECT_EXE)","")
+	@cp $(BUILD)/$(TARGET) $(PROJECT_EXE)
+endef
+
+###################################################
 # Install the project documentation.
 # TODO (call INSTALL_FOLDER,examples) to remove .git build external
 #
