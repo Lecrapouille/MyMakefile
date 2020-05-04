@@ -39,7 +39,7 @@ endif
 ###################################################
 # Compile sources. Note: abspath is needed for gcov
 #
-%.o: %$(SUFFIX) $(BUILD)/%.d $(MYMAKEFILES) version.h
+%.o: %$(SUFFIX) $(BUILD)/%.d $(MYMAKEFILES) config.hpp
 	@$(call print-progress,"Compiling","$(TARGET)","$<")
 	$(Q)$(COMPILER) $(DEPFLAGS) $(CXXFLAGS) -c $(abspath $<) -o $(abspath $(BUILD)/$@)
 	@$(POSTCOMPILE)
@@ -178,10 +178,13 @@ tarball:
 	@./$(M)/targz.sh $(PWD) $(TARGET)
 
 ###################################################
-# Generate a header file with the project version.
-version.h: VERSION
+# Generate a header file with the project config.
+config.hpp: VERSION
 	@$(call print-from,"Version","$(TARGET)","VERSION","")
-	@./$(M)/version.sh $(P)/VERSION $(BUILD)/version.h
+	@echo "TARGET=$(TARGET)" > $(BUILD)/config.txt
+	@echo "PROJECT_DATA_PATH=$(PWD)/core:$(PROJECT_DATA_ROOT)/core" >> $(BUILD)/config.txt
+	@echo "PROJECT_TEMP_DIR=$(PROJECT_TEMP_DIR)" >> $(BUILD)/config.txt
+	@./$(M)/config.sh $(P)/VERSION $(BUILD)
 
 ###################################################
 # Create a Version file if not present
@@ -209,7 +212,7 @@ clean:
 $(DEPFILES): | $(BUILD)
 $(PKG_FILE): | $(BUILD)
 $(OBJS): | $(BUILD)
-version.h: | $(BUILD) VERSION
+config.hpp: | $(BUILD) VERSION
 $(BUILD): which-compiler
 	@mkdir -p $(BUILD)
 

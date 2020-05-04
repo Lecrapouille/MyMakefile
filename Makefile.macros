@@ -74,6 +74,7 @@ PROJECT_EXE := $(BINDIR)/$(TARGET)-$(TARGET_VERSION)
 PROJECT_DATA_ROOT := $(DATADIR)/$(PROJECT)/$(TARGET_VERSION)
 PROJECT_DATA_PATH := $(PROJECT_DATA_ROOT)/data
 PROJECT_DOC_PATH := $(PROJECT_DATA_ROOT)/$(GENDOC)
+PROJECT_TEMP_DIR := $(TMPDIR)/$(PROJECT)
 
 ###################################################
 # Define and configure the tool asan
@@ -99,6 +100,12 @@ COVERAGE_RAPPORT := $(BUILD)/rapport.info
 #
 DEPFLAGS = -MT $@ -MMD -MP -MF $(BUILD)/$*.Td
 POSTCOMPILE = mv -f $(BUILD)/$*.Td $(BUILD)/$*.d
+
+###################################################
+#
+DEFINES += \
+  -DPROJECT_TEMP_DIR=\"$(PROJECT_TEMP_DIR)\" \
+  -DPROJECT_DATA_PATH=\"$(PWD)/core:$(PROJECT_DATA_ROOT)/core\"
 
 ###################################################
 # Install files present in the folder $1 in the the

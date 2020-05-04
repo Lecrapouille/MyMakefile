@@ -27,6 +27,8 @@
 # the build/version.h with these informations. This project uses them
 # in log files, in "about" windows ... This script is called by Makefile.
 
+source $2/config.txt
+
 ### Get major and minor version from VERSION file (given as $1)
 VERSION=`grep "[0-9]\+\.[0-9]\+" $1 2> /dev/null`
 if [ "$VERSION" == "" ];
@@ -47,16 +49,39 @@ echo "git: $BRANCH $SHA1"
 echo ""
 
 ### Save these informations as C++ header file
-cat <<EOF >$2
-#ifndef VERSION_H_
-#  define VERSION_H_
+cat <<EOF >$2/config.hpp
+#ifndef GENERATED_CONFIG_H
+#  define GENERATED_CONFIG_H
 
-#  define PROJECT_MAJOR_VERSION ${MAJOR_VERSION}u
-#  define PROJECT_MINOR_VERSION ${MINOR_VERSION}u
-#  define PROJECT_BRANCH "$BRANCH"
-#  define PROJECT_SHA1 "$SHA1"
+#  include <string>
 
-#endif /* VERSION_H_ */
+namespace config
+{
+  //! \brief Compiled in debug or released mode
+  enum Mode { Debug, Release };
+  const Mode mode = config::Debug;
+  //! \brief Used for logs and GUI.
+  const std::string project_name("${TARGET}");
+  //! \brief Major version of project
+  const uint32_t major_version(${MAJOR_VERSION}u);
+  //! \brief Minor version of project
+  const uint32_t minor_version(${MINOR_VERSION}u);
+  //! \brief Save the git SHA1
+  const std::string git_sha1("${SHA1}");
+  //! \brief Save the git branch
+  const std::string git_branch("${BRANCH}");
+  //! \brief Pathes where default project resources have been installed
+  //! (when called  by the shell command: sudo make install).
+  const std::string data_path("${PROJECT_DATA_PATH}");
+  //! \brief Location for storing temporary files
+  const std::string tmp_path("${PROJECT_TEMP_DIR}/");
+  //! \brief Give a name to the default project log file.
+  const std::string log_name(project_name + ".log");
+  //! \brief Define the full path for the project.
+  const std::string log_path(tmp_path + log_name);
+}
+
+#endif /* GENERATED_CONFIG_H */
 EOF
 
 exit 0

@@ -114,6 +114,19 @@ $(error ARCHI cannot be set)
 endif
 
 ###################################################
+# Temporary directory
+#
+ifeq ($(ARCHI),Darwin)
+TMPDIR ?= /tmp
+else ifeq ($(ARCHI),Linux)
+TMPDIR ?= /tmp
+else ifeq ($(ARCHI),Windows)
+TMPDIR ?= /tmp
+else
+$(error Unknown shared library file extension for this architecture)
+endif
+
+###################################################
 # Shared libraries file extension
 #
 ifeq ($(ARCHI),Darwin)
@@ -125,6 +138,7 @@ SO := dll
 else
 $(error Unknown shared library file extension for this architecture)
 endif
+DEFINES += -DDYLIB_EXT=\".$(SO)\"
 
 ###################################################
 # Define the compilator
