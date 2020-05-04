@@ -47,19 +47,19 @@ BRANCH=`git branch 2> /dev/null | head -n1 | cut -d" " -f2`
 echo "Project version: $MAJOR_VERSION.$MINOR_VERSION"
 echo "git: $BRANCH $SHA1"
 echo ""
+BUILD_TYPE=`[ "$BUILD_TYPE" == "debug" ] && echo "true" || echo "false"`
 
 ### Save these informations as C++ header file
 cat <<EOF >$2/config.hpp
-#ifndef GENERATED_CONFIG_H
-#  define GENERATED_CONFIG_H
+#ifndef GENERATED_${PROJECT}_${TARGET}_CONFIG_HPP
+#  define GENERATED_${PROJECT}_${TARGET}_CONFIG_HPP
 
 #  include <string>
 
 namespace config
 {
   //! \brief Compiled in debug or released mode
-  enum Mode { Debug, Release };
-  const Mode mode = config::Debug;
+  const bool debug = ${BUILD_TYPE};
   //! \brief Used for logs and GUI.
   const std::string project_name("${TARGET}");
   //! \brief Major version of project
@@ -81,7 +81,7 @@ namespace config
   const std::string log_path(tmp_path + log_name);
 }
 
-#endif /* GENERATED_CONFIG_H */
+#endif // GENERATED_${PROJECT}_${TARGET}_CONFIG_HPP
 EOF
 
 exit 0

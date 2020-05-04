@@ -181,9 +181,11 @@ tarball:
 # Generate a header file with the project config.
 config.hpp: VERSION
 	@$(call print-from,"Version","$(TARGET)","VERSION","")
-	@echo "TARGET=$(TARGET)" > $(BUILD)/config.txt
+	@echo "PROJECT=$(PROJECT)" > $(BUILD)/config.txt
+	@echo "TARGET=$(TARGET)" >> $(BUILD)/config.txt
 	@echo "PROJECT_DATA_PATH=$(PWD)/core:$(PROJECT_DATA_ROOT)/core" >> $(BUILD)/config.txt
 	@echo "PROJECT_TEMP_DIR=$(PROJECT_TEMP_DIR)" >> $(BUILD)/config.txt
+	@echo "BUILD_TYPE=$(BUILD_TYPE)" >> $(BUILD)/config.txt
 	@./$(M)/config.sh $(P)/VERSION $(BUILD)
 
 ###################################################
