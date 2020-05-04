@@ -106,7 +106,10 @@ obs:
 # Check if your project is harden
 .PHONY: check-harden
 check-harden: $(TARGET)
-	@hardening-check ./$(BUILD)/$(TARGET); echo ""
+	@hardening-check ./$(BUILD)/$(TARGET); echo -n ""
+ifeq ($(BUILD_TYPE),debug)
+	@echo " Project compiled in debug mode"
+endif
 
 ###################################################
 # Launch the executable with address sanitizer (if enabled).

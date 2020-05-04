@@ -40,41 +40,45 @@ ARCHI := $(shell uname -s)
 endif
 
 ###################################################
-# Define your C++ compilator
+# Define your C++ compilator (default: empty).
 CXX ?=
 
 ###################################################
-# Define your C compilator
+# Define your C compilator (default: empty).
 CXX ?=
 
 ###################################################
-# Define the directory holding compilation files (*.o ...).
+# Define the directory holding compilation files (default: build).
 BUILD ?= build
 
 ###################################################
 # Note: do not use $(P)/external VPATH seems not linking that.
 #
-# Define the directory holding third part libraries that shall be compiled.
+# Define the directory holding third part libraries that shall be compiled (default: external).
 THIRDPART ?= external
 
 ###################################################
-# Define the directory holding generated documentation.
+# Define the directory holding generated documentation (default: doc).
 GENDOC ?= doc
 
 ###################################################
-# Prefix to the path that the "install" target will install into: libraries to $(DESTDIR)$(PREFIX)/lib, binaries to $(DESTDIR)$(PREFIX)/bin
+# Define a temporary directory where the project will be installed: $(DESTDIR)$(PREFIX)/lib and $(DESTDIR)$(PREFIX)/bin (default: empty)
+DESTDIR ?=
+
+###################################################
+# Define where the project will be installed: $(DESTDIR)$(PREFIX)/lib and $(DESTDIR)$(PREFIX)/bin (default: /usr)
 PREFIX ?= /usr
 
 ###################################################
-# Select the C++ standard.
+# Select the C++ standard (default is --std=c++11).
 STANDARD ?= --std=c++11
 
 ###################################################
-# Select either a C++ project or a C project.
+# Select either a C++ project or a C project (default is .cpp).
 SUFFIX ?= .cpp
 
 ###################################################
-# Static library
+# Static library (default is ar and crs).
 AR ?= ar
 ARFLAGS ?= crs
 
