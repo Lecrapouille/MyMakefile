@@ -1,9 +1,10 @@
 # MyMakefile
 
-`MyMakefile` is a central build system based on GNU Makefile for compiling my GitHub C/C++ projects for Linux and Mac OS X (any maybe for Windows but I cannot test it **help wanted**). It allows me to reduce the size of my Makefiles by avoiding duplicating the same boring code over all my projects and therefore to update all my Makefiles in once. If for your own project, you are not interested in CMake and need to maintain a small makefile, you may be interested in this project.
-Two choices: -- simply copy/paste it inside your project -- or, better, use it as a git submodule (to follow my evolutions).
+[MyMakefile](https://github.com/Lecrapouille/MyMakefile) is a central build system based on GNU Makefile for compiling my GitHub C++ projects for Linux and normally to Mac OS X. it does not support Windows architecture because I have no access to it. `MyMakefile` allows me to reduce the size of my Makefiles by avoiding duplicating the same boring code over all my projects and therefore to update all my Makefiles in once. In the case, for your personal project, you are not interested by CMake or bored to Makefile syntax, you may be interested in this project. Two choices:
+* simply copy/paste it inside your project
+* or better, use it as a git submodule to follow my evolutions.
 
-Here, my personal projects using this repo as a git submodule:
+Here, the list of my personal projects using this repo as a git submodule:
 
 * https://github.com/Lecrapouille/SimTaDyn
 * https://github.com/Lecrapouille/SimForth
@@ -12,9 +13,7 @@ Here, my personal projects using this repo as a git submodule:
 
 Why this project?
 
-So you don't have to make yours or configure another one for more than 30 seconds.
-
-Or maybe you wanted to ask: why not simply using CMake instead of this project, CMake is a Makefile generator after all and architecture agnostic? The answer would be yes for big projects but I personally never liked CMake for generating makefiles containing more lines than he equivalent hand-made Maykefile, especially for small projects such as mine.
+Or maybe: why not simply using CMake instead of this project? CMake is, after all, a Makefile generator and is architecture agnostic! The answer would be yes for big projects but I personally never liked CMake for generating makefiles containing more lines than the equivalent hand-made Makefile, especially for small projects such as mines.
 
 ## MyMakefile Features
 
@@ -38,7 +37,9 @@ with the percentage of compiled files (in the way of the CMake progress bar).
 * Auto-generate the help and its comments for your own rules.
 * You do not have to write Makefile rules for compiling your project or installing your project: use macros instead. You can add your own personal Makefile rules anyway.
 
-**Current constraint: You have to define one target by Makefile. This can be easily bypassed.**
+**Current constraint:**
+* You have to define one target by Makefile. This can be easily bypassed as shown in examples given in this document. A solution to both fix it and reduce the code is in gestation in the git branch dev-multitargets.
+* You cannot build a binary and libraries because of the previous point: multi-targets is not managed.
 
 ## Inside MyMakefile
 
@@ -75,7 +76,7 @@ foo/
 - `.makefile/` is simply this repo `git clone git@github.com:Lecrapouille/MyMakefile.git --depth=1 .makefile` (or better as git sub-module).
 I personally add the `.` to hide it in my workspace but this is not mandatory.
 - `VERSION` is an ASCII file containing a version number such as `0.1` or `1.0.3`. It seems useless but it has a great role when installing
-your project in your operating system: you can install different versions of your project without they interfering each others.
+your project in your operating system: you can install different versions of your project without they interfering each others. If not present a default file is created.
 - `src/` is the folder containing your code source. For example, a simple hello word made by the `main.cpp` file. The name is not important as well
 and can arbitrary contains plenty of folders and source files.
 - `Makefile` contains, for this example, the following code (explanations come in next sections):
@@ -103,6 +104,8 @@ include $(M)/Makefile.footer
 ```
 
 Note:
+* `P` and `M` are mandatory. `P` indicates the relative path of the folder holding the root project. `M` indicates the location
+  of the folder holding this `MyMakefile` project.
 * You do not have to write compilation rules or rules such as `clean:` or `doc:` ... rules they are already defined in Makefile.footer.
 * If you want to add new rules add them before or after `include $(M)/Makefile.footer`.
 * `OBJS` contains the list of all .o files (separated by spaces). Please just give their base names and not their source path.
@@ -119,36 +122,44 @@ Note:
 
 #### Utility rules
 
+- `make help` show your makefile rules (the display is an auto-generated).
 - `make clean` remove `$(BUILD)` `$(GENDOC)/coverage`, `$(GENDOC)/html` folders.
 - `make doc` generate Doxyfile and call doxygen. The report is generated inside `$(GENDOC)/html`.
-- `check-harden` check if you code is hardening.
-- `asan` use Address Sanitizer (USE_ASAN shall be set to 1).
-- `gprof` use GNU profiler (USE_GPROF shall be set to 1).
-- `coverage` call gcov against your code and generate a code coverage report inside `$(GENDOC)/coverage`.
-- `coverity-scan` static analyzer of code (only if you have install coverity-scan): a tarball is created that you have to manually upload on their server
+- `make check-harden` check if you code is hardening.
+- `make asan` use Address Sanitizer (`USE_ASAN` shall be set to 1).
+- `make gprof` use GNU profiler (`USE_GPROF` shall be set to 1).
+- `make coverage` call gcov against your code and generate a code coverage report inside `$(GENDOC)/coverage`.
+- `make coverity-scan` static analyzer of code (only if you have install coverity-scan): a tarball is created that you have to manually upload on their server
 for obtaining the report.
-- `tarball` compress your project in tar.gz tarball (without `.git`, `$(BUILD)`, `$(GENDOC)` folders). Name conflicts of tarball are managed.
-- `which-compiler` show which is the default compiler.
+- `make tarball` compress your project in tar.gz tarball (without `.git`, `$(BUILD)`, `$(GENDOC)` folders). Name conflicts of tarball are managed.
+- `make which-compiler` show which is the default compiler.
 
 The following commands are mine and will not work "as it" for you:
-- `make obs` call the bash script `$(P)/.integration/opensuse-build-service.sh`. I used for building my projects on compilation farms.
+- `make obs` call the bash script `$(P)/.integration/opensuse-build-service.sh`. I used for building my projects on the compilation farms OBS (Opensuse Build Service).
 - `download-external-libs` call the bash script `$(P)/$(THIRDPART)/download-external-libs.sh` I use it as alternative to git submodules.
 I download github projects inside `$(P)/$(THIRDPART)`, rename them, refactorize them, etc ... This command is also used for my continuous integration tests.
 - `compile-external-libs` call the bash script `$(P)//$(THIRDPART)/download-external-libs.sh` Compile my downloaded GitHub projects.
 This command is also used for my continuous integration tests.
 
-#### Installation
+#### Installation rule
 
-- Installation rule: you have to write your own install rule (usually named `install:`). Place it after the `all:`.
-Some macros are here to help you: `@$(call RULE_INSTALL_DOC)`, `@$(call RULE_INSTALL_LIBRARIES)`,
-`@$(call RULE_INSTALL_HEADER_FILES)`, `@$(call RULE_INSTALL_PKG_CONFIG)`. They respectively install the documentation (refered by `GENDOC`),
-the .so (.dll or .dylib) and .a library files, .hpp files and .pc file inside your operating system.
-- You can also modify `DESTDIR` and `PREFIX` to tell to the `make install` rule where to install your software:
-`sudo make DESTDIR=/usr PREFIX=/usr/local/stow/foo install` will install binaries in `/usr/local/stow/foo/usr/local/bin`.
+- You have to write your own install rule (usually named `install:`). Place it after the `all:`.
+- Call `sudo make install` to install your project in your system but you can also modify `DESTDIR` and `PREFIX` to tell to the `make install` rule where to install your software:
+  - PREFIX: determines where the package will go when it is installed, and where it will look for its associated files when it is run. It's what you should use if you're just compiling something for use on a single host.
+  - DESTDIR: is for installing to a temporary directory which is not where the package will be run from.
+  - Example: `sudo make DESTDIR=/usr PREFIX=/usr/local/foo/bar install` will install binaries in `/usr/local/foo/bar/usr/local/bin`.
+Some macros are here to help you:
+  - `$(call INSTALL_BINARY)` to install your binary into `$(DESTDIR)$(PREFIX)/bin`.
+  - `$(call INSTALL_DOCUMENTATION)` to install your documentation into `$(DESTDIR)$(PREFIX)/share/$(PROJECT)/$(TARGET_VERSION)`. This will copy the followinf files and folders: `$(GENDOC) data/, examples/, AUTHORS, LICENSE, README.md, ChangeLog`.
+  - `$(call INSTALL_PROJECT_LIBRARIES)` to install shared and static libraries into `$(DESTDIR)$(PREFIX)/lib` and pkg-confile file into `/usr/lib/pkgconfig`.
+  - `$(call INSTALL_PROJECT_HEADERS)` to install header files into `$(DESTDIR)$(PREFIX)/include/$(PROJECT)-$(TARGET_VERSION)`.
+  - `$(call INSTALL_PROJECT_FOLDER,folder)` to install the folder into `$(DESTDIR)$(PREFIX)/share/$(PROJECT)/$(TARGET_VERSION)`.
+  - `$(call INSTALL_THIRDPART_FOLDER,ThirdPartLibrary/src,LibraryName,-name "*.h")` to copy recursively all `h` files from the folder `$(THIRDPART)/ThirdPartLibrary/src` into `$(DESTDIR)$(PREFIX)/include/$(PROJECT)-$(TARGET_VERSION)/LibraryName`. The `-name "*.h"` is a parameter to the command `find`.
+  - `$(call INSTALL_THIRDPART_FILES,ThirdPartLibrary,LibraryName,-name "*.h")` to copy all `h` files from the folder `$(THIRDPART)/ThirdPartLibrary/src` into `$(DESTDIR)$(PREFIX)/include/$(PROJECT)-$(TARGET_VERSION)/LibraryName`. The `-name "*.h"` is a parameter to the command `find`.
 
 ## A more complex example
 
-Let suppose you want to add a unit test folder. Just do this:
+Let suppose you want to add a unit test folder to ypur project. Just do this:
 ```
 foo/
 ├── .makefile/
