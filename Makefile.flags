@@ -147,8 +147,8 @@ endif
 #
 ifeq ($(USE_BACKWARD),1)
 OBJS := backward.o $(OBJS)
-INCLUDES += -I$(THIRDPART)/backward-cpp
-VPATH += $(THIRDPART)/backward-cpp
+INCLUDES += -I$(P)/$(THIRDPART)/backward-cpp
+VPATH += $(P)/$(THIRDPART)/backward-cpp
 ifneq ($(ARCHI),Darwin)
 DEFINES += -DBACKWARD_HAS_DW=1 -DBACKWARD_HAS_BFD=0 -DBACKWARD_HAS_DWARF=0
 DEFINES += -DBACKWARD_HAS_UNWIND=1 -DBACKWARD_HAS_BACKTRACE=0
