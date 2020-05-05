@@ -90,13 +90,13 @@ $(THIRDPART)/backward-cpp/.git/config: | $(BUILD)
 # Download external github code source needed by this project.
 .PHONY: download-external-libs
 download-external-libs:
-	@(cd $(THIRDPART) && ./download-external-libs.sh $(ARCHI))
+	@(cd $(THIRDPART) && ./download-external-libs.sh $(ARCHI) $(TARGET))
 
 ###################################################
 # Compile external projects needed.
 .PHONY: compile-external-libs
 compile-external-libs:
-	@(cd $(THIRDPART) && ./compile-external-libs.sh $(ARCHI))
+	@(cd $(THIRDPART) && ./compile-external-libs.sh $(ARCHI) $(TARGET))
 
 ###################################################
 # Create an uploadable tarball for the OpenSuse Build Service (OBS).
