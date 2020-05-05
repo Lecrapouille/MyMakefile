@@ -206,7 +206,7 @@ which-compiler:
 ###################################################
 # Clean the project
 .PHONY: clean
-clean:
+clean::
 	@$(call print-simple,"Cleaning","$(PWD)")
 	@rm -fr $(BUILD) $(GENDOC)/coverage $(GENDOC)/html $(GENDOC)/gprof 2> /dev/null
 
