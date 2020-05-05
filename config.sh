@@ -49,10 +49,13 @@ echo "git: $BRANCH $SHA1"
 echo ""
 BUILD_TYPE=`[ "$BUILD_TYPE" == "debug" ] && echo "true" || echo "false"`
 
+### Header guard
+GUARD=`echo "${PROJECT}_${TARGET}_GENERATED_CONFIG_HPP" | tr '[:lower:]' '[:upper:]' | tr "a-" "_"`
+
 ### Save these informations as C++ header file
 cat <<EOF >$2/config.hpp
-#ifndef GENERATED_${PROJECT}_${TARGET}_CONFIG_HPP
-#  define GENERATED_${PROJECT}_${TARGET}_CONFIG_HPP
+#ifndef ${GUARD}
+#  define ${GUARD}
 
 #  include <string>
 
@@ -81,7 +84,7 @@ namespace config
   const std::string log_path(tmp_path + log_name);
 }
 
-#endif // GENERATED_${PROJECT}_${TARGET}_CONFIG_HPP
+#endif // ${GUARD}
 EOF
 
 exit 0
