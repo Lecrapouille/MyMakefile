@@ -204,6 +204,12 @@ which-compiler:
 	@$(COMPILER) --version
 
 ###################################################
+# Display the description of the project
+.PHONY: about
+about:
+	@$(call print-to,"About","$(TARGET)","$(DESCRIPTION)")
+
+###################################################
 # Clean the project
 .PHONY: clean
 clean::
@@ -217,7 +223,8 @@ $(DEPFILES): | $(BUILD)
 $(PKG_FILE): | $(BUILD)
 $(OBJS): | $(BUILD)
 config.hpp: | $(BUILD) VERSION
-$(BUILD): which-compiler
+which-compiler: | about
+$(BUILD): about which-compiler
 	@mkdir -p $(BUILD)
 
 ###################################################
