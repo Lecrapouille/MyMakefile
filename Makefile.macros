@@ -191,11 +191,8 @@ endef
 define INSTALL_PROJECT_HEADERS
 	@$(call print-to,"Installing","headers","$(INCLDIR)","")
 	@$(call INSTALL_FOLDER,include,$(INCLDIR))
-	@$(call INSTALL_FOLDER,src,$(INCLDIR),-name "*.[hit]pp")
-	@$(call INSTALL_FOLDER,src,$(INCLDIR),-name "*.incl")
-	@$(call INSTALL_FOLDER,src,$(INCLDIR),-name "*.h")
-	@$(call INSTALL_FOLDER,src,$(INCLDIR),-name "*.hh")
-	@$(call INSTALL_FOLDER,src,$(INCLDIR),-name "*.hxx")
+	@$(call INSTALL_FOLDER,src,$(INCLDIR),\
+	-name "*.[hit]pp" -o -name "*.incl" -o -name "*.h" -o -name "*.hh" -o -name "*.hxx")
 endef
 
 ###################################################
