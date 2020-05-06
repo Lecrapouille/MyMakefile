@@ -26,6 +26,18 @@
 include $(M)/Makefile.flags
 
 ###################################################
+# Download Backward for tracing the stack when a crash occured.
+#
+ifeq ($(USE_BACKWARD),1)
+backward.o: | $(THIRDPART)/backward-cpp/backward.cpp
+$(THIRDPART)/backward-cpp/backward.cpp: | $(BUILD)
+	@if [ ! -d "$(THIRDPART)/backward-cpp" ] ; then \
+	$(call print-to,"Downloading","backward-cpp","$(TARGET)",""); \
+	mkdir -p $(THIRDPART) && cd $(THIRDPART) && git clone https://github.com/Lecrapouille/backward-cpp.git --depth=1 > /dev/null 2> /dev/null; \
+	fi
+endif
+
+###################################################
 # Link sources
 #
 $(TARGET): $(OBJS) $(THIRDPART_OBJS) $(THIRDPART_LIBS)
@@ -75,16 +87,6 @@ $(PKG_FILE): $(MYMAKEFILES) VERSION
 	@echo "Version: $(TARGET_VERSION)" >> $(BUILD)/$@
 	@echo "Libs: -L$$""{libdir} $(SHORT_LIB_TARGET) $(NOT_PKG_LIBS) $(PKGCFG_LIBS)" >> $(BUILD)/$@
 	@echo "Cflags: -I$$""{includedir}" >> $(BUILD)/$@
-
-###################################################
-# Download Backward for tracing the stack when a crash occured.
-#
-$(THIRDPART)/backward-cpp/backward.cpp: $(THIRDPART)/backward-cpp/.git/config
-$(THIRDPART)/backward-cpp/.git/config: | $(BUILD)
-	@if [ ! -d "$(THIRDPART)/backward-cpp" ] ; then \
-	$(call print-to,"Downloading","backward-cpp","$(TARGET)",""); \
-	mkdir -p $(THIRDPART) && cd $(THIRDPART) && git clone https://github.com/Lecrapouille/backward-cpp.git --depth=1 > /dev/null 2> /dev/null; \
-	fi
 
 ###################################################
 # Download external github code source needed by this project.

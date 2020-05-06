@@ -146,7 +146,7 @@ endif
 # Use Backward for tracing the stack when a crash occured.
 #
 ifeq ($(USE_BACKWARD),1)
-OBJS := backward.o $(OBJS)
+OBJS += backward.o
 INCLUDES += -I$(THIRDPART)/backward-cpp
 VPATH += $(THIRDPART)/backward-cpp
 ifneq ($(ARCHI),Darwin)
