@@ -89,7 +89,7 @@ CXXFLAGS += -pg
 LDFLAGS += -pg
 ifeq ($(BUILD_TYPE),release)
 BUILD_TYPE = debug
-$(warning Release mode desired but USE_BACKWARD will force debug mode)
+$(warning Release mode desired but USE_GPROF will force debug mode)
 endif
 endif
 
