@@ -61,6 +61,40 @@ cat <<EOF >$2/config.hpp
 
 namespace config
 {
+  //! \brief Project compiled in release or debug mode ?
+  extern const bool debug;
+  //! \brief Either create a new log file or smash the older log.
+  extern const bool separated_logs;
+  //! \brief Used for logs and GUI.
+  extern const std::string project_name;
+  //! \brief Major version of project
+  extern const uint32_t major_version;
+  //! \brief Minor version of project
+  extern const uint32_t minor_version;
+  //! \brief Save the git SHA1
+  extern const std::string git_sha1;
+  //! \brief Save the git branch
+  extern const std::string git_branch;
+  //! \brief Pathes where default project resources have been installed
+  //! (when called  by the shell command: sudo make install).
+  extern const std::string data_path;
+  //! \brief Location for storing temporary files
+  extern const std::string tmp_path;
+  //! \brief Give a name to the default project log file.
+  extern const std::string log_name;
+  //! \brief Define the full path for the project.
+  extern const std::string log_path;
+}
+
+#endif // ${GUARD}
+EOF
+
+### Save these informations as C++ file
+cat <<EOF >$2/config.cpp
+#include "./config.hpp"
+
+namespace config
+{
   //! \brief Compiled in debug or released mode
   const bool debug = ${BUILD_TYPE};
   //! \brief Used for logs and GUI.
@@ -84,7 +118,6 @@ namespace config
   const std::string log_path(tmp_path + log_name);
 }
 
-#endif // ${GUARD}
 EOF
 
 exit 0
