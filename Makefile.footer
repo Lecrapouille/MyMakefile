@@ -26,15 +26,6 @@
 include $(M)/Makefile.flags
 
 ###################################################
-# Compile the generated configuration file. A cpp
-# file is needed because with a single header file
-# we can have multiple definitions issues.
-#
-OBJS += config.o
-config.o: | $(BUILD)/config.cpp
-$(BUILD)/config.cpp: | $(VERSION)
-
-###################################################
 # Download Backward for tracing the stack when a crash occured.
 #
 ifeq ($(USE_BACKWARD),1)
