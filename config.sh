@@ -41,11 +41,11 @@ MINOR_VERSION=`echo "$VERSION" | cut -d'.' -f2`
 
 ### Get git SHA1 and branch
 SHA1=`git log 2> /dev/null | head -n1 | cut -d" " -f2`
-BRANCH=`git branch 2> /dev/null | head -n1 | cut -d" " -f2`
+BRANCH=`git rev-parse --abbrev-ref HEAD 2> /dev/null`
 
 ### Debug
 echo "Project version: $MAJOR_VERSION.$MINOR_VERSION"
-echo "git: $BRANCH $SHA1"
+echo "Git branch $BRANCH SHA1 $SHA1"
 echo ""
 BUILD_TYPE=`[ "$BUILD_TYPE" == "debug" ] && echo "true" || echo "false"`
 
