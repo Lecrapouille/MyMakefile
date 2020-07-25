@@ -29,11 +29,11 @@ include $(M)/Makefile.flags
 # Download Backward for tracing the stack when a crash occured.
 #
 ifeq ($(USE_BACKWARD),1)
-backward.o: | $(THIRDPART)/backward-cpp/backward.cpp
-$(THIRDPART)/backward-cpp/backward.cpp: | $(BUILD)
-	@if [ ! -d "$(THIRDPART)/backward-cpp" ] ; then \
+backward.o: | $(BUILD)/backward-cpp/backward.cpp
+$(BUILD)/backward-cpp/backward.cpp: | $(BUILD)
+	@if [ ! -d "$(BUILD)/backward-cpp" ] ; then \
 	$(call print-to,"Downloading","backward-cpp","$(TARGET)",""); \
-	mkdir -p $(THIRDPART) && cd $(THIRDPART) && git clone https://github.com/Lecrapouille/backward-cpp.git --depth=1 > /dev/null 2> /dev/null; \
+	mkdir -p $(BUILD) && cd $(BUILD) && git clone https://github.com/Lecrapouille/backward-cpp.git --depth=1 > /dev/null 2> /dev/null; \
 	fi
 endif
 
