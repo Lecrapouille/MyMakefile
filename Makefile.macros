@@ -227,10 +227,15 @@ endef
 # make recompile the whole project $(P)/Makefile.common
 # is optional.
 #
-MYMAKEFILES := ./Makefile $(P)/Makefile $(M)/Makefile.header			\
-$(M)/Makefile.footer $(M)/Makefile.color $(M)/Makefile.help $(M)/Makefile.flags	\
-$(M)/Makefile.macros
+MYMAKEFILES := $(M)/Makefile.header $(M)/Makefile.footer $(M)/Makefile.color	\
+$(M)/Makefile.help $(M)/Makefile.flags $(M)/Makefile.macros
 
+ifneq (,$(wildcard ./Makefile))
+MYMAKEFILES += ./Makefile
+endif
+ifneq (,$(wildcard $(P)/Makefile))
+MYMAKEFILES += $(P)/Makefile
+endif
 ifneq (,$(wildcard $(P)/Makefile.common))
 MYMAKEFILES += $(P)/Makefile.common
 endif

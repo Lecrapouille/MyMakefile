@@ -101,6 +101,22 @@ compile-external-libs:
 	@(cd $(THIRDPART) && ./compile-external-libs.sh $(ARCHI) $(TARGET))
 
 ###################################################
+# Run the binary
+#
+.PHONY: run
+run:
+	@./$(BUILD)/$(TARGET); echo "  \033[33merror code: $$?\033[00m"
+
+###################################################
+# Compile, launch unit tests and generate the code coverage html report.
+# This rule is an alias for unit-tests for retro-compatibility: I initialy
+# used the name "unit-tests" and dsicovered recently that the official name
+# is "check".
+#
+.PHONY: unit-tests
+unit-tests: check
+
+###################################################
 # Create an uploadable tarball for the OpenSuse Build Service (OBS).
 .PHONY: obs
 obs:
