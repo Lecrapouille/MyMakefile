@@ -141,12 +141,16 @@ $(error BUILD_TYPE shall be debug or release)
 endif
 
 ###################################################
-# Disable Backward when using gprof or ASAN
+# Disable Backward when using gprof or ASAN or Windows
 #
 ifeq ($(USE_GPROF),1)
 USE_BACKWARD := 0
 endif
 ifeq ($(USE_ASAN),1)
+USE_BACKWARD := 0
+endif
+ifeq ($(ARCHI),Windows)
+$(warning )
 USE_BACKWARD := 0
 endif
 
@@ -165,6 +169,15 @@ PKG_LIBS += libdw
 endif
 DEFINES +=
 endif
+
+###################################################
+# Import DLLs (exporting is made inside the rule
+# $(SHARED_LIB_TARGET) replacing this variable.
+#
+#ifeq ($(ARCHI),Windows)
+#DEFINES += -DLINKAGE="__declspec(dllexport)"
+#DEFINES += -DLINKAGE="__declspec(dllimport)"
+#endif
 
 ###################################################
 # Use ifdef because pkg-config does not like empty argument
