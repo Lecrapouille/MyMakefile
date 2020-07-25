@@ -102,6 +102,14 @@ LDFLAGS += -fsanitize=address -static-libasan
 endif
 
 ###################################################
+# Use coverage.
+#
+ifeq ($(USE_COVERAGE),1)
+CXXFLAGS += --coverage
+LDFLAGS += --coverage
+endif
+
+###################################################
 # Activate debug if Backward is set
 #
 ifeq ($(USE_BACKWARD),1)
