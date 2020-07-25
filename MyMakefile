@@ -1,0 +1,2 @@
+include $(M)/Makefile.header
+include $(M)/Makefile.footer
