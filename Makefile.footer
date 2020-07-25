@@ -67,8 +67,8 @@ $(STATIC_LIB_TARGET): $(OBJS) $(THIRDPART_OBJS) $(THIRDPART_LIBS)
 ###################################################
 # Shared library
 #
-$(SHARED_LIB_TARGET): CXXFLAGS += -fPIC
-$(SHARED_LIB_TARGET): LDFLAGS += -shared
+$(SHARED_LIB_TARGET): CXXFLAGS += $(DLL_CXXFLAGS)
+$(SHARED_LIB_TARGET): LDFLAGS += $(DLL_LDFLAGS)
 $(SHARED_LIB_TARGET): $(OBJS) $(THIRDPART_OBJS) $(THIRDPART_LIBS)
 	@$(call print-to,"Shared lib","$(TARGET)","$(BUILD)/$@","$(VERSION)")
 	$(Q)cd $(BUILD) && $(COMPILER) $(LDFLAGS) -o $@ $(OBJS) $(THIRDPART_OBJS)
