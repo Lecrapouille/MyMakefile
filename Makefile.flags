@@ -194,9 +194,3 @@ endif
 #
 VPATH := $(BUILD) $(VPATH)
 INCLUDES := -I$(BUILD) $(INCLUDES)
-
-###################################################
-# Finalize c++ and c compilation and linker flags
-#
-CXXFLAGS := $(CXXFLAGS) $(PKGCFG_CFLAGS) $(OPTIM_FLAGS) $(DEFINES) $(INCLUDES) $(COMPIL_FLAGS)
-LDFLAGS := $(LDFLAGS) $(THIRDPART_LIBS) $(NOT_PKG_LIBS) $(PKGCFG_LIBS) $(LINKER_FLAGS)

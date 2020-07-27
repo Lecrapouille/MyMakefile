@@ -42,7 +42,7 @@ endif
 #
 $(TARGET): $(OBJS) $(THIRDPART_OBJS) $(THIRDPART_LIBS)
 	@$(call print-to,"Linking","$(TARGET)","$(BUILD)/$@","$(VERSION)")
-	$(Q)cd $(BUILD) && $(COMPILER) $(OBJS) $(THIRDPART_OBJS) -o $@ $(LDFLAGS)
+	$(Q)cd $(BUILD) && $(COMPILER) $(LDFLAGS) $(OBJS) $(THIRDPART_OBJS) -o $@ $(THIRDPART_LIBS) $(NOT_PKG_LIBS) $(PKGCFG_LIBS) $(LINKER_FLAGS)
 ifeq ($(BUILD_TYPE),release)
 	@# See http://reverse.lostrealm.com/protect/strip.html
 	@cd $(BUILD) && strip -R .comment -R .note -R .note.ABI-tag $@
@@ -53,7 +53,7 @@ endif
 #
 %.o: %$(SUFFIX) $(BUILD)/%.d $(MYMAKEFILES) config.hpp
 	@$(call print-progress,"Compiling","$(TARGET)","$<")
-	$(Q)$(COMPILER) $(DEPFLAGS) $(CXXFLAGS) -c $(abspath $<) -o $(abspath $(BUILD)/$@)
+	$(Q)$(COMPILER) $(DEPFLAGS) $(CXXFLAGS) $(PKGCFG_CFLAGS) $(OPTIM_FLAGS) $(DEFINES) $(INCLUDES) -c $(abspath $<) -o $(abspath $(BUILD)/$@) $(COMPIL_FLAGS)
 	@$(POSTCOMPILE)
 
 ###################################################
@@ -71,7 +71,7 @@ $(SHARED_LIB_TARGET): CXXFLAGS += $(DLL_CXXFLAGS)
 $(SHARED_LIB_TARGET): LDFLAGS += $(DLL_LDFLAGS)
 $(SHARED_LIB_TARGET): $(OBJS) $(THIRDPART_OBJS) $(THIRDPART_LIBS)
 	@$(call print-to,"Shared lib","$(TARGET)","$(BUILD)/$@","$(VERSION)")
-	$(Q)cd $(BUILD) && $(COMPILER) $(LDFLAGS) -o $@ $(OBJS) $(THIRDPART_OBJS)
+	$(Q)cd $(BUILD) && $(COMPILER) $(LDFLAGS) -o $@ $(OBJS) $(THIRDPART_OBJS) $(THIRDPART_LIBS) $(NOT_PKG_LIBS) $(PKGCFG_LIBS) $(LINKER_FLAGS)
 
 ###################################################
 # Generate the pkg-config file
