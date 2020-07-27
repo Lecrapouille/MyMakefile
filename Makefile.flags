@@ -66,7 +66,7 @@ ifeq ($(CXXFLAGS),)
   endif
 
   # Flags for hardening the binary
-  CXXFLAGS += -Wformat -Werror=format-security -D_FORTIFY_SOURCE=2 -fPIE -fexceptions
+  CXXFLAGS += -Wformat -Wformat-security -Werror=format-security -D_FORTIFY_SOURCE=2 -fPIE -fexceptions
   ifeq ($(COMPILER_NAME),$(filter $(COMPILER_NAME),g++ gcc))
     ifeq "$(GCC_GREATER_V4_9)" "1"
       CXXFLAGS += -fstack-protector-strong
