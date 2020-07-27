@@ -15,6 +15,10 @@ Here, the list of my personal projects using this repo as a git submodule:
 
 Or maybe: why not simply using CMake instead of this project? CMake is, after all, a Makefile generator and is architecture agnostic! The answer would be yes for big projects but I personally never liked CMake for generating makefiles containing more lines than the equivalent hand-made Makefile, especially for small projects such as mines.
 
+**Similar project:**
+
+- https://github.com/Parrot-Developers/alchemy This project is a portage of Android Makefiles `Android.mk` and can manage several targets in a single file but this project is not fully 100% GNU Makefile.
+
 ## MyMakefile Features
 
 MyMakefile allows you to:
@@ -39,30 +43,42 @@ with the percentage of compiled files (in the way of the CMake progress bar).
 * Currently, you have to define a single target by Makefile file. This can be easily bypassed as shown in examples given in this document by adding a makefile in a separate folder (source, tests, ...). A WIP solution which both fix and reduce the code is in gestation in the git branch dev-multitargets.
 * You cannot build a binary and libraries because of the previous point: multi-targets is not managed.
 
-## Inside MyMakefile
-
-* Makefile.header: is the part of your Makefile to be included as header part. It contains the code for knowing your architecture, your compiler, destination folder for installation.
-It defines your project folder name (build, doc, external). It also checks against uninitialized variables.
-* Makefile.macros: contains code for defining paths, libraries/project names, installation ...
-* Makefile.color: define colorful displays and progress bar for hiding the misery of compilation.
-* Makefile.flags: add all GCC/clang compilation flags findable in the world and more :)
-* Makefile.help: Allow Makefile to auto parse and display its own rules.
-* Makefile.footer: is the part of your Makefile to be included as footer part: it defines a set of Makefile rules (like compiling c++ files or linking the project, ...).
-* Some Bash scripts exist and are called by Makefile rules:
- - targz.sh: for creating a backup of the code source project. The code source is compressed. git files, compiled and generated files (like doc) are not taken into account.
- - config.sh: for creating a version.h file needed when compiling the project.
-
-## Prerequisites
+**Prerequisites:**
 
 You probably have to install:
 - the basic calculator `bc` tool: `apt-get install bc` needed for my progress bar. I guessed it was a bash builtin but it seems not!
 - if needed, tools that can be called by MyMakefile: gcov, doxygen, hardening-check: `apt-get install gcovr doxygen devscripts`
 
-## Minimal MyMakefile example
+## Utility rules
 
-Examples are given in the `examples/` folder. Here a minimal MyMakefile project:
+- `make help` show your makefile rules (the display is an auto-generated).
+- `make clean` remove `$(BUILD)` `$(GENDOC)/coverage`, `$(GENDOC)/html` folders.
+- `make doc` generate Doxyfile and call doxygen. The report is generated inside `$(GENDOC)/html`.
+- `make check-harden` check if you code is hardening.
+- `make asan` use Address Sanitizer. `USE_ASAN` shall be set to 1.
+- `make gprof` use GNU profiler. `USE_GPROF` shall be set to 1.
+- `make coverage` call gcov against your code and generate a code coverage report inside `$(GENDOC)/coverage`. `USE_COVERAGE` shall be set to 1.
+- `make coverity-scan` static analyzer of code (only if you have install coverity-scan): a tarball is created that you have to manually upload on their server
+for obtaining the report.
+- `make tarball` compress your project in tar.gz tarball (without `.git`, `$(BUILD)`, `$(GENDOC)` folders). Name conflicts of tarball are managed.
+- `make which-compiler` show which is the default compiler.
+
+The following commands are mine and will not work "as it" for you (see my personal projects to adapt to your project):
+- `make download-external-libs` call the bash script located in `$(P)/$(THIRDPART)/download-external-libs.sh`. I use this script as alternative to git submodules. I do not like git submodules and I prefer `repo` but it is too complex for such simple projects as mine. Bash script is more flexbile for my case.
+I download github projects inside `$(P)/$(THIRDPART)`, rename them, refactorize them, etc. This command is also used for my continuous integration tests.
+- `make compile-external-libs` call the bash script `$(P)//$(THIRDPART)/download-external-libs.sh`. I use this script to compile my downloaded GitHub projects.
+You have to call `make download-external-libs` before. This command is also used for my continuous integration tests.
+- `make obs` call the bash script `$(P)/.integration/opensuse-build-service.sh`. I use this script for building my projects on the compilation farms OBS (OpenSuse Build Service).
+
+## MyMakefile examples
+
+Examples are given in the `examples/` folder. See my personal projects for more concrete examples.
+
+### Hello-World MyMakefile example
+
+Here a minimal MyMakefile project:
 ```
-foo/
+helloworld/
 ├── .makefile/
 ├── Makefile
 ├── src/
@@ -71,7 +87,7 @@ foo/
 └── VERSION
 ```
 
-- `.makefile/` is simply this repo clone with the following command `git clone git@github.com:Lecrapouille/MyMakefile.git --depth=1 .makefile`.
+- `.makefile/` is simply this MyMakefile repo clone with the following command `git clone git@github.com:Lecrapouille/MyMakefile.git --depth=1 .makefile`.
 A better solution would to use MyMakefile.git as sub-module for your pincipal project.
 I personally add the `.` to hide it in my workspace but this is not mandatory.
 - `VERSION` is an ASCII file containing a version number such as `0.1` or `1.0.3`. It seems useless but it has a great role when installing
@@ -100,67 +116,31 @@ all: $(TARGET)
 include $(M)/Makefile.footer
 ```
 
-Explanations:
+#### Explanations
+
 * `P` and `M` are mandatory. `P` indicates the relative path of the folder holding the root project. `M` indicates the location of the folder holding this `MyMakefile` project.
-* You do not have to write compilation rules or rules such as `clean:` or `doc:` ... rules they are already defined in Makefile.footer.
+* You do not have to write compilation rules or rules such as `clean:` or `doc:` ... rules they are already defined in Makefile.footer. Generated documentation is placed on `$(P)`
 * `PROJECT` is the main project name. A project can have several targets (ie: main binary, unit tests ...).
 * `TARGET` is the name for your compiled binary.
-* `DESCRIPTION` explain your target in few words (optional).
+* `DESCRIPTION` explain your target in few words (optional but used for generated pkg-config files when you compile for libraries).
 * `BUILD_TYPE = release` to compile your project without debug elements (else replace it by `̀BUILD_TYPE = debug`).
 * `OBJS` contains the list of all .o files (separated by spaces). Please just give their base names and not their source path.
 * Use `VPATH` (separated by spaces) to define folders for finding your source files. In our example with have a single folder holding source code: `src`.
 * Use `INCLUDES` (prepend by `-I` and separated by spaces) to define folders for finding your header files. In our example with have a single folder holding source code: `src`.
-* Use `DEFINES` for defining your personal C/C++ macros.
+* Use `DEFINES` for defining your personal C/C++ macros (if needed).
 * `all: $(TARGET)` for building your project. If you want to add new rules add them before or after `include $(M)/Makefile.footer`.
 
 #### Compilation
 
 - To compile it just type `make` or `make -j8` change 8 to the number of cores of your CPU.
-- A `./build/Test` binary has been created (by default `$(BUILD)=build`).
+- A `./build/Test` binary has been created (by default `BUILD = build/`).
 - To display compilation flags, simply compile with `VERBOSE=1 make -j8` or simply `V=1 make -j8`.
 - To change the default compiler by yours (for ie clang++-6.0 instead of g++) do: `make CXX=clang++-6.0 -j8`
 - If compiled with success, you can test it: `./build/Test` or `make run`.
 
-#### Utility rules
+### Hello-World MyMakefile with Unit-Tests example
 
-- `make help` show your makefile rules (the display is an auto-generated).
-- `make clean` remove `$(BUILD)` `$(GENDOC)/coverage`, `$(GENDOC)/html` folders.
-- `make doc` generate Doxyfile and call doxygen. The report is generated inside `$(GENDOC)/html`.
-- `make check-harden` check if you code is hardening.
-- `make asan` use Address Sanitizer (`USE_ASAN` shall be set to 1).
-- `make gprof` use GNU profiler (`USE_GPROF` shall be set to 1).
-- `make coverage` call gcov against your code and generate a code coverage report inside `$(GENDOC)/coverage`.
-- `make coverity-scan` static analyzer of code (only if you have install coverity-scan): a tarball is created that you have to manually upload on their server
-for obtaining the report.
-- `make tarball` compress your project in tar.gz tarball (without `.git`, `$(BUILD)`, `$(GENDOC)` folders). Name conflicts of tarball are managed.
-- `make which-compiler` show which is the default compiler.
-
-The following commands are mine and will not work "as it" for you:
-- `make obs` call the bash script `$(P)/.integration/opensuse-build-service.sh`. I used for building my projects on the compilation farms OBS (Opensuse Build Service).
-- `download-external-libs` call the bash script `$(P)/$(THIRDPART)/download-external-libs.sh` I use it as alternative to git submodules.
-I download github projects inside `$(P)/$(THIRDPART)`, rename them, refactorize them, etc ... This command is also used for my continuous integration tests.
-- `compile-external-libs` call the bash script `$(P)//$(THIRDPART)/download-external-libs.sh` Compile my downloaded GitHub projects.
-This command is also used for my continuous integration tests.
-
-#### Installation rule
-
-- You have to write your own install rule (usually named `install:`). Place it after the `all:`.
-- Call `sudo make install` to install your project in your system but you can also modify `DESTDIR` and `PREFIX` to tell to the `make install` rule where to install your software:
-  - PREFIX: determines where the package will go when it is installed, and where it will look for its associated files when it is run. It's what you should use if you're just compiling something for use on a single host.
-  - DESTDIR: is for installing to a temporary directory which is not where the package will be run from.
-  - Example: `sudo make DESTDIR=/usr PREFIX=/usr/local/foo/bar install` will install binaries in `/usr/local/foo/bar/usr/local/bin`.
-Some macros are here to help you:
-  - `$(call INSTALL_BINARY)` to install your binary into `$(DESTDIR)$(PREFIX)/bin`.
-  - `$(call INSTALL_DOCUMENTATION)` to install your documentation into `$(DESTDIR)$(PREFIX)/share/$(PROJECT)/$(TARGET_VERSION)`. This will copy the followinf files and folders: `$(GENDOC) data/, examples/, AUTHORS, LICENSE, README.md, ChangeLog`.
-  - `$(call INSTALL_PROJECT_LIBRARIES)` to install shared and static libraries into `$(DESTDIR)$(PREFIX)/lib` and pkg-confile file into `/usr/lib/pkgconfig`.
-  - `$(call INSTALL_PROJECT_HEADERS)` to install header files into `$(DESTDIR)$(PREFIX)/include/$(PROJECT)-$(TARGET_VERSION)`.
-  - `$(call INSTALL_PROJECT_FOLDER,folder)` to install the folder into `$(DESTDIR)$(PREFIX)/share/$(PROJECT)/$(TARGET_VERSION)`.
-  - `$(call INSTALL_THIRDPART_FOLDER,ThirdPartLibrary/src,LibraryName,-name "*.h")` to copy recursively all `h` files from the folder `$(THIRDPART)/ThirdPartLibrary/src` into `$(DESTDIR)$(PREFIX)/include/$(PROJECT)-$(TARGET_VERSION)/LibraryName`. The `-name "*.h"` is a parameter to the command `find`.
-  - `$(call INSTALL_THIRDPART_FILES,ThirdPartLibrary,LibraryName,-name "*.h")` to copy all `h` files from the folder `$(THIRDPART)/ThirdPartLibrary/src` into `$(DESTDIR)$(PREFIX)/include/$(PROJECT)-$(TARGET_VERSION)/LibraryName`. The `-name "*.h"` is a parameter to the command `find`.
-
-## A more complex example
-
-Let suppose you want to add a unit test folder to your project. Just do this:
+Let suppose you want to add a unit test folder for your project. Just do this:
 ```
 foo/
 ├── .makefile/
@@ -178,10 +158,8 @@ foo/
 └── VERSION
 ```
 
-- Add a `Makefile.common` holding shared information between `./Makefile` and `test/Makefile`
-  (such as `PROJECT`, `VPATH`, `INCLUDES`, `DEFINES`, `THIRDPART_LIBS`, `LINKER_FLAGS`) and
-  including `$(M)/Makefile.header`.
-- Each Makefile defines `P` the path to the root of the project (`.` for `./Makefile` and `..` for `test/Makefile`) and include the `Makefile.common`.
+- A `Makefile.common` can be added for holding shared information between `./Makefile` and `test/Makefile` (such as `PROJECT`, `VPATH`, `INCLUDES`, `DEFINES`, `THIRDPART_LIBS`, `LINKER_FLAGS`) and including `$(M)/Makefile.header`. This `Makefile.common` file is not mandatory.
+- Each `Makefile` defines `P` the path to the root of the project (`.` for `./Makefile` and `..` for `test/Makefile`) and include the `Makefile.common`.
 
 Example `Makefile.common`:
 ```
@@ -194,22 +172,70 @@ INCLUDES += $(P)/src
 
 And `test/Makefile`:
 ```
-P := ..
-M := $(P)/.makefile
 TARGET = $(PROJECT)-UnitTest
 DESCRIPTION = Unit tests for $(PROJECT)
 BUILD_TYPE = release
+
+P := ..
+M := $(P)/.makefile
 include $(M)/Makefile.common
+
 OBJS = tests.o foo.o
+
 all: $(TARGET)
+
 include $(M)/Makefile.footer
 ```
 
-See my personal projects for more complete examples.
+### A more complex example
 
-## Useful Macros
+This Makefile show lot of MyMakefil variables. Explanaitions are given in the next section.
 
-Explanations of the guts MyMakefile:
+```
+P := .
+M := $(P)/.makefile
+
+PROJECT = CheckMyMakefile
+TARGET = Test
+DESCRIPTION = Project template testing MyMakefile
+BUILD_TYPE = debug
+
+SUFFIX = .cpp
+STANDARD = --std=c++14
+CXXFLAGS = -W -Wall
+COMPIL_FLAGS = -Wextra
+
+USE_COVERAGE = 1
+
+include $(M)/Makefile.header
+
+OBJS += main.o
+
+DEFINES += -DFOOBAR -UFOO
+VPATH += src src/foo
+INCLUDES += -Isrc -Iinclude
+
+THIRDPART_LIBS += $(THIRDPART)/foo/libfoo.a
+LINKER_FLAGS += -L/not/official/path -lesoteric
+PKG_LIBS += gtk+-3.0
+
+all: $(TARGET)
+
+install: $(STATIC_LIB_TARGET) $(SHARED_LIB_TARGET)
+  @$(call RULE_INSTALL_DOC)
+  @$(call RULE_INSTALL_LIBRARIES)
+  @$(call RULE_INSTALL_HEADER_FILES)
+  @$(call RULE_INSTALL_PKG_CONFIG)
+
+include $(M)/Makefile.footer
+```
+
+## Inside MyMakefile
+
+### Description of Useful Macros
+
+Explanations of MyMakefile variables:
+
 * **[Mandatory]** `P` shall indicate the relative path to the root folder (`.`, `..` etc).
 * **[Mandatory]** `M` shall indicate the relative path of the folder containing the `MyMakefile` repo (usually `M := $(P)/.makefile`).
 * **[Mandatory]** `PROJECT` is the main project name.
@@ -222,10 +248,13 @@ to have one Makefile file for each target (this is not a major problem if your c
 * **[Optional]** when `BUILD_TYPE=release` [backward-cpp](https://github.com/bombela/backward-cpp) is disabled.
 * **[Optional]** You can activate gprof with `USE_GPROF=1` and `make gprof` rule.
 * **[Optional]** You can activate address sanitizer with `USE_ASAN=1` and `make asan` rule.
+* **[Optional]** You can activate code covergae with `USE_COVERAGE=1` and `make coverage` rule.
 * **[Default=.cpp]** `SUFFIX` allows choosing between a c++ or a c project.
 * **[Default=--std=c++11]** `STANDARD` is only used for c++ projects. It defines the c++ standard (gnu++11, std++14, etc).
-* **[Default=external/]** `THIRDPART` refers to the folder containing thirdpart libraries
+* **[Default=external/]** `$(P)/THIRDPART` refers to the folder containing thirdpart libraries
 (git cloned from GitHub for example). In my case, in `debug` mode, I compile my project against the https://github.com/bombela/backward-cpp (placed in `$(THIRDPART)` directory) for displaying the stack trace when a segfault occurred.
+* **[Default=build/]** `BUILD` refers to the folder holding compiled files.
+* **[Default=doc/]** `DOC` refers to the folder holding generated documentation (doxygen ...)
 * **[Mandatory]** `OBJS` is the list of object files you want to compile. Do not include their path just their name with the extension `.o` (ie foo.o bar.o).
 * **[Optional]** `VPATH` and `INCLUDES` allow to find .c or .cpp and .hpp or .h files. Use the macro `P` in paths (ie `$(P)/src`).
 * **[Optional]** `COMPIL_FLAGS` if set it will had extra compilation flags to `CXXFLAGS`. By default `CXXFLAGS` is set with plenty of good compilation flags for clang and gcc.
@@ -243,13 +272,13 @@ This avoids having git submodules (which I dislike).
 
 ### How are made CXXFLAGS and LDFLAGS?
 
-Here how INTERNALY `CXXFLAGS` and `LDFLAGS` are made:
+Here how internally (privately) `CXXFLAGS` and `LDFLAGS` are made:
 ```
 CXXFLAGS := $(CXXFLAGS) $(PKGCFG_CFLAGS) $(OPTIM_FLAGS) $(DEFINES) $(INCLUDES) $(COMPIL_FLAGS)
 LDFLAGS := $(LDFLAGS) $(THIRDPART_LIBS) $(NOT_PKG_LIBS) $(PKGCFG_LIBS) $(LINKER_FLAGS)
 ```
 
-* `:= $(CXXFLAGS)` and `:= $(LDFLAGS)` have predefined flags but can be replaced by yours.
+* `:= $(CXXFLAGS)` and `:= $(LDFLAGS)` are predefined flags the `:=` allow you replace values by ypur values.
 * `$(PKGCFG_CFLAGS)` is made by `PKG_LIBS` when calling the option `--cflags`.
 * `$(PKGCFG_LIBS)` is made by `PKG_LIBS` when calling the option `--libs`.
 * `$(OPTIM_FLAGS)` is changed by `BUILD_TYPE=release` or `BUILD_TYPE=debug`.
@@ -259,46 +288,31 @@ LDFLAGS := $(LDFLAGS) $(THIRDPART_LIBS) $(NOT_PKG_LIBS) $(PKGCFG_LIBS) $(LINKER_
 * `$(THIRDPART_LIBS)` are defined by after having compiled your external libraries.
 * `$(NOT_PKG_LIBS)` are system libs when not define by a `pkg-config` file.
 
-### Examples
+### Description of Installation Macros
 
-```
-P := .
-M := $(P)/.makefile
+- You have to write your own install rule (usually named `install:`). Place it after the `all:`.
+- Call `sudo make install` to install your project in your system but you can also modify `DESTDIR` and `PREFIX` to tell to the `make install` rule where to install your software:
+  - PREFIX: determines where the package will go when it is installed, and where it will look for its associated files when it is run. It's what you should use if you're just compiling something for use on a single host.
+  - DESTDIR: is for installing to a temporary directory which is not where the package will be run from.
+  - Example: `sudo make DESTDIR=/usr PREFIX=/usr/local/foo/bar install` will install binaries in `/usr/local/foo/bar/usr/local/bin`.
+Some macros are here to help you:
+  - `$(call INSTALL_BINARY)` to install your binary into `$(DESTDIR)$(PREFIX)/bin`.
+  - `$(call INSTALL_DOCUMENTATION)` to install your documentation into `$(DESTDIR)$(PREFIX)/share/$(PROJECT)/$(TARGET_VERSION)`. This will copy the followinf files and folders: `$(GENDOC) data/, examples/, AUTHORS, LICENSE, README.md, ChangeLog`.
+  - `$(call INSTALL_PROJECT_LIBRARIES)` to install shared and static libraries into `$(DESTDIR)$(PREFIX)/lib` and pkg-confile file into `/usr/lib/pkgconfig`.
+  - `$(call INSTALL_PROJECT_HEADERS)` to install header files into `$(DESTDIR)$(PREFIX)/include/$(PROJECT)-$(TARGET_VERSION)`.
+  - `$(call INSTALL_PROJECT_FOLDER,folder)` to install the folder into `$(DESTDIR)$(PREFIX)/share/$(PROJECT)/$(TARGET_VERSION)`.
+  - `$(call INSTALL_THIRDPART_FOLDER,ThirdPartLibrary/src,LibraryName,-name "*.h")` to copy recursively all `h` files from the folder `$(THIRDPART)/ThirdPartLibrary/src` into `$(DESTDIR)$(PREFIX)/include/$(PROJECT)-$(TARGET_VERSION)/LibraryName`. The `-name "*.h"` is a parameter to the command `find`.
+  - `$(call INSTALL_THIRDPART_FILES,ThirdPartLibrary,LibraryName,-name "*.h")` to copy all `h` files from the folder `$(THIRDPART)/ThirdPartLibrary/src` into `$(DESTDIR)$(PREFIX)/include/$(PROJECT)-$(TARGET_VERSION)/LibraryName`. The `-name "*.h"` is a parameter to the command `find`.
 
-PROJECT = CheckMyMakefile
-TARGET = Test
-DESCRIPTION = Project template testing MyMakefile
-BUILD_TYPE = debug
+### Description of Internal Files
 
-SUFFIX = .cpp
-STANDARD = --std=c++14
-CXXFLAGS = -W -Wall
-COMPIL_FLAGS = -Wextra
-
-include $(M)/Makefile.header
-
-OBJS += main.o
-
-DEFINES += -DFOOBAR -UFOO
-VPATH += $(P)/src $(P)/src/foo
-INCLUDES += -I$(P)/src I$(P)/include
-
-THIRDPART_LIBS += $(THIRDPART)/foo/libfoo.a
-LINKER_FLAGS += -L/not/official/path -lesoteric
-PKG_LIBS += gtk+-3.0
-
-all: $(TARGET)
-
-install: $(STATIC_LIB_TARGET) $(SHARED_LIB_TARGET)
-  @$(call RULE_INSTALL_DOC)
-  @$(call RULE_INSTALL_LIBRARIES)
-  @$(call RULE_INSTALL_HEADER_FILES)
-  @$(call RULE_INSTALL_PKG_CONFIG)
-
-include $(M)/Makefile.footer
-```
-
-## Similar project
-
-- https://github.com/Parrot-Developers/alchemy
-
+* Makefile.header: is the part of your Makefile to be included as header part. It contains the code for knowing your architecture, your compiler, destination folder for installation.
+It defines your project folder name (build, doc, external). It also checks against uninitialized variables.
+* Makefile.macros: contains code for defining paths, libraries/project names, installation ...
+* Makefile.color: define colorful displays and progress bar for hiding the misery of compilation.
+* Makefile.flags: add all GCC/clang compilation flags findable in the world and more :)
+* Makefile.help: Allow Makefile to auto parse and display its own rules.
+* Makefile.footer: is the part of your Makefile to be included as footer part: it defines a set of Makefile rules (like compiling c++ files or linking the project, ...).
+* Some Bash scripts exist and are called by Makefile rules:
+ - targz.sh: for creating a backup of the code source project. The code source is compressed. git files, compiled and generated files (like doc) are not taken into account.
+ - config.sh: for creating a version.h file needed when compiling the project.
