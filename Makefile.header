@@ -129,21 +129,10 @@ endif
 #
 ifeq ($(ARCHI),Darwin)
 SO := dylib
-DLL_CXXFLAGS := -fPIC
-DLL_LDFLAGS := -dynamiclib
-DEFINES += -DSHARED_EXPORT=
-
 else ifeq ($(ARCHI),Linux)
 SO := so
-DLL_CXXFLAGS := -fPIC
-DLL_LDFLAGS := -shared
-DEFINES += -DSHARED_EXPORT=
-
 else ifeq ($(ARCHI),Windows)
 SO := dll
-DLL_CXXFLAGS := -fPIC
-DLL_LDFLAGS := -shared
-
 else
 $(error Unknown shared library file extension for this architecture)
 endif

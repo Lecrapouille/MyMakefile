@@ -82,6 +82,32 @@ $(warning CXXFLAGS: You have replaced default compilation flags by your own flag
 endif
 
 ###################################################
+# Shared libraries file extension.
+#
+ifeq ($(ARCHI),Darwin)
+DLL_CXXFLAGS := -fPIC
+DLL_LDFLAGS := -dynamiclib
+DEFINES += -DDLL_LINKAGE=
+
+else ifeq ($(ARCHI),Linux)
+DLL_CXXFLAGS := -fPIC
+DLL_LDFLAGS := -shared
+DEFINES += -DDLL_LINKAGE=
+
+else ifeq ($(ARCHI),Windows)
+DLL_CXXFLAGS := -fPIC
+DLL_LDFLAGS := -shared
+#if TODO
+#DEFINES += -DDLL_LINKAGE="__declspec(dllexport)"
+#else
+#DEFINES += -DDLL_LINKAGE="__declspec(dllimport)"
+#endif
+
+else
+$(error Unknown shared library file extension for this architecture)
+endif
+
+###################################################
 # Profile code.
 #
 ifeq ($(USE_GPROF),1)
@@ -169,15 +195,6 @@ PKG_LIBS += libdw
 endif
 DEFINES +=
 endif
-
-###################################################
-# Import DLLs (exporting is made inside the rule
-# $(SHARED_LIB_TARGET) replacing this variable.
-#
-#ifeq ($(ARCHI),Windows)
-#DEFINES += -DLINKAGE="__declspec(dllexport)"
-#DEFINES += -DLINKAGE="__declspec(dllimport)"
-#endif
 
 ###################################################
 # Use ifdef because pkg-config does not like empty argument
