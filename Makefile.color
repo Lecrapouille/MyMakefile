@@ -26,6 +26,7 @@
 ###################################################
 # Define colors
 #
+ifeq ($(ARCHI),Windows)
 CLR_DEFAULT := $(shell echo -e '\033[00m')
 CLR_RED     := $(shell echo -e '\033[31m')
 CLR_GREEN   := $(shell echo -e '\033[32m')
@@ -33,6 +34,15 @@ CLR_YELLOW  := $(shell echo -e '\033[33m')
 CLR_BLUE    := $(shell echo -e '\033[34m')
 CLR_PURPLE  := $(shell echo -e '\033[35m')
 CLR_CYAN    := $(shell echo -e '\033[36m')
+else
+CLR_DEFAULT := $(shell echo '\033[00m')
+CLR_RED     := $(shell echo '\033[31m')
+CLR_GREEN   := $(shell echo '\033[32m')
+CLR_YELLOW  := $(shell echo '\033[33m')
+CLR_BLUE    := $(shell echo '\033[34m')
+CLR_PURPLE  := $(shell echo '\033[35m')
+CLR_CYAN    := $(shell echo '\033[36m')
+endif
 
 ###################################################
 # Progress bar
