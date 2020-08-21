@@ -44,8 +44,10 @@ $(TARGET): $(OBJS) $(THIRDPART_OBJS) $(THIRDPART_LIBS)
 	@$(call print-to,"Linking","$(TARGET)","$(BUILD)/$@","$(VERSION)")
 	$(Q)cd $(BUILD) && $(COMPILER) $(LDFLAGS) $(OBJS) $(THIRDPART_OBJS) -o $@ $(THIRDPART_LIBS) $(NOT_PKG_LIBS) $(PKGCFG_LIBS) $(LINKER_FLAGS)
 ifeq ($(BUILD_TYPE),release)
+  ifneq ($(ARCHI),Darwin)
 	@# See http://reverse.lostrealm.com/protect/strip.html
 	@cd $(BUILD) && strip -R .comment -R .note -R .note.ABI-tag $@
+  endif
 endif
 
 ###################################################
