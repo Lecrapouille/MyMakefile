@@ -115,7 +115,8 @@ DEFINES += \
 define INSTALL_FILES
 	if [ -d $(1) ]; then \
 		cd $(1); \
-		for f in `find . $(3) -type f`; do install -D --mode 644 "$$f" "$(2)/$$f"; done; \
+		mkdir -p $(2); \
+		for f in `find . $(3) -type f`; do install -m 644 "$$f" "$(2)/$$f"; done; \
 	fi
 endef
 
@@ -128,8 +129,8 @@ define INSTALL_FOLDER
 	if [ -d $(1) ]; then \
 		$(call print-to,"Installing","$(1)","$(2)",""); \
 		cd $(1); \
-		for d in `find . -type d`; do install -d --mode 755 "$$d" "$(2)/$$d"; done; \
-		for f in `find . $(3) -type f`; do install -D --mode 644 "$$f" "$(2)/$$f"; done; \
+		for d in `find . -type d`; do install -d -m 755 "$$d" "$(2)/$$d"; done; \
+		for f in `find . $(3) -type f`; do install -m 644 "$$f" "$(2)/$$f"; done; \
 	fi
 endef
 
@@ -146,6 +147,7 @@ endef
 #
 define INSTALL_BINARY
 	@$(call print-to,"Installing","$(BUILD)/$(TARGET)","$(PROJECT_EXE)","")
+	@mkdir -p $(BINDIR)
 	@cp $(BUILD)/$(TARGET) $(PROJECT_EXE)
 endef
 
@@ -154,7 +156,7 @@ endef
 # TODO (call INSTALL_FOLDER,examples) to remove .git build external
 #
 define INSTALL_DOCUMENTATION
-	@install -d --mode 755 $(PROJECT_DATA_ROOT)
+	@install -d -m 755 $(PROJECT_DATA_ROOT)
 	@install -m 644 AUTHORS LICENSE README.md ChangeLog $(PROJECT_DATA_ROOT)
 	@$(call INSTALL_PROJECT_FOLDER,$(GENDOC))
 	@$(call INSTALL_PROJECT_FOLDER,examples)
@@ -166,6 +168,7 @@ endef
 #
 define INSTALL_PKG_CONFIG
 	@$(call print-to,"Installing","pkg-config","/usr/lib/pkgconfig","")
+	@mkdir -p $(PKG_DIR)
 	@install -m 644 $(BUILD)/$(PKG_FILE) $(PKG_DIR)
 	@ln -snf $(PKG_DIR)/$(PKG_FILE) $(PKG_DIR)/$(SYMBOLIC_PKG_FILE)
 endef
@@ -176,6 +179,7 @@ endef
 #
 define INSTALL_PROJECT_LIBRARIES
 	@$(call print-to,"Installing","libs","$(LIBDIR)","")
+	@mkdir -p $(LIBDIR)
 	@install -m 644 $(BUILD)/$(STATIC_LIB_TARGET) $(LIBDIR)
 	@ln -snf $(LIBDIR)/$(STATIC_LIB_TARGET) $(LIBDIR)/$(SYMBOLIC_STATIC_LIB_TARGET)
 	@install -m 644 $(BUILD)/$(SHARED_LIB_TARGET) $(LIBDIR)
@@ -206,6 +210,7 @@ endef
 # Install files of third part libraries
 #
 define INSTALL_THIRDPART_FILES
+	@$(call print-to,"Installing","$(THIRDPART)/$(1)","$(INCLDIR)/$(2)","")
 	@$(call INSTALL_FILES,$(THIRDPART)/$(1),$(INCLDIR)/$(2),-maxdepth 1 -mindepth 1 $(3))
 endef
 
