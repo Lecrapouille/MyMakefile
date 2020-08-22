@@ -52,13 +52,6 @@ SYMBOLIC_STATIC_LIB_TARGET := $(LIB_TARGET).a
 STATIC_LIB_TARGET := $(SYMBOLIC_STATIC_LIB_TARGET).$(TARGET_VERSION)
 
 ###################################################
-# Define names for pkg-config file
-#
-PKG_DIR := /usr/lib/pkgconfig
-PKG_FILE := $(TARGET_LOWER_CASE)-$(TARGET_VERSION).pc
-SYMBOLIC_PKG_FILE := $(TARGET_LOWER_CASE).pc
-
-###################################################
 # Define where to install exec, data, libraries,
 # documentation ...
 #
@@ -66,6 +59,13 @@ BINDIR := $(DESTDIR)$(PREFIX)/bin
 LIBDIR := $(DESTDIR)$(PREFIX)/lib
 DATADIR := $(DESTDIR)$(PREFIX)/share
 INCLDIR := $(DESTDIR)$(PREFIX)/include/$(PROJECT)-$(TARGET_VERSION)
+
+###################################################
+# Define names for pkg-config file
+#
+PKG_DIR := $(LIBDIR)/pkgconfig
+PKG_FILE := $(TARGET_LOWER_CASE)-$(TARGET_VERSION).pc
+SYMBOLIC_PKG_FILE := $(TARGET_LOWER_CASE).pc
 
 ###################################################
 # TODO to be cleaned
