@@ -167,7 +167,8 @@ $(error BUILD_TYPE shall be debug or release)
 endif
 
 ###################################################
-# Disable Backward when using gprof or ASAN or Windows
+# Disable Backward when using gprof or ASAN or
+# architecture different from Linux
 #
 ifeq ($(USE_GPROF),1)
 USE_BACKWARD := 0
@@ -176,7 +177,11 @@ ifeq ($(USE_ASAN),1)
 USE_BACKWARD := 0
 endif
 ifeq ($(ARCHI),Windows)
-$(warning )
+$(warning Disable USE_BACKWARD for Windows)
+USE_BACKWARD := 0
+endif
+ifeq ($(ARCHI),Darwin)
+$(warning Disable USE_BACKWARD for MacOS X)
 USE_BACKWARD := 0
 endif
 
@@ -187,13 +192,10 @@ ifeq ($(USE_BACKWARD),1)
 OBJS += backward.o
 INCLUDES += -I$(BUILD)/backward-cpp
 VPATH += $(BUILD)/backward-cpp
-ifneq ($(ARCHI),Darwin)
 DEFINES += -DBACKWARD_HAS_DW=1 -DBACKWARD_HAS_BFD=0 -DBACKWARD_HAS_DWARF=0
 DEFINES += -DBACKWARD_HAS_UNWIND=1 -DBACKWARD_HAS_BACKTRACE=0
 DEFINES += -DBACKWARD_HAS_BACKTRACE_SYMBOL=1
 PKG_LIBS += libdw
-endif
-DEFINES +=
 endif
 
 ###################################################
