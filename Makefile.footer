@@ -220,7 +220,7 @@ VERSION:
 # Display the compiler version and information.
 .PHONY: which-compiler
 which-compiler:
-	@$(call print-simple,"Version","$(COMPILER)")
+	@$(call print-simple,"Compiler","$(COMPILER)")
 	@$(COMPILER) --version
 
 ###################################################
