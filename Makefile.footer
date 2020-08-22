@@ -78,6 +78,7 @@ $(SHARED_LIB_TARGET): $(OBJS) $(THIRDPART_OBJS) $(THIRDPART_LIBS)
 ###################################################
 # Generate the pkg-config file
 #
+$(PKG_FILE): | config.hpp
 $(PKG_FILE): $(MYMAKEFILES) VERSION
 	@$(call print-to,"Generating","$(TARGET)","$@","")
 	@echo "prefix=$(DESTDIR)$(PREFIX)" > $(BUILD)/$@
@@ -241,7 +242,7 @@ clean::
 #
 $(DEPFILES): | $(BUILD)
 $(PKG_FILE): | $(BUILD)
-$(OBJS): | $(BUILD)
+$(OBJS): | config.hpp
 config.hpp: | $(BUILD) VERSION
 which-compiler: | about
 $(BUILD): about which-compiler
