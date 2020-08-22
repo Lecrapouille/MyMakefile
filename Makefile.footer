@@ -29,12 +29,21 @@ include $(M)/Makefile.flags
 # Download Backward for tracing the stack when a crash occured.
 #
 ifeq ($(USE_BACKWARD),1)
+ifeq ($(ARCHI),Darwin)
+config.hpp: | backward.cpp
+backward.cpp: | $(BUILD)
+	@if [ ! -d "$(BUILD)/backward-cpp" ] ; then \
+	$(call print-to,"Downloading","backward-cpp","$(TARGET)",""); \
+	cd $(BUILD) && git clone https://github.com/Lecrapouille/backward-cpp.git --depth=1; \
+	fi
+else
 backward.o: | $(BUILD)/backward-cpp/backward.cpp
 $(BUILD)/backward-cpp/backward.cpp: | $(BUILD)
 	@if [ ! -d "$(BUILD)/backward-cpp" ] ; then \
 	$(call print-to,"Downloading","backward-cpp","$(TARGET)",""); \
 	mkdir -p $(BUILD) && cd $(BUILD) && git clone https://github.com/Lecrapouille/backward-cpp.git --depth=1 > /dev/null 2> /dev/null; \
 	fi
+endif
 endif
 
 ###################################################
@@ -247,6 +256,7 @@ config.hpp: | $(BUILD) VERSION
 which-compiler: | about
 $(BUILD): about which-compiler
 	@mkdir -p $(BUILD)
+	@mkdir -p $(BUILD)/backward-cpp
 
 ###################################################
 # Auto-Dependency Generation
