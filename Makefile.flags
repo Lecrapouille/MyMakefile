@@ -151,16 +151,16 @@ endif
 # GCC and clang Optimization flags
 #
 ifeq ($(BUILD_TYPE),debug)
-USE_BACKWARD := 1
-OPTIM_FLAGS := -O0 -g3 -fasynchronous-unwind-tables
+USE_BACKWARD = 1
+OPTIM_FLAGS = -O0 -g3 -fasynchronous-unwind-tables
 DEFINES += -UNDEBUG -D_GLIBCXX_ASSERTIONS
 else ifeq ($(BUILD_TYPE),release)
-USE_BACKWARD ?= 0
-OPTIM_FLAGS ?= -O2
+USE_BACKWARD = 0
+OPTIM_FLAGS = -O2
 DEFINES += -DNDEBUG
 else ifeq ($(BUILD_TYPE),normal)
-USE_BACKWARD := 1
-OPTIM_FLAGS := -O2 -g
+USE_BACKWARD = 1
+OPTIM_FLAGS = -O2 -g
 DEFINES += -UNDEBUG -D_GLIBCXX_ASSERTIONS
 else
 $(error BUILD_TYPE shall be debug or release)
@@ -171,18 +171,24 @@ endif
 # architecture different from Linux
 #
 ifeq ($(USE_GPROF),1)
-USE_BACKWARD := 0
+USE_BACKWARD = 0
 endif
+
 ifeq ($(USE_ASAN),1)
-USE_BACKWARD := 0
+USE_BACKWARD = 0
 endif
+
+ifeq ($(USE_BACKWARD),1)
 ifeq ($(ARCHI),Windows)
 $(warning Disable USE_BACKWARD for Windows)
-USE_BACKWARD := 0
+USE_BACKWARD = 0
 endif
+
+# FIXME buggy with MacOS X
 ifeq ($(ARCHI),Darwin)
 $(warning Disable USE_BACKWARD for MacOS X)
-USE_BACKWARD := 0
+USE_BACKWARD = 0
+endif
 endif
 
 ###################################################
