@@ -30,7 +30,7 @@ include $(M)/Makefile.flags
 #
 ifeq ($(USE_BACKWARD),1)
 ifeq ($(ARCHI),Darwin)
-config.hpp: | backward.cpp
+$(PROJECT_INFO): | backward.cpp
 backward.cpp: | $(BUILD)
 	@if [ ! -d "$(BUILD)/backward-cpp" ] ; then \
 	$(call print-to,"Downloading","backward-cpp","$(TARGET)",""); \
@@ -62,7 +62,7 @@ endif
 ###################################################
 # Compile sources. Note: abspath is needed for gcov
 #
-%.o: %$(SUFFIX) $(BUILD)/%.d $(MYMAKEFILES) config.hpp
+%.o: %$(SUFFIX) $(BUILD)/%.d $(MYMAKEFILES) $(PROJECT_INFO)
 	@$(call print-progress,"Compiling","$(TARGET)","$<")
 	$(Q)$(COMPILER) $(DEPFLAGS) $(CXXFLAGS) $(PKGCFG_CFLAGS) $(OPTIM_FLAGS) $(DEFINES) $(INCLUDES) -c $(abspath $<) -o $(abspath $(BUILD)/$@) $(COMPIL_FLAGS)
 	@$(POSTCOMPILE)
@@ -87,7 +87,7 @@ $(SHARED_LIB_TARGET): $(OBJS) $(THIRDPART_OBJS) $(THIRDPART_LIBS)
 ###################################################
 # Generate the pkg-config file
 #
-$(PKG_FILE): | config.hpp
+$(PKG_FILE): | $(PROJECT_INFO)
 $(PKG_FILE): $(MYMAKEFILES) VERSION
 	@$(call print-to,"Generating","$(TARGET)","$@","")
 	@echo "prefix=$(DESTDIR)$(PREFIX)" > $(BUILD)/$@
@@ -220,14 +220,14 @@ tarball:
 	@./$(M)/targz.sh $(PWD) $(TARGET)
 
 ###################################################
-# Generate a header file with the project config.
-config.hpp: VERSION
+# Generate a header file with the project information.
+$(PROJECT_INFO): VERSION
 	@$(call print-from,"Version","$(TARGET)","VERSION","")
-	@echo "PROJECT=$(PROJECT)" > $(BUILD)/config.txt
-	@echo "TARGET=$(TARGET)" >> $(BUILD)/config.txt
-	@echo "PROJECT_DATA_PATH=$(PWD)/core:$(PROJECT_DATA_ROOT)/core" >> $(BUILD)/config.txt
-	@echo "PROJECT_TEMP_DIR=$(PROJECT_TEMP_DIR)" >> $(BUILD)/config.txt
-	@echo "BUILD_TYPE=$(BUILD_TYPE)" >> $(BUILD)/config.txt
+	@echo "PROJECT=$(PROJECT)" > $(BUILD)/project_info.txt
+	@echo "TARGET=$(TARGET)" >> $(BUILD)/project_info.txt
+	@echo "PROJECT_DATA_PATH=$(PWD)/core:$(PROJECT_DATA_ROOT)/core" >> $(BUILD)/project_info.txt
+	@echo "PROJECT_TEMP_DIR=$(PROJECT_TEMP_DIR)" >> $(BUILD)/project_info.txt
+	@echo "BUILD_TYPE=$(BUILD_TYPE)" >> $(BUILD)/project_info.txt
 	@./$(M)/config.sh $(P)/VERSION $(BUILD)
 
 ###################################################
@@ -261,8 +261,8 @@ clean::
 #
 $(DEPFILES): | $(BUILD)
 $(PKG_FILE): | $(BUILD)
-$(OBJS): | config.hpp
-config.hpp: | $(BUILD) VERSION
+$(OBJS): | $(PROJECT_INFO)
+$(PROJECT_INFO): | $(BUILD) VERSION
 which-compiler: | about
 $(BUILD): about which-compiler
 	@mkdir -p $(BUILD)

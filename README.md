@@ -315,4 +315,4 @@ It defines your project folder name (build, doc, external). It also checks again
 * Makefile.footer: is the part of your Makefile to be included as footer part: it defines a set of Makefile rules (like compiling c++ files or linking the project, ...).
 * Some Bash scripts exist and are called by Makefile rules:
  - targz.sh: for creating a backup of the code source project. The code source is compressed. git files, compiled and generated files (like doc) are not taken into account.
- - config.sh: for creating a version.h file needed when compiling the project.
+ - config.sh: for creating a C++ project_info.hpp file needed when compiling the project.

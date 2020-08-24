@@ -27,7 +27,7 @@
 # the build/version.h with these informations. This project uses them
 # in log files, in "about" windows ... This script is called by Makefile.
 
-source $2/config.txt
+source $2/project_info.txt
 
 ### Get major and minor version from VERSION file (given as $1)
 VERSION=`grep "[0-9]\+\.[0-9]\+" $1 2> /dev/null`
@@ -50,38 +50,40 @@ echo ""
 BUILD_TYPE=`[ "$BUILD_TYPE" == "debug" ] && echo "true" || echo "false"`
 
 ### Header guard
-GUARD=`echo "${PROJECT}_${TARGET}_GENERATED_CONFIG_HPP" | tr '[:lower:]' '[:upper:]' | tr "a-" "_"`
+GUARD=`echo "${PROJECT}_${TARGET}_GENERATED_PROJECT_INFO_HPP" | tr '[:lower:]' '[:upper:]' | tr "a-" "_"`
 
 ### Save these informations as C++ header file
-cat <<EOF >$2/config.hpp
+cat <<EOF >$2/project_info.hpp
 #ifndef ${GUARD}
 #  define ${GUARD}
 
-#  include <string>
+#  include <cstdint>
 
-namespace config
+namespace project
 {
-  //! \brief Compiled in debug or released mode
-  bool debug = ${BUILD_TYPE};
-  //! \brief Used for logs and GUI.
-  std::string project_name("${TARGET}");
-  //! \brief Major version of project
-  uint32_t major_version(${MAJOR_VERSION}u);
-  //! \brief Minor version of project
-  uint32_t minor_version(${MINOR_VERSION}u);
-  //! \brief Save the git SHA1
-  std::string git_sha1("${SHA1}");
-  //! \brief Save the git branch
-  std::string git_branch("${BRANCH}");
-  //! \brief Pathes where default project resources have been installed
-  //! (when called  by the shell command: sudo make install).
-  std::string data_path("${PROJECT_DATA_PATH}");
-  //! \brief Location for storing temporary files
-  std::string tmp_path("${PROJECT_TEMP_DIR}/");
-  //! \brief Give a name to the default project log file.
-  std::string log_name(project_name + ".log");
-  //! \brief Define the full path for the project.
-  std::string log_path(tmp_path + log_name);
+  static Info info(
+    // Compiled in debug or released mode
+    ${BUILD_TYPE},
+    // Project name used for logs and GUI.
+    "${TARGET}",
+    // Major version of project
+    ${MAJOR_VERSION}u,
+    // Minor version of project
+    ${MINOR_VERSION}u,
+    // git SHA1
+    "${SHA1}",
+    // git branch
+    "${BRANCH}",
+    // Pathes where default project resources have been installed
+    // (when called  by the shell command: sudo make install).
+    "${PROJECT_DATA_PATH}",
+    // Location for storing temporary files
+    "${PROJECT_TEMP_DIR}/",
+    // Give a name to the default project log file.
+    "${TARGET}.log",
+    // Define the full path for the project.
+    "${PROJECT_TEMP_DIR}/${TARGET}.log"
+  );
 }
 
 #endif // ${GUARD}
