@@ -104,8 +104,7 @@ POSTCOMPILE = mv -f $(BUILD)/$*.Td $(BUILD)/$*.d
 ###################################################
 #
 DEFINES += \
-  -DPROJECT_TEMP_DIR=\"$(PROJECT_TEMP_DIR)\" \
-  -DPROJECT_DATA_PATH=\"$(PWD)/core:$(PROJECT_DATA_ROOT)/core\"
+  -DPROJECT_TEMP_DIR=\"$(PROJECT_TEMP_DIR)\"
 
 ###################################################
 # Install files present in the folder $1 in the the
