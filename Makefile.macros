@@ -167,7 +167,7 @@ endef
 # Install the pkg-config file (if the project is a library)
 #
 define INSTALL_PKG_CONFIG
-	@$(call print-to,"Installing","pkg-config","/usr/lib/pkgconfig","")
+	@$(call print-to,"Installing","pkg-config","$(PKG_DIR)","")
 	@mkdir -p $(PKG_DIR)
 	@install -m 644 $(BUILD)/$(PKG_FILE) $(PKG_DIR)
 	@ln -snf $(PKG_DIR)/$(PKG_FILE) $(PKG_DIR)/$(SYMBOLIC_PKG_FILE)
