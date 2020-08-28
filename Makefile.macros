@@ -164,6 +164,22 @@ define INSTALL_DOCUMENTATION
 endef
 
 ###################################################
+# Create the pkg-config file (if the project is a library)
+#
+define CREATE_PKG_CONFIG
+	@$(call print-to,"Generating","$(TARGET)","$(1)","")
+	@echo "prefix=$(DESTDIR)$(PREFIX)" > $(BUILD)/$(1)
+	@echo "exec_prefix=$(BINDIR)" >> $(BUILD)/$(1)
+	@echo "libdir=$(LIBDIR)" >> $(BUILD)/$(1)
+	@echo "includedir=$(INCLDIR)" >> $(BUILD)/$(1)
+	@echo "Name: $(PROJECT)" >> $(BUILD)/$(1)
+	@echo "Description: $(DESCRIPTION)" >> $(BUILD)/$(1)
+	@echo "Version: $(TARGET_VERSION)" >> $(BUILD)/$(1)
+	@echo "Libs: -L$$""{libdir} $(SHORT_LIB_TARGET) $(NOT_PKG_LIBS) $(PKGCFG_LIBS)" >> $(BUILD)/$(1)
+	@echo "Cflags: -I$$""{includedir}" >> $(BUILD)/$(1)
+endef
+
+###################################################
 # Install the pkg-config file (if the project is a library)
 #
 define INSTALL_PKG_CONFIG

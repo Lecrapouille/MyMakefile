@@ -85,16 +85,11 @@ $(SHARED_LIB_TARGET): $(OBJS) $(THIRDPART_OBJS) $(THIRDPART_LIBS)
 #
 $(PKG_FILE): | $(PROJECT_INFO)
 $(PKG_FILE): $(MYMAKEFILES) VERSION
-	@$(call print-to,"Generating","$(TARGET)","$@","")
-	@echo "prefix=$(DESTDIR)$(PREFIX)" > $(BUILD)/$@
-	@echo "exec_prefix=$(BINDIR)" >> $(BUILD)/$@
-	@echo "libdir=$(LIBDIR)" >> $(BUILD)/$@
-	@echo "includedir=$(INCLDIR)" >> $(BUILD)/$@
-	@echo "Name: $(PROJECT)" >> $(BUILD)/$@
-	@echo "Description: $(DESCRIPTION)" >> $(BUILD)/$@
-	@echo "Version: $(TARGET_VERSION)" >> $(BUILD)/$@
-	@echo "Libs: -L$$""{libdir} $(SHORT_LIB_TARGET) $(NOT_PKG_LIBS) $(PKGCFG_LIBS)" >> $(BUILD)/$@
-	@echo "Cflags: -I$$""{includedir}" >> $(BUILD)/$@
+	@$(call CREATE_PKG_CONFIG,$(PKG_FILE))
+
+.PHONY: pkg-config
+pkg-config:
+	@$(call CREATE_PKG_CONFIG,$(PKG_FILE))
 
 ###################################################
 # Download external github code source needed by this project.
