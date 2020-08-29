@@ -216,7 +216,7 @@ $(PROJECT_INFO): VERSION
 	@$(call print-from,"Version","$(TARGET)","VERSION","")
 	@echo "PROJECT=$(PROJECT)" > $(BUILD)/project_info.txt
 	@echo "TARGET=$(TARGET)" >> $(BUILD)/project_info.txt
-	@echo "PROJECT_DATA_PATH=$(PWD)/core:$(PROJECT_DATA_ROOT)/core" >> $(BUILD)/project_info.txt
+	@echo "PROJECT_DATA_PATH=$(PROJECT_DATA_PATH)" >> $(BUILD)/project_info.txt
 	@echo "PROJECT_TEMP_DIR=$(PROJECT_TEMP_DIR)" >> $(BUILD)/project_info.txt
 	@echo "BUILD_TYPE=$(BUILD_TYPE)" >> $(BUILD)/project_info.txt
 	@./$(M)/config.sh $(P)/VERSION $(BUILD)
