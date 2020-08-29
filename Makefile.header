@@ -119,7 +119,7 @@ endif
 # echo -e command (not supported by Mac OS X)
 #
 ifeq ($(ARCHI),Windows)
-ECHO_COLOR = 'echo -e'
+ECHO_COLOR = echo -e
 else
 ECHO_COLOR = echo
 endif
