@@ -10,6 +10,7 @@ Here, the list of my personal projects using this repo as a git submodule:
 * https://github.com/Lecrapouille/SimForth
 * https://github.com/Lecrapouille/OpenGLCppWrapper
 * https://github.com/Lecrapouille/ChessNeuNeu
+* https://github.com/Lecrapouille/OpenGlassBox
 
 ## Why this project?
 
