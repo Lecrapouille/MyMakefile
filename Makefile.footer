@@ -78,7 +78,7 @@ $(SHARED_LIB_TARGET): CXXFLAGS += $(DLL_CXXFLAGS)
 $(SHARED_LIB_TARGET): LDFLAGS += $(DLL_LDFLAGS)
 $(SHARED_LIB_TARGET): $(OBJS) $(THIRDPART_OBJS) $(THIRDPART_LIBS)
 	@$(call print-to,"Shared lib","$(TARGET)","$(BUILD)/$@","$(VERSION)")
-	$(Q)cd $(BUILD) && $(COMPILER) $(LDFLAGS) -o $@ $(OBJS) $(THIRDPART_OBJS) $(THIRDPART_LIBS) $(NOT_PKG_LIBS) $(PKGCFG_LIBS) $(LINKER_FLAGS)
+	$(Q)cd $(BUILD) && $(COMPILER) $(LDFLAGS) -o $@ $(OBJS) $(THIRDPART_OBJS) -Wl,--whole-archive $(THIRDPART_LIBS) $(NOT_PKG_LIBS) $(PKGCFG_LIBS) -Wl,--no-whole-archive $(LINKER_FLAGS)
 
 ###################################################
 # Generate the pkg-config file
