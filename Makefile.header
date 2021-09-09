@@ -40,6 +40,10 @@ ARCHI := $(shell uname -s)
 endif
 
 ###################################################
+# Macros to override through Makefile command lines
+#
+
+###################################################
 # Define your C++ compilator (default: empty).
 CXX ?=
 
@@ -48,7 +52,7 @@ CXX ?=
 CXX ?=
 
 ###################################################
-# Define the directory holding compilation files (default: build).
+# Define the directory holding compilation files (default: build/).
 BUILD ?= build
 
 ###################################################
@@ -56,7 +60,7 @@ BUILD ?= build
 THIRDPART ?= $(P)/external
 
 ###################################################
-# Define the directory holding generated documentation (default: doc).
+# Define the directory holding generated documentation (default: doc). Do not add $(P) to allow several folders
 GENDOC ?= doc
 
 ###################################################

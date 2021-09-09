@@ -230,7 +230,7 @@ define INSTALL_THIRDPART_FILES
 endef
 
 ###################################################
-# Create Doxyfile files (TODO: update license in footer.html)
+# Create Doxyfile files (TODO: update license in footer.html. FIXME linux path make failed sed ie LOGO)
 #
 define RULE_CREATE_DOXYFILES
 	cp -r $(M)/doxygen $(P)/$(GENDOC)
@@ -239,6 +239,8 @@ define RULE_CREATE_DOXYFILES
 	find $(P)/$(GENDOC)/doxygen -type f -exec sed -i 's/%PROJECT/$(PROJECT)/g' {} \;
 	find $(P)/$(GENDOC)/doxygen -type f -exec sed -i 's/%DESCRIPTION/$(DESCRIPTION)/g' {} \;
 	find $(P)/$(GENDOC)/doxygen -type f -exec sed -i 's/%GENDOC/$(P)\/$(GENDOC)/g' {} \;
+	find $(P)/$(GENDOC)/doxygen -type f -exec sed -i 's/%LOGO/$(P)\/$(LOGO)/g' {} \;
+	find $(P)/$(GENDOC)/doxygen -type f -exec sed -i 's/%INPUT/$(P)\/$(DOXY_INPUT)/g' {} \;
 	mv $(P)/$(GENDOC)/doxygen/Doxyfile $(P)/Doxyfile
 endef
 

@@ -1,6 +1,9 @@
 #
 *~
 
+# Copied folder
+./doc
+
 # Prerequisites
 *.d
 

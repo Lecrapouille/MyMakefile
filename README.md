@@ -77,7 +77,7 @@ Examples are given in the `examples/` folder. See my personal projects for more 
 
 ### Hello-World MyMakefile example
 
-Here a minimal MyMakefile project:
+Here is a minimal C++ project using MyMakefile:
 ```
 helloworld/
 ├── .makefile/
@@ -88,8 +88,8 @@ helloworld/
 └── VERSION
 ```
 
-- `.makefile/` is simply this MyMakefile repo clone with the following command `git clone git@github.com:Lecrapouille/MyMakefile.git --depth=1 .makefile`.
-A better solution would to use MyMakefile.git as sub-module for your pincipal project.
+- `.makefile/` is simply this MyMakefile repo cloned with the following command `git clone git@github.com:Lecrapouille/MyMakefile.git --depth=1 .makefile`.
+A better solution would to use MyMakefile.git as sub-module for your pincipal project `git submodule add https://github.com/Lecrapouille/MyMakefile.git .makefile`.
 I personally add the `.` to hide it in my workspace but this is not mandatory.
 - `VERSION` is an ASCII file containing a version number such as `0.1` or `1.0.3`. It seems useless but it has a great role when installing
 your project in your operating system: you can install different versions of your project without they interfering each others. If not present a default file is created.
@@ -245,12 +245,14 @@ for the same project, you may want several binaries and therefore several Makefi
 When typing `make install` resources files will be install in their sub-folders (such as PROJECT/PROJECT_VERSION/TARGET/TARGET_VERSION/). The current constraint is
 to have one Makefile file for each target (this is not a major problem if your create one folder by sub-project).
 * **[Mandatory]** `DESCRIPTION` explain your target in few words. This information is used for pkg-config file when `TARGET` is a library (or soon for [Open Build Service](https://openbuildservice.org/)).
+* **[Optional]** `LOGO` the path of your logo for your Doxygen documentation.
+* **[Optional]** `DOXY_INPUT` extra paths to search for Doxygen.
 * **[Mandatory]** `BUILD_TYPE` allow compile the project either in `release` mode (compiled with -O2 and no gdb symbols) or `debug` mode (compiled with -O0 -g3 and extra compilation flags and use [backward-cpp](https://github.com/bombela/backward-cpp)) or `normal` mode (compiled -O2 -g). This mode is very slow and generates bigger executable size but nice for developement.
 * **[Optional]** when `BUILD_TYPE=release` [backward-cpp](https://github.com/bombela/backward-cpp) is disabled.
 * **[Optional]** You can activate gprof with `USE_GPROF=1` and `make gprof` rule.
 * **[Optional]** You can activate address sanitizer with `USE_ASAN=1` and `make asan` rule.
 * **[Optional]** You can activate code covergae with `USE_COVERAGE=1` and `make coverage` rule.
-* **[Default=.cpp]** `SUFFIX` allows choosing between a c++ or a c project.
+* **[Default=.cpp]** `SUFFIX` allows choosing between a c++ or a c project (Note I've hardly tested C projects).
 * **[Default=--std=c++11]** `STANDARD` is only used for c++ projects. It defines the c++ standard (gnu++11, std++14, etc).
 * **[Default=external/]** `$(P)/THIRDPART` refers to the folder containing thirdpart libraries
 (git cloned from GitHub for example). In my case, in `debug` mode, I compile my project against the https://github.com/bombela/backward-cpp (placed in `$(THIRDPART)` directory) for displaying the stack trace when a segfault occurred.
