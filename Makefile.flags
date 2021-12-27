@@ -180,13 +180,13 @@ endif
 
 ifeq ($(USE_BACKWARD),1)
 ifeq ($(ARCHI),Windows)
-$(warning Disable USE_BACKWARD for Windows)
+$(warning Warning: Cannot use Backward-cpp for Windows. USE_BACKWARD disabled)
 USE_BACKWARD = 0
 endif
 
 # FIXME buggy with MacOS X
 ifeq ($(ARCHI),Darwin)
-$(warning Disable USE_BACKWARD for MacOS X)
+$(warning Warning: Cannot use Backward-cpp for MacOS X. USE_BACKWARD disabled)
 USE_BACKWARD = 0
 endif
 endif
@@ -201,7 +201,7 @@ VPATH += $(BUILD)/backward-cpp
 DEFINES += -DBACKWARD_HAS_DW=1 -DBACKWARD_HAS_BFD=0 -DBACKWARD_HAS_DWARF=0
 DEFINES += -DBACKWARD_HAS_UNWIND=1 -DBACKWARD_HAS_BACKTRACE=0
 DEFINES += -DBACKWARD_HAS_BACKTRACE_SYMBOL=1
-PKG_LIBS += libdw
+PKG_LIBS += -ldw
 endif
 
 ###################################################
