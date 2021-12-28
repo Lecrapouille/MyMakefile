@@ -264,6 +264,6 @@ $(BUILD): about which-compiler
 $(BUILD)/%.d: ;
 .PRECIOUS: $(BUILD)/%.d
 
--include $(patsubst %,$(BUILD)/%.d,$(basename $(OBJS)))
+-include $(patsubst %,$(BUILD)/%.d,$(basename $(OBJS)) $(basename $(THIRDPART_OBJS)))
 
 include $(M)/Makefile.help
