@@ -81,6 +81,15 @@ else
 $(warning CXXFLAGS: You have replaced default compilation flags by your own flags)
 endif
 
+# Creating shared libraries from static ones
+ifeq ($(ARCHI),Darwin)
+  LINK_ALL_LOAD=-Wl,-all_load
+  LINK_NO_ALL_LOAD=-Wl,-noall_load
+else
+  LINK_ALL_LOAD=-Wl,--whole-archive
+  LINK_NO_ALL_LOAD=-Wl,--no-whole-archive
+endif
+
 ###################################################
 # Shared libraries file extension.
 #
