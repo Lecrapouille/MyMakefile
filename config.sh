@@ -33,7 +33,7 @@ source $2/project_info.txt
 VERSION=`grep "[0-9]\+\.[0-9]\+" $1 2> /dev/null`
 if [ "$VERSION" == "" ];
 then
-  echo "ERROR: VERSION file is missing or badly formed. Abort !"
+  echo "$0 ERROR: VERSION file is missing or badly formed. Abort !"
   exit 1
 fi
 MAJOR_VERSION=`echo "$VERSION" | cut -d'.' -f1`

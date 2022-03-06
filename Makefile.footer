@@ -84,7 +84,7 @@ $(SHARED_LIB_TARGET): $(OBJS) $(THIRDPART_OBJS) $(THIRDPART_LIBS)
 # Generate the pkg-config file
 #
 $(PKG_FILE): | $(PROJECT_INFO)
-$(PKG_FILE): $(MYMAKEFILES) VERSION
+$(PKG_FILE): $(MYMAKEFILES) VERSION.txt
 	@$(call CREATE_PKG_CONFIG,$(PKG_FILE))
 
 .PHONY: pkg-config
@@ -212,20 +212,20 @@ tarball:
 
 ###################################################
 # Generate a header file with the project information.
-$(PROJECT_INFO): VERSION
-	@$(call print-from,"Version","$(TARGET)","VERSION","")
+$(PROJECT_INFO): VERSION.txt
+	@$(call print-from,"Version","$(TARGET)","VERSION.txt","")
 	@echo "PROJECT=$(PROJECT)" > $(BUILD)/project_info.txt
 	@echo "TARGET=$(TARGET)" >> $(BUILD)/project_info.txt
 	@echo "PROJECT_DATA_PATH=$(PROJECT_DATA_PATH)" >> $(BUILD)/project_info.txt
 	@echo "PROJECT_TEMP_DIR=$(PROJECT_TEMP_DIR)" >> $(BUILD)/project_info.txt
 	@echo "BUILD_TYPE=$(BUILD_TYPE)" >> $(BUILD)/project_info.txt
-	@./$(M)/config.sh $(P)/VERSION $(BUILD)
+	@./$(M)/config.sh $(P)/VERSION.txt $(BUILD)
 
 ###################################################
 # Create a Version file if not present
 #
-VERSION:
-	echo "0.1.0" > VERSION
+VERSION.txt:
+	echo "0.1.0" > VERSION.txt
 
 ###################################################
 # Display the compiler version and information.
@@ -253,7 +253,7 @@ clean::
 $(DEPFILES): | $(BUILD)
 $(PKG_FILE): | $(BUILD)
 $(OBJS): | $(PROJECT_INFO)
-$(PROJECT_INFO): | $(BUILD) VERSION
+$(PROJECT_INFO): | $(BUILD) VERSION.txt
 which-compiler: | about
 $(BUILD): about which-compiler
 	@mkdir -p $(BUILD)

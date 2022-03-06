@@ -30,10 +30,10 @@ include $(M)/Makefile.color
 # shared libraries.
 #
 TARGET_VERSION := $(shell \
-  if [ ! -f $(P)/VERSION ]; then echo "0.1.0" > $(P)/VERSION; fi; \
-  cat $(P)/VERSION)
-TARGET_MAJOR_VERSION := $(shell cat $(P)/VERSION | cut -d"." -f1)
-TARGET_MINOR_VERSION := $(shell cat $(P)/VERSION | cut -d"." -f2)
+  if [ ! -f $(P)/VERSION.txt ]; then echo "0.1.0" > $(P)/VERSION.txt; fi; \
+  cat $(P)/VERSION.txt)
+TARGET_MAJOR_VERSION := $(shell cat $(P)/VERSION.txt | cut -d"." -f1)
+TARGET_MINOR_VERSION := $(shell cat $(P)/VERSION.txt | cut -d"." -f2)
 
 ###################################################
 # Get project and target names in lower case

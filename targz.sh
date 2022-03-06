@@ -37,7 +37,7 @@
 HERE=${1##*/}
 PROJECT=$2
 DATE='-'`date +%Y-%m-%d`
-VERSION='-'`cat VERSION`
+VERSION='-'`cat VERSION.txt`
 NTH=0
 TARGET_TGZ="${PROJECT}${DATE}-v${NTH}.tar.gz"
 
@@ -47,7 +47,7 @@ do
     NTH=`echo "$TARGET_TGZ" | cut -d"v" -f2 | cut -d"." -f1`
     if [ "$NTH" == "" ];
     then
-        echo "ERROR: cannot manage this case $TARGET_TGZ"
+        echo "$0 ERROR: cannot manage this case $TARGET_TGZ"
         exit 1
     else
         NTH=$(( NTH + 1 ))

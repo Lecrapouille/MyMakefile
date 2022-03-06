@@ -85,14 +85,16 @@ helloworld/
 ├── src/
 │   ├── main.cpp
 │   └── main.hpp
-└── VERSION
+└── VERSION.txt
 ```
 
 - `.makefile/` is simply this MyMakefile repo cloned with the following command `git clone git@github.com:Lecrapouille/MyMakefile.git --depth=1 .makefile`.
 A better solution would to use MyMakefile.git as sub-module for your pincipal project `git submodule add https://github.com/Lecrapouille/MyMakefile.git .makefile`.
 I personally add the `.` to hide it in my workspace but this is not mandatory.
-- `VERSION` is an ASCII file containing a version number such as `0.1` or `1.0.3`. It seems useless but it has a great role when installing
+
+- `VERSION.txt` is an ASCII file containing a version number such as `0.1` or `1.0.3`. It seems useless but it has a great role when installing
 your project in your operating system: you can install different versions of your project without they interfering each others. If not present a default file is created.
+Note: because of prossible conflict with C++ VERSION file when using `-I` since 2019 our VERSION file shall have a .txt extension.
 - `src/` is the folder containing your code source (you can use your own name) containing, for this example, a simple hello word named `main.cpp`. The name is not important as well: you can several sub-folders and source files.
 - `Makefile` contains, for this example, the following code (explanations come just after):
 
@@ -155,8 +157,8 @@ foo/
 │   ├── Makefile
 │   ├── tests.cpp
 │   ├── tests.hpp
-│   └── VERSION
-└── VERSION
+│   └── VERSION.txt
+└── VERSION.txt
 ```
 
 - A `Makefile.common` can be added for holding shared information between `./Makefile` and `test/Makefile` (such as `PROJECT`, `VPATH`, `INCLUDES`, `DEFINES`, `THIRDPART_LIBS`, `LINKER_FLAGS`) and including `$(M)/Makefile.header`. This `Makefile.common` file is not mandatory.
@@ -242,7 +244,7 @@ Explanations of MyMakefile variables:
 * **[Mandatory]** `PROJECT` is the main project name.
 * **[Mandatory]** `TARGET` is the name of your binary or library that your Makefile file is compiling for. `TARGET` can be equal to `PROJECT` but
 for the same project, you may want several binaries and therefore several Makefile targets (for example MyGame-lib, MyGame-exec, and MyGame-unit-tests).
-When typing `make install` resources files will be install in their sub-folders (such as PROJECT/PROJECT_VERSION/TARGET/TARGET_VERSION/). The current constraint is
+When typing `make install` resources files will be install in their sub-folders (such as PROJECT/PROJECT_VERSION.txt/TARGET/TARGET_VERSION.txt/). The current constraint is
 to have one Makefile file for each target (this is not a major problem if your create one folder by sub-project).
 * **[Mandatory]** `DESCRIPTION` explain your target in few words. This information is used for pkg-config file when `TARGET` is a library (or soon for [Open Build Service](https://openbuildservice.org/)).
 * **[Optional]** `LOGO` the path of your logo for your Doxygen documentation.
@@ -300,12 +302,12 @@ LDFLAGS := $(LDFLAGS) $(THIRDPART_LIBS) $(NOT_PKG_LIBS) $(PKGCFG_LIBS) $(LINKER_
   - Example: `sudo make DESTDIR=/usr PREFIX=/usr/local/foo/bar install` will install binaries in `/usr/local/foo/bar/usr/local/bin`.
 Some macros are here to help you:
   - `$(call INSTALL_BINARY)` to install your binary into `$(DESTDIR)$(PREFIX)/bin`.
-  - `$(call INSTALL_DOCUMENTATION)` to install your documentation into `$(DESTDIR)$(PREFIX)/share/$(PROJECT)/$(TARGET_VERSION)`. This will copy the followinf files and folders: `$(GENDOC) data/, examples/, AUTHORS, LICENSE, README.md, ChangeLog`.
+  - `$(call INSTALL_DOCUMENTATION)` to install your documentation into `$(DESTDIR)$(PREFIX)/share/$(PROJECT)/$(TARGET_VERSION.txt)`. This will copy the followinf files and folders: `$(GENDOC) data/, examples/, AUTHORS, LICENSE, README.md, ChangeLog`.
   - `$(call INSTALL_PROJECT_LIBRARIES)` to install shared and static libraries into `$(DESTDIR)$(PREFIX)/lib` and pkg-confile file into `/usr/lib/pkgconfig`.
-  - `$(call INSTALL_PROJECT_HEADERS)` to install header files into `$(DESTDIR)$(PREFIX)/include/$(PROJECT)-$(TARGET_VERSION)`.
-  - `$(call INSTALL_PROJECT_FOLDER,folder)` to install the folder into `$(DESTDIR)$(PREFIX)/share/$(PROJECT)/$(TARGET_VERSION)`.
-  - `$(call INSTALL_THIRDPART_FOLDER,ThirdPartLibrary/src,LibraryName,-name "*.h")` to copy recursively all `h` files from the folder `$(THIRDPART)/ThirdPartLibrary/src` into `$(DESTDIR)$(PREFIX)/include/$(PROJECT)-$(TARGET_VERSION)/LibraryName`. The `-name "*.h"` is a parameter to the command `find`.
-  - `$(call INSTALL_THIRDPART_FILES,ThirdPartLibrary,LibraryName,-name "*.h")` to copy all `h` files from the folder `$(THIRDPART)/ThirdPartLibrary/src` into `$(DESTDIR)$(PREFIX)/include/$(PROJECT)-$(TARGET_VERSION)/LibraryName`. The `-name "*.h"` is a parameter to the command `find`.
+  - `$(call INSTALL_PROJECT_HEADERS)` to install header files into `$(DESTDIR)$(PREFIX)/include/$(PROJECT)-$(TARGET_VERSION.txt)`.
+  - `$(call INSTALL_PROJECT_FOLDER,folder)` to install the folder into `$(DESTDIR)$(PREFIX)/share/$(PROJECT)/$(TARGET_VERSION.txt)`.
+  - `$(call INSTALL_THIRDPART_FOLDER,ThirdPartLibrary/src,LibraryName,-name "*.h")` to copy recursively all `h` files from the folder `$(THIRDPART)/ThirdPartLibrary/src` into `$(DESTDIR)$(PREFIX)/include/$(PROJECT)-$(TARGET_VERSION.txt)/LibraryName`. The `-name "*.h"` is a parameter to the command `find`.
+  - `$(call INSTALL_THIRDPART_FILES,ThirdPartLibrary,LibraryName,-name "*.h")` to copy all `h` files from the folder `$(THIRDPART)/ThirdPartLibrary/src` into `$(DESTDIR)$(PREFIX)/include/$(PROJECT)-$(TARGET_VERSION.txt)/LibraryName`. The `-name "*.h"` is a parameter to the command `find`.
 
 ### Description of Internal Files
 
