@@ -122,10 +122,10 @@ endif
 ###################################################
 # echo -e command (not supported by Mac OS X)
 #
-ifeq ($(ARCHI),Windows)
-ECHO_COLOR = echo -e
-else
+ifeq ($(ARCHI),Darwin)
 ECHO_COLOR = echo
+else
+ECHO_COLOR = echo -e
 endif
 
 ###################################################
