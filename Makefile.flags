@@ -51,7 +51,7 @@ ifeq ($(CXXFLAGS),)
     -Wunneeded-member-function -Wunneeded-internal-declaration -Wshadow-all	\
     -Wunreachable-code-aggressive -Wvector-conversion -Wzero-length-array	\
     -Wthread-safety -Wsuper-class-method-mismatch -Werror=implicit-function-declaration \
-    -Wtautological-compare
+    -Wtautological-compare -Wno-unused-command-line-argument
   # GCC specific
   else ifeq ($(COMPILER_NAME),$(filter $(COMPILER_NAME),g++ gcc))
     GCC_GREATER_V4_8 := $(shell expr $(COMPILER_VERSION) \>= 40800)
