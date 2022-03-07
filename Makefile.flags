@@ -111,7 +111,13 @@ DLL_LDFLAGS := -shared
 #else
 #DEFINES += -DDLL_LINKAGE="__declspec(dllimport)"
 #endif
-
+else ifeq ($(ARCHI),MSYS)
+DLL_CXXFLAGS := -fPIC
+DLL_LDFLAGS := -shared
+else ifeq ($(ARCHI),MINGW)
+DLL_CXXFLAGS := -fPIC
+DLL_LDFLAGS := -shared
+LDFLAGS += -lmingw32
 else
 $(error Unknown shared library file extension for this architecture)
 endif

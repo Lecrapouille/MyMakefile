@@ -36,7 +36,10 @@
 ifeq ($(OS),Windows_NT)
 ARCHI := Windows
 else
-ARCHI := $(shell uname -s)
+ARCHI := $(shell sh -c 'uname -s 2>/dev/null || echo Unknown')
+ARCHI := $(patsubst CYGWIN%,Cygwin,$(ARCHI))
+ARCHI := $(patsubst MSYS%,MSYS,$(ARCHI))
+ARCHI := $(patsubst MINGW%,MINGW,$(ARCHI))
 endif
 
 ###################################################
@@ -124,6 +127,8 @@ endif
 #
 ifeq ($(ARCHI),Darwin)
 ECHO_COLOR = echo
+else ifeq ($(ARCHI),MINGW)
+ECHO_COLOR = echo
 else
 ECHO_COLOR = echo -e
 endif
@@ -131,15 +136,7 @@ endif
 ###################################################
 # Temporary directory
 #
-ifeq ($(ARCHI),Darwin)
 TMPDIR ?= /tmp
-else ifeq ($(ARCHI),Linux)
-TMPDIR ?= /tmp
-else ifeq ($(ARCHI),Windows)
-TMPDIR ?= /tmp
-else
-$(error Unknown shared library file extension for this architecture)
-endif
 
 ###################################################
 # Shared libraries file extension
@@ -149,6 +146,10 @@ SO := dylib
 else ifeq ($(ARCHI),Linux)
 SO := so
 else ifeq ($(ARCHI),Windows)
+SO := dll
+else ifeq ($(ARCHI),MSYS)
+SO := dll
+else ifeq ($(ARCHI),MINGW)
 SO := dll
 else
 $(error Unknown shared library file extension for this architecture)
