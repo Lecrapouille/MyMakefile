@@ -40,7 +40,7 @@ ifeq ($(CXXFLAGS),)
   CXXFLAGS += -Wall -Wextra -Wuninitialized -Wundef -Wunused		\
   -Wunused-result -Wunused-parameter -Wtype-limits	\
   -Wcast-align -Wcast-qual -Wconversion -Wfloat-equal	\
-  -Wpointer-arith -Wswitch-enum -pedantic -Wpacked -Wold-style-cast		\
+  -Wpointer-arith -Wswitch-enum -Wpedantic -Wpacked -Wold-style-cast		\
   -Wdeprecated -Wvariadic-macros -Wvla -Wsign-conversion
 
   # Clang specific
