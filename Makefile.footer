@@ -68,25 +68,22 @@ endif
 #
 %.o: %$(CC_SUFFIX) $(BUILD)/%.d $(MYMAKEFILES) $(PROJECT_INFO)
 	@$(call print-progress,"Compiling","$(TARGET)","$<")
-	$(Q)$(CC) $(DEPFLAGS) $(CXXFLAGS) $(PKGCFG_CFLAGS) $(OPTIM_FLAGS) $(DEFINES) $(INCLUDES) -c $(abspath $<) -o $(abspath $(BUILD)/$@) $(COMPIL_FLAGS)
+	$(Q)$(CC) $(DEPFLAGS) $(CCFLAGS) $(PKGCFG_CFLAGS) $(OPTIM_FLAGS) $(DEFINES) $(INCLUDES) -c $(abspath $<) -o $(abspath $(BUILD)/$@) $(COMPIL_FLAGS)
 	@$(POSTCOMPILE)
 
 ###################################################
 # Static library
 #
-$(STATIC_LIB_TARGET): CXXFLAGS += -fPIC
-$(STATIC_LIB_TARGET): $(OBJS) $(THIRDPART_OBJS) $(THIRDPART_LIBS)
+$(STATIC_LIB_TARGET): $(LIB_OBJS) $(THIRDPART_OBJS) $(THIRDPART_LIBS)
 	@$(call print-to,"Static lib","$(TARGET)","$(BUILD)/$@","$(VERSION)")
-	$(Q)cd $(BUILD) && $(AR) $(ARFLAGS) $@ $(OBJS) $(THIRDPART_OBJS) && ranlib $@
+	$(Q)cd $(BUILD) && $(AR) $(ARFLAGS) $@ $(LIB_OBJS) $(THIRDPART_OBJS) && ranlib $@
 
 ###################################################
 # Shared library
 #
-$(SHARED_LIB_TARGET): CXXFLAGS += $(DLL_CXXFLAGS)
-$(SHARED_LIB_TARGET): LDFLAGS += $(DLL_LDFLAGS)
-$(SHARED_LIB_TARGET): $(OBJS) $(THIRDPART_OBJS) $(THIRDPART_LIBS)
+$(SHARED_LIB_TARGET): $(LIB_OBJS) $(THIRDPART_OBJS) $(THIRDPART_LIBS)
 	@$(call print-to,"Shared lib","$(TARGET)","$(BUILD)/$@","$(VERSION)")
-	$(Q)cd $(BUILD) && $(COMPILER) $(LDFLAGS) -o $@ $(OBJS) $(THIRDPART_OBJS) $(LINK_ALL_LOAD) $(THIRDPART_LIBS) $(NOT_PKG_LIBS) $(PKGCFG_LIBS) $(LINK_NO_ALL_LOAD) $(LINKER_FLAGS)
+	$(Q)cd $(BUILD) && $(COMPILER) $(LDFLAGS) -o $@ $(LIB_OBJS) $(THIRDPART_OBJS) $(LINK_ALL_LOAD) $(THIRDPART_LIBS) $(NOT_PKG_LIBS) $(PKGCFG_LIBS) $(LINK_NO_ALL_LOAD) $(LINKER_FLAGS)
 
 ###################################################
 # Generate the pkg-config file

@@ -127,7 +127,8 @@ include $(M)/Makefile.footer
 * `TARGET` is the name for your compiled binary.
 * `DESCRIPTION` explain your target in few words (optional but used for generated pkg-config files when you compile for libraries).
 * `BUILD_TYPE = release` to compile your project without debug elements (else replace it by `̀BUILD_TYPE = debug`).
-* `OBJS` contains the list of all .o files (separated by spaces). Please just give their base names and not their source path.
+* `OBJS` contains the list of all .o files (separated by spaces) for compiling `TARGET`. Please just give their base names and not their source path.
+* `LIB_OBJS` contains the list of all .o files (separated by spaces) for compiling `TARGET`. Please just give their base names and not their source path.
 * Use `VPATH` (separated by spaces) to define folders for finding your source files. In our example with have a single folder holding source code: `src`.
 * Use `INCLUDES` (prepend by `-I` and separated by spaces) to define folders for finding your header files. In our example with have a single folder holding source code: `src`.
 * Use `DEFINES` for defining your personal C/C++ macros (if needed).

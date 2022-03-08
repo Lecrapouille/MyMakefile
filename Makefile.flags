@@ -26,32 +26,79 @@
 ###################################################
 # clang and GCC common compilation flags.
 #
+ifeq ($(CCFLAGS),)
+
+  # Avoid temporary files, speeding up builds
+  CCFLAGS += -pipe
+
+  # Warms about C
+  CCFLAGS += -Wstrict-prototypes
+
+  # Clang and GCC common flags
+  CCFLAGS += -Wall -Wextra -Wuninitialized -Wundef -Wunused \
+  -Wunused-result -Wunused-parameter -Wtype-limits	    \
+  -Wcast-align -Wcast-qual -Wconversion -Wfloat-equal	    \
+  -Wpointer-arith -Wswitch-enum -Wpedantic -Wpacked         \
+  -Wdeprecated -Wvariadic-macros -Wvla -Wsign-conversion -Wshadow
+
+  # Clang specific
+  ifeq ($(COMPILER_NAME),clang)
+    CCFLAGS += -Wconditional-uninitialized	        \
+    -Wused-but-marked-unused -Wunused-member-function				\
+    -Wunused-getter-return-value -Wunused-exception-parameter			\
+    -Wunneeded-member-function -Wunneeded-internal-declaration -Wshadow-all	\
+    -Wunreachable-code-aggressive -Wvector-conversion -Wzero-length-array	\
+    -Wthread-safety -Werror=implicit-function-declaration \
+    -Wtautological-compare -Wno-unused-command-line-argument
+  # GCC specific
+  else ifeq ($(COMPILER_NAME),$(filter $(COMPILER_NAME),g++ gcc))
+    GCC_GREATER_V4_8 := $(shell expr $(COMPILER_VERSION) \>= 40800)
+    GCC_GREATER_V4_9 := $(shell expr $(COMPILER_VERSION) \>= 40900)
+    GCC_GREATER_V6 := $(shell expr $(COMPILER_VERSION) \>= 60000)
+    GCC_GREATER_V9 := $(shell expr $(COMPILER_VERSION) \>= 90000)
+    ifeq "$(GCC_GREATER_V6)" "1"
+      CCFLAGS += -Wtautological-compare
+    else ifeq "$(GCC_GREATER_V9)" "1"
+      CCFLAGS += -Wpessimizzing-move
+    endif
+  endif
+
+  # Flags for hardening the binary
+  CCFLAGS += -Wformat -Wformat-security -Werror=format-security -D_FORTIFY_SOURCE=2 -fPIE -fexceptions
+  ifeq ($(COMPILER_NAME),$(filter $(COMPILER_NAME),g++ gcc))
+    ifeq "$(GCC_GREATER_V4_9)" "1"
+      CCFLAGS += -fstack-protector-strong
+    endif
+  endif
+
+  # Compiler version
+  CCFLAGS += -DCOMPILER_VERSION=$(COMPILER_VERSION)
+else
+
+$(warning CCFLAGS: You have replaced default compilation flags by your own flags)
+endif
+
 ifeq ($(CXXFLAGS),)
 
   # Avoid temporary files, speeding up builds
   CXXFLAGS += -pipe
 
-  # Warms about C
-  ifeq ($(SUFFIX),.c)
-     CXXFLAGS += -Weffc++ -Wstrict-selector-match -Wstrict-prototypes
-  endif
-
   # Clang and GCC common flags
-  CXXFLAGS += -Wall -Wextra -Wuninitialized -Wundef -Wunused		\
-  -Wunused-result -Wunused-parameter -Wtype-limits	\
-  -Wcast-align -Wcast-qual -Wconversion -Wfloat-equal	\
-  -Wpointer-arith -Wswitch-enum -Wpedantic -Wpacked -Wold-style-cast		\
-  -Wdeprecated -Wvariadic-macros -Wvla -Wsign-conversion
+  CXXFLAGS += -Wall -Wextra -Wuninitialized -Wundef -Wunused \
+  -Wunused-result -Wunused-parameter -Wtype-limits	    \
+  -Wcast-align -Wcast-qual -Wconversion -Wfloat-equal	    \
+  -Wpointer-arith -Wswitch-enum -Wpedantic -Wpacked         \
+  -Wdeprecated -Wvariadic-macros -Wvla -Wsign-conversion -Wshadow -Wold-style-cast
 
   # Clang specific
   ifeq ($(COMPILER_NAME),clang)
-    CXXFLAGS += -Wconditional-uninitialized -Wundefined-reinterpret-cast	\
+    CXXFLAGS += -Wconditional-uninitialized	        \
     -Wused-but-marked-unused -Wunused-member-function				\
     -Wunused-getter-return-value -Wunused-exception-parameter			\
     -Wunneeded-member-function -Wunneeded-internal-declaration -Wshadow-all	\
     -Wunreachable-code-aggressive -Wvector-conversion -Wzero-length-array	\
-    -Wthread-safety -Wsuper-class-method-mismatch -Werror=implicit-function-declaration \
-    -Wtautological-compare -Wno-unused-command-line-argument
+    -Wthread-safety -Werror=implicit-function-declaration \
+    -Wtautological-compare -Wno-unused-command-line-argument -Wundefined-reinterpret-cast -Wsuper-class-method-mismatch
   # GCC specific
   else ifeq ($(COMPILER_NAME),$(filter $(COMPILER_NAME),g++ gcc))
     GCC_GREATER_V4_8 := $(shell expr $(COMPILER_VERSION) \>= 40800)
@@ -72,7 +119,6 @@ ifeq ($(CXXFLAGS),)
       CXXFLAGS += -fstack-protector-strong
     endif
   endif
-  LDFLAGS += -pie
 
   # Compiler version
   CXXFLAGS += -DCOMPILER_VERSION=$(COMPILER_VERSION)
@@ -93,6 +139,7 @@ endif
 ###################################################
 # Shared libraries file extension.
 #
+LDFLAGS += -pie
 ifeq ($(ARCHI),Darwin)
 DLL_CXXFLAGS := -fPIC
 DLL_LDFLAGS := -dynamiclib
@@ -234,3 +281,9 @@ endif
 #
 VPATH := $(BUILD) $(VPATH)
 INCLUDES := -I$(BUILD) $(INCLUDES)
+
+###################################################
+#
+CXXFLAGS += $(DLL_CXXFLAGS)
+CCFLAGS += $(DLL_CXXFLAGS)
+LDFLAGS += $(DLL_LDFLAGS)
