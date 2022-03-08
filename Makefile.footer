@@ -56,11 +56,19 @@ ifeq ($(BUILD_TYPE),release)
 endif
 
 ###################################################
-# Compile sources. Note: abspath is needed for gcov
+# Compile C++ sources. Note: abspath is needed for gcov
 #
-%.o: %$(SUFFIX) $(BUILD)/%.d $(MYMAKEFILES) $(PROJECT_INFO)
+%.o: %$(CXX_SUFFIX) $(BUILD)/%.d $(MYMAKEFILES) $(PROJECT_INFO)
 	@$(call print-progress,"Compiling","$(TARGET)","$<")
-	$(Q)$(COMPILER) $(DEPFLAGS) $(CXXFLAGS) $(PKGCFG_CFLAGS) $(OPTIM_FLAGS) $(DEFINES) $(INCLUDES) -c $(abspath $<) -o $(abspath $(BUILD)/$@) $(COMPIL_FLAGS)
+	$(Q)$(CXX) $(STANDARD) $(DEPFLAGS) $(CXXFLAGS) $(PKGCFG_CFLAGS) $(OPTIM_FLAGS) $(DEFINES) $(INCLUDES) -c $(abspath $<) -o $(abspath $(BUILD)/$@) $(COMPIL_FLAGS)
+	@$(POSTCOMPILE)
+
+###################################################
+# Compile C sources. Note: abspath is needed for gcov
+#
+%.o: %$(CC_SUFFIX) $(BUILD)/%.d $(MYMAKEFILES) $(PROJECT_INFO)
+	@$(call print-progress,"Compiling","$(TARGET)","$<")
+	$(Q)$(CC) $(DEPFLAGS) $(CXXFLAGS) $(PKGCFG_CFLAGS) $(OPTIM_FLAGS) $(DEFINES) $(INCLUDES) -c $(abspath $<) -o $(abspath $(BUILD)/$@) $(COMPIL_FLAGS)
 	@$(POSTCOMPILE)
 
 ###################################################

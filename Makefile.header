@@ -81,6 +81,8 @@ STANDARD ?= --std=c++11
 ###################################################
 # Select either a C++ project or a C project (default is .cpp).
 SUFFIX ?= .cpp
+CC_SUFFIX = .c
+CXX_SUFFIX = .cpp
 
 ###################################################
 # Static library (default is ar and crs).
@@ -159,12 +161,12 @@ DEFINES += -DDYLIB_EXT=\".$(SO)\"
 ###################################################
 # Define the compilator
 #
-ifeq ($(SUFFIX),.c)
+ifeq ($(SUFFIX),$(CC_SUFFIX))
 COMPILER := $(CC)
-else ifeq ($(SUFFIX),.cpp)
+else ifeq ($(SUFFIX),$(CXX_SUFFIX))
 COMPILER := $(CXX) $(STANDARD)
 else
-$(error Supported SUFFIX are .c or .cpp)
+$(error Supported SUFFIX are $(CC_SUFFIX) or $(CXX_SUFFIX))
 endif
 
 ###################################################
