@@ -75,6 +75,9 @@ endif
 # Static library
 #
 $(STATIC_LIB_TARGET): $(LIB_OBJS) $(THIRDPART_OBJS) $(THIRDPART_LIBS)
+ifeq ($(LIB_OBJS),)
+	echo "LIB_OBJS is empty and you requested to created a static lib" && exit 1
+endif
 	@$(call print-to,"Static lib","$(TARGET)","$(BUILD)/$@","$(VERSION)")
 	$(Q)cd $(BUILD) && $(AR) $(ARFLAGS) $@ $(LIB_OBJS) $(THIRDPART_OBJS) && ranlib $@
 
@@ -83,6 +86,9 @@ $(STATIC_LIB_TARGET): $(LIB_OBJS) $(THIRDPART_OBJS) $(THIRDPART_LIBS)
 #
 $(SHARED_LIB_TARGET): LDFLAGS += $(DLL_LDFLAGS)
 $(SHARED_LIB_TARGET): $(LIB_OBJS) $(THIRDPART_OBJS) $(THIRDPART_LIBS)
+ifeq ($(LIB_OBJS),)
+	echo "LIB_OBJS is empty and you requested to created a shared lib" && exit 1
+endif
 	@$(call print-to,"Shared lib","$(TARGET)","$(BUILD)/$@","$(VERSION)")
 	$(Q)cd $(BUILD) && $(COMPILER) $(LDFLAGS) -o $@ $(LIB_OBJS) $(THIRDPART_OBJS) $(LINK_ALL_LOAD) $(THIRDPART_LIBS) $(NOT_PKG_LIBS) $(PKGCFG_LIBS) $(LINK_NO_ALL_LOAD) $(LINKER_FLAGS)
 
