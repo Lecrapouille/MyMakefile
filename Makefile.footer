@@ -81,6 +81,7 @@ $(STATIC_LIB_TARGET): $(LIB_OBJS) $(THIRDPART_OBJS) $(THIRDPART_LIBS)
 ###################################################
 # Shared library
 #
+$(SHARED_LIB_TARGET): LDFLAGS += $(DLL_LDFLAGS)
 $(SHARED_LIB_TARGET): $(LIB_OBJS) $(THIRDPART_OBJS) $(THIRDPART_LIBS)
 	@$(call print-to,"Shared lib","$(TARGET)","$(BUILD)/$@","$(VERSION)")
 	$(Q)cd $(BUILD) && $(COMPILER) $(LDFLAGS) -o $@ $(LIB_OBJS) $(THIRDPART_OBJS) $(LINK_ALL_LOAD) $(THIRDPART_LIBS) $(NOT_PKG_LIBS) $(PKGCFG_LIBS) $(LINK_NO_ALL_LOAD) $(LINKER_FLAGS)
