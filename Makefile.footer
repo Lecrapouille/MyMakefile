@@ -258,7 +258,7 @@ clean::
 #
 $(DEPFILES): | $(BUILD)
 $(PKG_FILE): | $(BUILD)
-$(OBJS): | $(PROJECT_INFO)
+$(OBJS) $(LIB_OBJS): | $(PROJECT_INFO)
 $(PROJECT_INFO): | $(BUILD) VERSION.txt
 which-compiler: | about
 $(BUILD): about which-compiler
@@ -270,6 +270,6 @@ $(BUILD): about which-compiler
 $(BUILD)/%.d: ;
 .PRECIOUS: $(BUILD)/%.d
 
--include $(patsubst %,$(BUILD)/%.d,$(basename $(OBJS)) $(basename $(THIRDPART_OBJS)))
+-include $(patsubst %,$(BUILD)/%.d,$(basename $(OBJS)) $(basename $(LIB_OBJS)) $(basename $(THIRDPART_OBJS)))
 
 include $(M)/Makefile.help
