@@ -46,6 +46,9 @@ endif
 # Link sources
 #
 $(TARGET): $(OBJS) $(THIRDPART_OBJS) $(THIRDPART_LIBS)
+ifeq ($(OBJS),)
+	echo "OBJS is empty and you requested to created a target" && exit 1
+endif
 	@$(call print-to,"Linking","$(TARGET)","$(BUILD)/$@","$(VERSION)")
 	$(Q)cd $(BUILD) && $(COMPILER) $(LDFLAGS) $(OBJS) $(THIRDPART_OBJS) -o $@ $(THIRDPART_LIBS) $(NOT_PKG_LIBS) $(PKGCFG_LIBS) $(LINKER_FLAGS)
 ifeq ($(BUILD_TYPE),release)
