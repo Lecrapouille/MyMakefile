@@ -141,6 +141,8 @@ include $(M)/Makefile.footer
 - To display compilation flags, simply compile with `VERBOSE=1 make -j8` or simply `V=1 make -j8`.
 - To change the default compiler by yours (for ie clang++-6.0 instead of g++) do: `make CXX=clang++-6.0 -j8`
 - If compiled with success, you can test it: `./build/Test` or `make run`.
+- To force compiling in release mode: `make BUILD_TYPE=release CXX=clang++-6.0 -j8`
+- To force compiling in debug mode: `make BUILD_TYPE=debug CXX=clang++-6.0 -j8`
 
 ### Hello-World MyMakefile with Unit-Tests example
 

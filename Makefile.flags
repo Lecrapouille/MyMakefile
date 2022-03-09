@@ -225,7 +225,7 @@ USE_BACKWARD = 1
 OPTIM_FLAGS = -O2 -g
 DEFINES += -UNDEBUG -D_GLIBCXX_ASSERTIONS
 else
-$(error BUILD_TYPE shall be debug or release)
+$(error BUILD_TYPE shall be debug or release but get $(BUILD_TYPE))
 endif
 
 ###################################################
