@@ -37,7 +37,7 @@ CLR_CYAN    := $(shell $(ECHO_COLOR) '\033[36m')
 ###################################################
 # Progress bar
 #
-OBJS_COUNT = $(words $(OBJS) $(THIRDPART_OBJS))
+OBJS_COUNT = $(words $(OBJS) $(LIB_OBJS) $(THIRDPART_OBJS))
 CUR_PERCENT = 0
 INC_PERCENT = $(shell echo "100 / $(OBJS_COUNT)" | bc -l)
 define UPDATE_PERCENT
