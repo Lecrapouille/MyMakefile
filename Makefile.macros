@@ -163,6 +163,31 @@ define INSTALL_DOCUMENTATION
 endef
 
 ###################################################
+# Create a MacOS application bundle
+#
+define CREATE_MACOS_APP_BUNDLE
+	@$(call print-to,"Generating","$(TARGET)","$(1)","")
+	@echo "<?xml version=\"1.0\" encoding=\"UTF-8\"?>" > $(BUILD)/$(1)
+	@echo "<!DOCTYPE plist PUBLIC \"-//Apple//DTD PLIST 1.0//EN\" \"http://www.apple.com/DTDs/PropertyList-1.0.dtd\">" >> $(BUILD)/$(1)
+	@echo "<plist version=\"1.0\">" >> $(BUILD)/$(1)
+	@echo "<dict>" >> $(BUILD)/$(1)
+	@echo "    <key>CFBundleExecutable</key>" >> $(BUILD)/$(1)
+	@echo "    <string>${TARGET}</string>" >> $(BUILD)/$(1)
+	@echo "    <key>CFBundleIdentifier</key>" >> $(BUILD)/$(1)
+	@echo "    <string>com.${APPLE_IDENTIFIER}.${TARGET}</string>" >> $(BUILD)/$(1)
+	@echo "    <key>CFBundleInfoDictionaryVersion</key>" >> $(BUILD)/$(1)
+	@echo "    <string>6.0</string>" >> $(BUILD)/$(1)
+	@echo "    <key>CFBundleName</key>" >> $(BUILD)/$(1)
+	@echo "    <string>${TARGET}</string>" >> $(BUILD)/$(1)
+	@echo "    <key>CFBundlePackageType</key>" >> $(BUILD)/$(1)
+	@echo "    <string>APPL</string>" >> $(BUILD)/$(1)
+	@echo "    <key>CFBundleIconFile</key>" >> $(BUILD)/$(1)
+	@echo "    <string>${TARGET}.icns</string>" >> $(BUILD)/$(1)
+	@echo "</dict>" >> $(BUILD)/$(1)
+	@echo "</plist>" >> $(BUILD)/$(1)
+endef
+
+###################################################
 # Create the pkg-config file (if the project is a library)
 #
 define CREATE_PKG_CONFIG

@@ -94,6 +94,10 @@ ARFLAGS ?= crs
 PROJECT_INFO ?= project_info.hpp
 
 ###################################################
+# MacOS X path to the application bundle icon
+MACOS_BUNDLE_ICON ?= .makefile/macos.icns
+
+###################################################
 # Check if some variables have been defined
 #
 ifndef PROJECT

@@ -278,6 +278,26 @@ This avoids having git submodules (which I dislike).
 * **[Mandatory]** `all:` tell Makefile what to compile. In this case the binary `$(TARGET)` its libraries `$(STATIC_LIB_TARGET)`, `$(SHARED_LIB_TARGET)` and the pkg-config file `$(PKG_FILE)` (when typing `make install`).
 * Including `Makefile.footer` is mandatory.
 
+### Specific commands for MacOS
+
+You can create MacOS bundle application. For example:
+
+```
+ifeq ($(ARCHI),Darwin)
+BUILD_MACOS_APP_BUNDLE = 1
+APPLE_IDENTIFIER = lecrapouille
+MACOS_BUNDLE_ICON = data/icon.icns
+endif
+```
+
+* The `ifeq ($(ARCHI),Darwin) endif` if optional and allow to generated MacOS
+  application if and only if your Makefile is called from a Mac device and
+  therefore provide creating non-crossed compiled application from ie Linux.
+
+* `BUILD_MACOS_APP_BUNDLE` will add a `all: $(TARGET).app` for you.
+* `APPLE_IDENTIFIER` allows to create inside the `Info.plist` a field `com.$(APPLE_IDENTIFIER).$(TARGET)`.
+* `MACOS_BUNDLE_ICON` define the path of your bundle application icon. If not set a default icon will be set.
+
 ### How are made CXXFLAGS and LDFLAGS?
 
 Here how internally (privately) `CXXFLAGS` and `LDFLAGS` are made:

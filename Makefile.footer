@@ -43,6 +43,21 @@ endif
 endif
 
 ###################################################
+# Create MacOS application bundle
+#
+ifneq ($(BUILD_MACOS_APP_BUNDLE),)
+all: $(TARGET).app
+
+$(TARGET).app: $(TARGET)
+	$(Q)rm -fr $(BUILD)/${TARGET}.app 2> /dev/null
+	$(Q)mkdir -p $(BUILD)/${TARGET}.app/Contents/{MacOS,Resources}
+	$(Q)cp $(BUILD)/$(TARGET) $(BUILD)/${TARGET}.app/Contents/MacOS
+	$(Q)cp $(MACOS_BUNDLE_ICON) $(BUILD)/${TARGET}.app/Contents/Resources/${TARGET}.icns
+	$(Q)cp -r data/* $(BUILD)/${TARGET}.app/Contents/Resources
+	@$(call CREATE_MACOS_APP_BUNDLE,${TARGET}.app/Contents/Info.plist)
+endif
+
+###################################################
 # Link sources
 #
 $(TARGET): $(OBJS) $(THIRDPART_OBJS) $(THIRDPART_LIBS)
