@@ -93,11 +93,16 @@ endif
 # Static library
 #
 $(STATIC_LIB_TARGET): $(LIB_OBJS) $(THIRDPART_OBJS) $(THIRDPART_LIBS)
+	@$(call print-to,"Static lib","$(TARGET)","$(BUILD)/$@","$(VERSION)")
 ifeq ($(LIB_OBJS),)
 	echo "LIB_OBJS is empty and you requested to created a static lib" && exit 1
 endif
-	@$(call print-to,"Static lib","$(TARGET)","$(BUILD)/$@","$(VERSION)")
+ifneq ($(THIRDPART_LIBS),)
+	@./$(M)/alib.sh $(BUILD) $(THIRDPART_LIBS)
+	$(Q)cd $(BUILD) && $(AR) $(ARFLAGS) $@ $(LIB_OBJS) $(THIRDPART_OBJS) _lib*/*.o && ranlib $@
+else
 	$(Q)cd $(BUILD) && $(AR) $(ARFLAGS) $@ $(LIB_OBJS) $(THIRDPART_OBJS) && ranlib $@
+endif
 
 ###################################################
 # Shared library
