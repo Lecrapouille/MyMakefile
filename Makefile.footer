@@ -133,8 +133,8 @@ download-external-libs:
 	@if [ -e "$(THIRDPART)/download-external-libs.sh" ] ; then \
 	(cd $(THIRDPART) && ./download-external-libs.sh $(ARCHI) $(TARGET)); \
 	else \
-	$(ECHO_COLOR) "  \033[33m:( \033[36mMissing file $(THIRDPART)/download-external-libs.sh \033[33m:("; \
-	$(ECHO_COLOR) "  \033[33m:) \033[36mOr no external libs to download ! \033[33m:)\033[00m"; \
+	echo "  $(CLR_YELLOW):( $(CLR_CYAN)Missing file $(THIRDPART)/download-external-libs.sh $(CLR_YELLOW):("; \
+	echo "  $(CLR_YELLOW):) $(CLR_CYAN)Or no external libs to download ! $(CLR_YELLOW):)$(CLR_DEFAULT)"; \
 	fi
 
 ###################################################
@@ -144,8 +144,8 @@ compile-external-libs:
 	@if [ -e "$(THIRDPART)/compile-external-libs.sh" ] ; then \
 	(cd $(THIRDPART) && ./compile-external-libs.sh $(ARCHI) $(TARGET)); \
 	else \
-	$(ECHO_COLOR) "  \033[33m:( \033[36mMissing file $(THIRDPART)/compile-external-libs.sh \033[33m:("; \
-	$(ECHO_COLOR) "  \033[33m:) \033[36mOr no external libs to compile ! \033[33m:)\033[00m"; \
+	echo "  $(CLR_YELLOW):( $(CLR_CYAN)Missing file $(THIRDPART)/compile-external-libs.sh $(CLR_YELLOW):("; \
+	echo "  $(CLR_YELLOW):) $(CLR_CYAN)Or no external libs to compile ! $(CLR_YELLOW):)$(CLR_DEFAULT)"; \
 	fi
 
 ###################################################
