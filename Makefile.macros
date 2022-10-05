@@ -70,7 +70,8 @@ SYMBOLIC_PKG_FILE := $(TARGET_LOWER_CASE).pc
 ###################################################
 # TODO to be cleaned
 #
-PROJECT_EXE := $(BINDIR)/$(TARGET)-$(TARGET_VERSION)
+PROJECT_EXE_NO_VERSION := $(BINDIR)/$(TARGET)
+PROJECT_EXE := $(PROJECT_EXE_NO_VERSION)-$(TARGET_VERSION)
 PROJECT_DATA_ROOT := $(DATADIR)/$(PROJECT)/$(TARGET_VERSION)
 PROJECT_DATA_PATH := $(PROJECT_DATA_ROOT)/data
 PROJECT_DOC_PATH := $(PROJECT_DATA_ROOT)/$(GENDOC)
@@ -148,6 +149,7 @@ define INSTALL_BINARY
 	@$(call print-to,"Installing","$(BUILD)/$(TARGET)","$(PROJECT_EXE)","")
 	@mkdir -p $(BINDIR)
 	@cp $(BUILD)/$(TARGET) $(PROJECT_EXE)
+	@ln -sf $(PROJECT_EXE) $(PROJECT_EXE_NO_VERSION)
 endef
 
 ###################################################
