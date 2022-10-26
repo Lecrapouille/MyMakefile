@@ -50,7 +50,7 @@ echo ""
 BUILD_TYPE=`[ "$BUILD_TYPE" == "debug" ] && echo "true" || echo "false"`
 
 ### Header guard
-GUARD=`echo "${PROJECT}_${TARGET}_GENERATED_PROJECT_INFO_HPP" | tr '[:lower:]' '[:upper:]' | tr "a-" "_"`
+GUARD=`echo "${PROJECT}_${TARGET}_GENERATED_PROJECT_INFO_HPP" | tr '[:lower:]' '[:upper:]' | tr "\-." "__"`
 
 ### Save these informations as C++ header file
 cat <<EOF >$2/project_info.hpp
