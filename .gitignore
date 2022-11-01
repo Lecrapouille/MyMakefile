@@ -1,5 +1,6 @@
 #
 *~
+examples/*/build
 
 # Copied folder
 ./doc
