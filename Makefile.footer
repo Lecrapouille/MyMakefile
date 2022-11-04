@@ -130,8 +130,9 @@ pkg-config:
 # Download external github code source needed by this project.
 .PHONY: download-external-libs
 download-external-libs:
+	@$(call print-to,"Downloading third parts","$(TARGET)","$(THIRDPART)")
 	@if [ -e "$(THIRDPART)/download-external-libs.sh" ] ; then \
-	(cd $(THIRDPART) && ./download-external-libs.sh $(ARCHI) $(TARGET)); \
+	(cd $(THIRDPART) && ./download-external-libs.sh "$(ARCHI)" "$(TARGET)"); \
 	else \
 	echo "  $(CLR_YELLOW):( $(CLR_CYAN)Missing file $(THIRDPART)/download-external-libs.sh $(CLR_YELLOW):("; \
 	echo "  $(CLR_YELLOW):) $(CLR_CYAN)Or no external libs to download ! $(CLR_YELLOW):)$(CLR_DEFAULT)"; \
@@ -141,8 +142,9 @@ download-external-libs:
 # Compile external projects needed.
 .PHONY: compile-external-libs
 compile-external-libs:
+	@$(call print-to,"Compiling third parts","$(TARGET)","$(THIRDPART)")
 	@if [ -e "$(THIRDPART)/compile-external-libs.sh" ] ; then \
-	(cd $(THIRDPART) && ./compile-external-libs.sh $(ARCHI) $(TARGET)); \
+	(cd $(THIRDPART) && ./compile-external-libs.sh "$(ARCHI)" "$(TARGET)" "$(CC)" "$(CXX)"); \
 	else \
 	echo "  $(CLR_YELLOW):( $(CLR_CYAN)Missing file $(THIRDPART)/compile-external-libs.sh $(CLR_YELLOW):("; \
 	echo "  $(CLR_YELLOW):) $(CLR_CYAN)Or no external libs to compile ! $(CLR_YELLOW):)$(CLR_DEFAULT)"; \
