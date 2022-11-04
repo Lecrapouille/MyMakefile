@@ -52,7 +52,7 @@ CXX ?=
 
 ###################################################
 # Define your C compilator (default: empty).
-CXX ?=
+CC ?=
 
 ###################################################
 # Define the directory holding compilation files (default: build/).
