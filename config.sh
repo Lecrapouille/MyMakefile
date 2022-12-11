@@ -47,7 +47,6 @@ BRANCH=`git rev-parse --abbrev-ref HEAD 2> /dev/null`
 echo "Project version: $MAJOR_VERSION.$MINOR_VERSION"
 echo "Git branch $BRANCH SHA1 $SHA1"
 echo ""
-BUILD_TYPE=`[ "$BUILD_TYPE" == "debug" ] && echo "true" || echo "false"`
 
 ### Header guard
 GUARD=`echo "${PROJECT}_${TARGET}_GENERATED_PROJECT_INFO_HPP" | tr '[:lower:]' '[:upper:]' | tr "\-." "__"`
@@ -57,33 +56,35 @@ cat <<EOF >$2/project_info.hpp
 #ifndef ${GUARD}
 #  define ${GUARD}
 
-#  include <cstdint>
+#  include <string>
 
 namespace project
 {
-  static Info info(
-    // Compiled in debug or released mode
-    ${BUILD_TYPE},
-    // Project name used for logs and GUI.
-    "${TARGET}",
-    // Major version of project
-    ${MAJOR_VERSION}u,
-    // Minor version of project
-    ${MINOR_VERSION}u,
-    // git SHA1
-    "${SHA1}",
-    // git branch
-    "${BRANCH}",
-    // Pathes where default project resources have been installed
-    // (when called  by the shell command: sudo make install).
-    "${PROJECT_DATA_PATH}",
-    // Location for storing temporary files
-    "${PROJECT_TEMP_DIR}/",
-    // Give a name to the default project log file.
-    "${TARGET}.log",
-    // Define the full path for the project.
-    "${PROJECT_TEMP_DIR}/${TARGET}.log"
-  );
+    namespace info
+    {
+        enum Mode { debug, release };
+        //! \brief Compiled in debug or in release mode
+        const Mode mode{project::info::${BUILD_TYPE}};
+        //! \brief Used for logs and GUI.
+        const std::string project_name{"${TARGET}"};
+        //! \brief Major version of project
+        const uint32_t major_version{${MAJOR_VERSION}u};
+        //! \brief Minor version of project
+        const uint32_t minor_version{${MAJOR_VERSION}u};
+        //! \brief Save the git branch
+        const std::string git_branch{"${BRANCH}"};
+        //! \brief Save the git SHA1
+        const std::string git_sha1{"${SHA1}"};
+        //! \brief Pathes where default project resources have been installed
+        //! (when called  by the shell command: sudo make install).
+        const std::string data_path{"${PROJECT_DATA_PATH}"};
+        //! \brief Location for storing temporary files
+        const std::string tmp_path{"${PROJECT_TEMP_DIR}/"};
+        //! \brief Give a name to the default project log file.
+        const std::string log_name{"${TARGET}.log"};
+        //! \brief Define the full path for the project.
+        const std::string log_path{"${PROJECT_TEMP_DIR}/${TARGET}.log"};
+    }
 }
 
 #endif // ${GUARD}

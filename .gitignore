@@ -3,7 +3,9 @@
 examples/*/build
 
 # Copied folder
-./doc
+doc/coverage
+examples/*/build
+examples/*/tests/build
 
 # Prerequisites
 *.d
