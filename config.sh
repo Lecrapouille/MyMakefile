@@ -70,7 +70,7 @@ namespace project
         //! \brief Major version of project
         const uint32_t major_version{${MAJOR_VERSION}u};
         //! \brief Minor version of project
-        const uint32_t minor_version{${MAJOR_VERSION}u};
+        const uint32_t minor_version{${MINOR_VERSION}u};
         //! \brief Save the git branch
         const std::string git_branch{"${BRANCH}"};
         //! \brief Save the git SHA1
