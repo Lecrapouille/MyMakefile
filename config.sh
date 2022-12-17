@@ -38,15 +38,11 @@ then
 fi
 MAJOR_VERSION=`echo "$VERSION" | cut -d'.' -f1`
 MINOR_VERSION=`echo "$VERSION" | cut -d'.' -f2`
+PATCH_VERSION=`echo "$VERSION" | cut -d'.' -f3`
 
 ### Get git SHA1 and branch
 SHA1=`git log 2> /dev/null | head -n1 | cut -d" " -f2`
 BRANCH=`git rev-parse --abbrev-ref HEAD 2> /dev/null`
-
-### Debug
-echo "Project version: $MAJOR_VERSION.$MINOR_VERSION"
-echo "Git branch $BRANCH SHA1 $SHA1"
-echo ""
 
 ### Header guard
 GUARD=`echo "${PROJECT}_${TARGET}_GENERATED_PROJECT_INFO_HPP" | tr '[:lower:]' '[:upper:]' | tr "\-." "__"`
@@ -65,12 +61,16 @@ namespace project
         enum Mode { debug, release };
         //! \brief Compiled in debug or in release mode
         const Mode mode{project::info::${BUILD_TYPE}};
-        //! \brief Used for logs and GUI.
-        const std::string project_name{"${TARGET}"};
+        //! \brief Project name.
+        const std::string project_name{"${PROJECT}"};
+        //! \brief Application name.
+        const std::string application_name{"${TARGET}"};
         //! \brief Major version of project
-        const uint32_t major_version{${MAJOR_VERSION}u};
+        const uint32_t major_version{${MAJOR_VERSION:=0}u};
         //! \brief Minor version of project
-        const uint32_t minor_version{${MINOR_VERSION}u};
+        const uint32_t minor_version{${MINOR_VERSION:=0}u};
+        //! \brief Patch version of project
+        const uint32_t patch_version{${PATCH_VERSION:=0}u};
         //! \brief Save the git branch
         const std::string git_branch{"${BRANCH}"};
         //! \brief Save the git SHA1
