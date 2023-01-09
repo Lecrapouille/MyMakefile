@@ -26,3 +26,12 @@ To compile and run unit tests of the main application:
 - `make check` or if you have multicore `make check -j8` (adapt the `8` to your CPU number of cores)
 
 If a gcov have been installed you will see an coverage report.
+
+## Example 02
+
+Basic hello word project with two internal libraries.
+
+To compile and run the main application:
+- Optionally: `make clean`
+- `make` or if you have multicore `make -j8` (adapt the `8` to your CPU number of cores)
+- `make run` or `./build/HelloWorld00`
