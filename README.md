@@ -144,6 +144,24 @@ include $(M)/Makefile.footer
 - To force compiling in release mode: `make BUILD_TYPE=release CXX=clang++-6.0 -j8`
 - To force compiling in debug mode: `make BUILD_TYPE=debug CXX=clang++-6.0 -j8`
 
+#### Emscripten
+
+To compile your project with [Emscripten](https://emscripten.org)
+
+```
+emmake make -j8
+```
+
+`emmake` is a script offered by Emscripten that calls your makefile but set before all environement variables for you.
+
+#### Clang vs. GCC
+
+By default gcc is called (because of `$CXX`). To compile with clang++.
+
+```
+make CXX=clang++-11 -j8
+```
+
 ### Hello-World MyMakefile with Unit-Tests example
 
 Let suppose you want to add a unit test folder for your project. Just do this:
@@ -334,13 +352,17 @@ Some macros are here to help you:
 
 ### Description of Internal Files
 
-* Makefile.header: is the part of your Makefile to be included as header part. It contains the code for knowing your architecture, your compiler, destination folder for installation.
+* `Makefile.header`: is the part of your Makefile to be included as header part. It contains the code for knowing your architecture, your compiler, destination folder for installation.
 It defines your project folder name (build, doc, external). It also checks against uninitialized variables.
-* Makefile.macros: contains code for defining paths, libraries/project names, installation ...
-* Makefile.color: define colorful displays and progress bar for hiding the misery of compilation.
-* Makefile.flags: add all GCC/clang compilation flags findable in the world and more :)
-* Makefile.help: Allow Makefile to auto parse and display its own rules.
-* Makefile.footer: is the part of your Makefile to be included as footer part: it defines a set of Makefile rules (like compiling c++ files or linking the project, ...).
+* `Makefile.macros`: contains code for defining paths, libraries/project names, installation ...
+* `Makefile.color`: define colorful displays and progress bar for hiding the misery of compilation.
+* `Makefile.flags`: add all GCC/clang compilation flags findable in the world and more :)
+* `Makefile.help`: Allow Makefile to auto parse and display its own rules.
+* `Makefile.footer`: is the part of your Makefile to be included as footer part: it defines a set of Makefile rules (like compiling c++ files or linking the project, ...).
 * Some Bash scripts exist and are called by Makefile rules:
  - targz.sh: for creating a backup of the code source project. The code source is compressed. git files, compiled and generated files (like doc) are not taken into account.
  - config.sh: for creating a C++ project_info.hpp file needed when compiling the project.
+
+Order of inclusion:
+* `Makefile.header` will include `Makefile.macros` that will include `Makefile.color`.
+* `Makefile.footer` will include `Makefile.flags` and `Makefile.help`.

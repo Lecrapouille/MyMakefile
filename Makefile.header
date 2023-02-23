@@ -55,6 +55,11 @@ CXX ?=
 CC ?=
 
 ###################################################
+# Strip command
+# See http://reverse.lostrealm.com/protect/strip.html
+STRIP ?= strip -R .comment -R .note -R .note.ABI-tag
+
+###################################################
 # Define the directory holding compilation files (default: build/).
 BUILD ?= build
 
@@ -143,6 +148,25 @@ endif
 # Temporary directory
 #
 TMPDIR ?= /tmp
+
+###################################################
+# Application extension
+#
+ifneq ($(EMSCRIPTEN),)
+EXT := .html
+else ifeq ($(ARCHI),Darwin)
+EXT := .app
+else ifeq ($(ARCHI),Linux)
+EXT :=
+else ifeq ($(ARCHI),Windows)
+EXT := .exe
+else ifeq ($(ARCHI),MSYS)
+EXT := .exe
+else ifeq ($(ARCHI),MINGW)
+EXT := .exe
+else
+$(error Unknown binary file extension for this architecture)
+endif
 
 ###################################################
 # Shared libraries file extension

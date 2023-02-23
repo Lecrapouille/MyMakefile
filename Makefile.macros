@@ -169,8 +169,7 @@ endef
 ###################################################
 # Create a MacOS application bundle
 #
-define CREATE_MACOS_APP_BUNDLE
-	@$(call print-to,"Generating","$(TARGET)","$(1)","")
+define CREATE_MACOS_INFO_PLIST
 	@echo "<?xml version=\"1.0\" encoding=\"UTF-8\"?>" > $(BUILD)/$(1)
 	@echo "<!DOCTYPE plist PUBLIC \"-//Apple//DTD PLIST 1.0//EN\" \"http://www.apple.com/DTDs/PropertyList-1.0.dtd\">" >> $(BUILD)/$(1)
 	@echo "<plist version=\"1.0\">" >> $(BUILD)/$(1)
@@ -189,6 +188,19 @@ define CREATE_MACOS_APP_BUNDLE
 	@echo "    <string>${TARGET}.icns</string>" >> $(BUILD)/$(1)
 	@echo "</dict>" >> $(BUILD)/$(1)
 	@echo "</plist>" >> $(BUILD)/$(1)
+endef
+
+###################################################
+# Create a MacOS application bundle
+#
+define CREATE_MACOS_APP_BUNDLE
+	@$(call print-to,"Generating bundle","$(TARGET)","$(1)","")
+	@rm -fr $(BUILD)/$(TARGET)$(EXT) 2> /dev/null
+	@mkdir -p $(BUILD)/$(TARGET)$(EXT)/Contents/{MacOS,Resources}
+	@cp $(BUILD)/$(TARGET) $(BUILD)/$(TARGET)$(EXT)/Contents/MacOS
+	@cp $(MACOS_BUNDLE_ICON) $(BUILD)/$(TARGET)$(EXT)/Contents/Resources/$(TARGET).icns
+	@cp -r data/* $(BUILD)/$(TARGET)$(EXT)/Contents/Resources
+	@$(call CREATE_MACOS_INFO_PLIST,$(TARGET)$(EXT)/Contents/Info.plist)
 endef
 
 ###################################################
