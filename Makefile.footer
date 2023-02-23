@@ -138,7 +138,7 @@ download-external-libs:
 compile-external-libs:
 	@$(call print-to,"Compiling third parts","$(TARGET)","$(THIRDPART)")
 	@if [ -e "$(THIRDPART)/compile-external-libs.sh" ] ; then \
-	(cd $(THIRDPART) && ./compile-external-libs.sh "$(ARCHI)" "$(TARGET)" "$(CC)" "$(CXX)"); \
+	(cd $(THIRDPART) && ./compile-external-libs.sh "$(ARCHI)" "$(TARGET)" "$(CC)" "$(CXX)" "$(EMSCRIPTEN)"); \
 	else \
 	echo "  $(CLR_YELLOW):( $(CLR_CYAN)Missing file $(THIRDPART)/compile-external-libs.sh $(CLR_YELLOW):("; \
 	echo "  $(CLR_YELLOW):) $(CLR_CYAN)Or no external libs to compile ! $(CLR_YELLOW):)$(CLR_DEFAULT)"; \
