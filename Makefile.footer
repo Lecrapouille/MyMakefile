@@ -54,15 +54,21 @@ ifeq ($(OBJS),)
 	echo "OBJS is empty and you requested to created a target" && exit 1
 endif
 	@$(call print-to,"Linking","$(TARGET)","$(BUILD)/$@","$(VERSION)")
-	$(Q)cd $(BUILD) && $(COMPILER) $(LDFLAGS) $(OBJS) $(THIRDPART_OBJS) -o $@ $(THIRDPART_LIBS) $(NOT_PKG_LIBS) $(PKGCFG_LIBS) $(LINKER_FLAGS)
+	$(Q)cd $(BUILD) && $(COMPILER) $(LDFLAGS) $(OBJS) $(THIRDPART_OBJS) -o $(TARGET) $(THIRDPART_LIBS) $(NOT_PKG_LIBS) $(PKGCFG_LIBS) $(LINKER_FLAGS)
 # Strip command: http://reverse.lostrealm.com/protect/strip.html
 ifneq ($(STRIP),)
 	@$(call print-to,"Stripping","$(TARGET)","$(BUILD)/$@","$(VERSION)")
-	$(Q)cd $(BUILD) && $(STRIP) $@
+	$(Q)cd $(BUILD) && $(STRIP) $(TARGET)
 endif
-# Create MacOS bundle application
+# Create MacOS bundle application (we do not check if we are on Darwin for allowing cross compilation)
 ifneq ($(BUILD_MACOS_APP_BUNDLE),)
 	$(Q)$(call CREATE_MACOS_APP_BUNDLE)
+endif
+# Add the extension to the binary name (except for MacOS since its a folder)
+ifneq ($(EXT),)
+ifneq ($(ARCHI),Darwin)
+	$(Q)cd $(BUILD) && cp $(TARGET) $(TARGET)$(EXT)
+endif
 endif
 
 ###################################################
