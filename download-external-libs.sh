@@ -32,7 +32,7 @@ function cloning
 {
     REPO=$1
 
-    echo -e "\033[35m*** Cloning: \033[36m$URL/$REPO\033[00m >= \033[33m$TARGET\033[00m"
+    echo -e "\033[35m*** Cloning: \033[36m$URL/$REPO\033[00m => \033[33m$TARGET\033[00m"
     if [ "$URL" == "$GITHUB_URL" ]; then
         ARR=(${REPO//\// })
         if [ "${ARR[1]}" == "" ]; then

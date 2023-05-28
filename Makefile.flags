@@ -198,12 +198,22 @@ LDFLAGS += --coverage
 endif
 
 ###################################################
-# Activate debug if Backward is set
+# Activate debug if backward-cpp library is desired
 #
 ifeq ($(USE_BACKWARD),1)
 ifeq ($(BUILD_TYPE),release)
 BUILD_TYPE = debug
 $(warning Release mode desired but USE_BACKWARD will force debug mode)
+endif
+endif
+
+###################################################
+# Activate debug if dbg-macro library is desired
+#
+ifeq ($(USE_DEBUG_MACRO),1)
+ifeq ($(BUILD_TYPE),release)
+BUILD_TYPE = debug
+$(warning Release mode desired but USE_DEBUG_MACRO will force debug mode)
 endif
 endif
 
@@ -214,14 +224,17 @@ endif
 #
 ifeq ($(BUILD_TYPE),debug)
 USE_BACKWARD = 1
+USE_DEBUG_MACRO = 1
 OPTIM_FLAGS = -O0 -g3 -fasynchronous-unwind-tables
 DEFINES += -UNDEBUG -D_GLIBCXX_ASSERTIONS
 else ifeq ($(BUILD_TYPE),release)
 USE_BACKWARD = 0
+USE_DEBUG_MACRO = 0
 OPTIM_FLAGS = -O2
 DEFINES += -DNDEBUG
 else ifeq ($(BUILD_TYPE),normal)
 USE_BACKWARD = 1
+USE_DEBUG_MACRO = 1
 OPTIM_FLAGS = -O2 -g
 DEFINES += -UNDEBUG -D_GLIBCXX_ASSERTIONS
 else
@@ -242,19 +255,19 @@ endif
 
 ifeq ($(USE_BACKWARD),1)
 ifeq ($(ARCHI),Windows)
-$(warning Warning: Cannot use Backward-cpp for Windows. USE_BACKWARD disabled)
+$(warning Warning: Cannot use backward-cpp lib for Windows. USE_BACKWARD will be disabled)
 USE_BACKWARD = 0
 endif
 
 # FIXME buggy with MacOS X
 ifeq ($(ARCHI),Darwin)
-$(warning Warning: Cannot use Backward-cpp for MacOS X. USE_BACKWARD disabled)
+$(warning Warning: Cannot use backward-cpp lib for MacOS X. USE_BACKWARD will be disabled)
 USE_BACKWARD = 0
 endif
 endif
 
 ###################################################
-# Use Backward for tracing the stack when a crash occured.
+# Use backward-cpp library for tracing the stack when a crash occured.
 #
 ifeq ($(USE_BACKWARD),1)
 OBJS += backward.o
@@ -264,6 +277,14 @@ DEFINES += -DBACKWARD_HAS_DW=1 -DBACKWARD_HAS_BFD=0 -DBACKWARD_HAS_DWARF=0
 DEFINES += -DBACKWARD_HAS_UNWIND=1 -DBACKWARD_HAS_BACKTRACE=0
 DEFINES += -DBACKWARD_HAS_BACKTRACE_SYMBOL=1
 LINKER_FLAGS += -ldw
+endif
+
+###################################################
+# Use dbg-macro library for printf-style debugging
+#
+ifeq ($(USE_DEBUG_MACRO),1)
+INCLUDES += -I$(BUILD)/dbg-macro
+DEFINES += -DBG_MACRO_NO_WARNING
 endif
 
 ###################################################

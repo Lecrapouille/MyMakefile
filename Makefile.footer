@@ -26,20 +26,21 @@
 include $(M)/Makefile.flags
 
 ###################################################
-# Download Backward for tracing the stack when a crash occured.
+# Download private thirdparts
 #
-
 ifeq ($(USE_BACKWARD),1)
-$(PROJECT_INFO): | backward.cpp
 ifeq ($(ARCHI),Darwin)
 backward.cpp: | $(BUILD)
 else
 $(BUILD)/backward-cpp/backward.cpp: | $(BUILD)
+	@$(call GIT_CLONE,$(BUILD),"bombela","backward-cpp")
 endif
-	@if [ ! -d "$(BUILD)/backward-cpp" ] ; then \
-	$(call print-to,"Downloading","backward-cpp","$(TARGET)",""); \
-	cd $(BUILD) && git clone https://github.com/bombela/backward-cpp.git --depth=1; \
-	fi
+endif
+
+ifeq ($(USE_DEBUG_MACRO),1)
+$(TARGET): $(BUILD)/dbg-macro/dbg.h
+$(BUILD)/dbg-macro/dbg.h: | $(BUILD)
+	@$(call GIT_CLONE,$(BUILD),"sharkdp","dbg-macro")
 endif
 
 ###################################################
