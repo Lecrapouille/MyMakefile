@@ -1,0 +1,72 @@
+name: Non regression CI
+on:
+  workflow_dispatch:
+    branches:
+      - master
+  push:
+    branches:
+      - master
+  pull_request:
+    branches:
+      - master
+
+jobs:
+#  compilation_msys:
+#    name: Compilation on on Msys2
+#    runs-on: windows-latest
+#    defaults:
+#      run:
+#        shell: msys2 {0}
+#    steps:
+#      - name: Checkout
+#        uses: actions/checkout@v3
+#        with:
+#          submodules: true
+#      - name: Install Msys2 packages
+#        uses: msys2/setup-msys2@v2
+#        with:
+#          msystem: MINGW64
+#          install: mingw-w64-x86_64-gcc mingw-w64-x86_64-bc mingw-w64-x86_64-pkg-config
+
+  compilation_linux:
+    name: Compilation on on Linux
+    runs-on: ubuntu-20.04
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+        with:
+          submodules: true
+      - name: Install packages
+        run: |
+          sudo apt-get update
+          sudo apt-get install bc pkg-config lcov
+      - name: Compile Example 00
+        run: |
+          (cd examples/00 && make -j`nproc --all` && ./build/HelloWorld00)
+      - name: Compile Example 01
+        run: |
+          (cd examples/01 && make -j`nproc --all` && ./build/HelloWorld01)
+      - name: Compile Example 02
+        run: |
+          (cd examples/02 && make -j`nproc --all` && ./build/HelloWorld02)
+
+  compilation_macos:
+    name: Compilation on on MacOS X
+    runs-on: macos-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+        with:
+          submodules: true
+      - name: Install packages
+        run: |
+          brew install bc pkg-config lcov
+      - name: Compile Example 00
+        run: |
+          (cd examples/00 && make -j`sysctl -n hw.logicalcpu` && ./build/HelloWorld00)
+      - name: Compile Example 01
+        run: |
+          (cd examples/01 && make -j`sysctl -n hw.logicalcpu` && ./build/HelloWorld01)
+      - name: Compile Example 02
+        run: |
+          (cd examples/02 && make -j`sysctl -n hw.logicalcpu` && ./build/HelloWorld02)

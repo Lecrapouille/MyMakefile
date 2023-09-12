@@ -2,7 +2,7 @@
 # Project definition
 #
 PROJECT = TutorialMyMakefile
-TARGET = HelloWorld
+TARGET = HelloWorld02
 DESCRIPTION = Tutorial 02 for MyMakefile: Hello libraries
 BUILD_TYPE = release
 
