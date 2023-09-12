@@ -26,37 +26,37 @@
 ###################################################
 # Define colors
 #
-CLR_DEFAULT := $(shell $(ECHO_COLOR) '\033[00m')
-CLR_RED     := $(shell $(ECHO_COLOR) '\033[31m')
-CLR_GREEN   := $(shell $(ECHO_COLOR) '\033[32m')
-CLR_YELLOW  := $(shell $(ECHO_COLOR) '\033[33m')
-CLR_BLUE    := $(shell $(ECHO_COLOR) '\033[34m')
-CLR_PURPLE  := $(shell $(ECHO_COLOR) '\033[35m')
-CLR_CYAN    := $(shell $(ECHO_COLOR) '\033[36m')
+CLR_DEFAULT := \033[00m
+CLR_RED     := \033[31m
+CLR_GREEN   := \033[32m
+CLR_YELLOW  := \033[33m
+CLR_BLUE    := \033[34m
+CLR_PURPLE  := \033[35m
+CLR_CYAN    := \033[36m
 
 ###################################################
 # Progress bar
 #
 OBJS_COUNT = $(words $(OBJS) $(LIB_OBJS) $(THIRDPART_OBJS))
 CUR_PERCENT = 0
-INC_PERCENT = $(shell echo "100 / $(OBJS_COUNT)" | bc -l)
+INC_PERCENT = $(shell $(ECHO_COLOR) "100 / $(OBJS_COUNT)" | bc -l)
 define UPDATE_PERCENT
-$(eval CUR_PERCENT=$(shell echo "$(CUR_PERCENT) + $(INC_PERCENT)" | bc -l))
-$(eval DISP_PERCENT=$(shell echo "($(CUR_PERCENT) + 0.5) / 1" | bc))
+$(eval CUR_PERCENT=$(shell $(ECHO_COLOR) "$(CUR_PERCENT) + $(INC_PERCENT)" | bc -l))
+$(eval DISP_PERCENT=$(shell $(ECHO_COLOR) "($(CUR_PERCENT) + 0.5) / 1" | bc))
 endef
 
 ###################################################
 # Display predefined colorful messages
 #
 print-simple = \
-        echo "$(CLR_PURPLE)*** $1:$(CLR_DEFAULT) $(CLR_CYAN)$2$(CLR_DEFAULT)"
+        $(ECHO_COLOR) "$(CLR_PURPLE)*** $1:$(CLR_DEFAULT) $(CLR_CYAN)$2$(CLR_DEFAULT)"
 print-from = \
-        echo "$(CLR_PURPLE)*** $1:$(CLR_DEFAULT) $(CLR_CYAN)$2$(CLR_DEFAULT) <= $(CLR_YELLOW)$3$(CLR_DEFAULT)"
+        $(ECHO_COLOR) "$(CLR_PURPLE)*** $1:$(CLR_DEFAULT) $(CLR_CYAN)$2$(CLR_DEFAULT) <= $(CLR_YELLOW)$3$(CLR_DEFAULT)"
 print-to = \
-        echo "$(CLR_PURPLE)*** $1:$(CLR_DEFAULT) $(CLR_CYAN)$2$(CLR_DEFAULT) => $(CLR_YELLOW)$3$(CLR_DEFAULT) $4"
+        $(ECHO_COLOR) "$(CLR_PURPLE)*** $1:$(CLR_DEFAULT) $(CLR_CYAN)$2$(CLR_DEFAULT) => $(CLR_YELLOW)$3$(CLR_DEFAULT) $4"
 print-progress = \
 	$(call UPDATE_PERCENT) \
-        echo "$(CLR_PURPLE)$1 [$(DISP_PERCENT)%]$(CLR_DEFAULT) $(CLR_CYAN)$2$(CLR_DEFAULT) <= $(CLR_YELLOW)$3$(CLR_DEFAULT)"
+        $(ECHO_COLOR) "$(CLR_PURPLE)$1 [$(DISP_PERCENT)%]$(CLR_DEFAULT) $(CLR_CYAN)$2$(CLR_DEFAULT) <= $(CLR_YELLOW)$3$(CLR_DEFAULT)"
 
 ###################################################
 # Change the verbosity of the makefile.
