@@ -83,8 +83,8 @@ DESTDIR ?=
 PREFIX ?= /usr
 
 ###################################################
-# Select the C++ standard (default is --std=c++11).
-STANDARD ?= --std=c++11
+# Select the C++ standard (default is --std=c++14).
+STANDARD ?= --std=c++14
 
 ###################################################
 # Select either a C++ project or a C project (default is .cpp).
