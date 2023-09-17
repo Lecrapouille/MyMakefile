@@ -201,20 +201,11 @@ gprof: $(TARGET)
 .PHONY: coverage
 coverage: $(TARGET)
 	@$(call print-to,"Running","$(TARGET)","$(COVERAGE_RAPPORT)","")
-ifeq ($(TRAVIS),true)
 	@./$(BUILD)/$(TARGET)
-else
-	@./$(BUILD)/$(TARGET) || echo ""
-endif
-	@$(call print-to,"Documentation","$(COVERAGE_RAPPORT)","$(COVERAGE_DIR)","")
-	@lcov --quiet --directory .. -c -o $(COVERAGE_RAPPORT)
-	@lcov --quiet --remove $(COVERAGE_RAPPORT) '/usr*' 'external/*' 'tests/*' -o $(COVERAGE_RAPPORT)
-ifeq ($(TRAVIS),true)
-	@coveralls-lcov --source-encoding=ISO-8859-1 $(COVERAGE_RAPPORT)
-else
-	@genhtml --quiet -o $(COVERAGE_DIR) -t "$(TARGET)" $(COVERAGE_RAPPORT)
-	@xdg-open $(COVERAGE_DIR)/index.html >/dev/null
-endif
+	@$(call print-to,"Coverage report","$(TARGET)","$(COVERAGE_RAPPORT)","")
+	@mkdir -p $(COVERAGE_DIR)
+	@gcovr -r $(P) --html-details $(COVERAGE_RAPPORT) -e '/usr/*' -e $(THIRDPART)
+	@xdg-open $(COVERAGE_RAPPORT) >/dev/null
 
 ###################################################
 # For using this service, you have to download and install

@@ -90,11 +90,7 @@ endif
 # Path where to store the generated coverage docs
 #
 COVERAGE_DIR := $(P)/$(GENDOC)/coverage
-
-###################################################
-# Path where to store lcov rapport
-#
-COVERAGE_RAPPORT := $(BUILD)/rapport.info
+COVERAGE_RAPPORT := $(COVERAGE_DIR)/coverage.html
 
 ###################################################
 # Store files dependencies in *.d files: when a file
