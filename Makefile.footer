@@ -135,8 +135,8 @@ download-external-libs:
 	@if [ -e "$(THIRDPART)/download-external-libs.sh" ] ; then \
 	(cd $(THIRDPART) && ./download-external-libs.sh "$(ARCHI)" "$(TARGET)"); \
 	else \
-	echo "  $(CLR_YELLOW):( $(CLR_CYAN)Missing file $(THIRDPART)/download-external-libs.sh $(CLR_YELLOW):("; \
-	echo "  $(CLR_YELLOW):) $(CLR_CYAN)Or no external libs to download ! $(CLR_YELLOW):)$(CLR_DEFAULT)"; \
+	$(ECHO_COLOR) "  $(CLR_YELLOW):( $(CLR_CYAN)Missing file $(THIRDPART)/download-external-libs.sh $(CLR_YELLOW):("; \
+	$(ECHO_COLOR) "  $(CLR_YELLOW):) $(CLR_CYAN)Or no external libs to download ! $(CLR_YELLOW):)$(CLR_DEFAULT)"; \
 	fi
 
 ###################################################
@@ -147,8 +147,8 @@ compile-external-libs:
 	@if [ -e "$(THIRDPART)/compile-external-libs.sh" ] ; then \
 	(cd $(THIRDPART) && ./compile-external-libs.sh "$(ARCHI)" "$(TARGET)" "$(CC)" "$(CXX)" "$(EMSCRIPTEN)"); \
 	else \
-	echo "  $(CLR_YELLOW):( $(CLR_CYAN)Missing file $(THIRDPART)/compile-external-libs.sh $(CLR_YELLOW):("; \
-	echo "  $(CLR_YELLOW):) $(CLR_CYAN)Or no external libs to compile ! $(CLR_YELLOW):)$(CLR_DEFAULT)"; \
+	$(ECHO_COLOR) "  $(CLR_YELLOW):( $(CLR_CYAN)Missing file $(THIRDPART)/compile-external-libs.sh $(CLR_YELLOW):("; \
+	$(ECHO_COLOR) "  $(CLR_YELLOW):) $(CLR_CYAN)Or no external libs to compile ! $(CLR_YELLOW):)$(CLR_DEFAULT)"; \
 	fi
 
 ###################################################
@@ -156,7 +156,7 @@ compile-external-libs:
 #
 .PHONY: run
 run:
-	@./$(BUILD)/$(TARGET); echo "  \033[33merror code: $$?\033[00m"
+	@./$(BUILD)/$(TARGET); $(ECHO_COLOR) "  \033[33merror code: $$?\033[00m"
 
 ###################################################
 # Compile, launch unit tests and generate the code coverage html report.
