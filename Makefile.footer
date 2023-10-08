@@ -33,14 +33,14 @@ ifeq ($(ARCHI),Darwin)
 backward.cpp: | $(BUILD)
 else
 $(BUILD)/backward-cpp/backward.cpp: | $(BUILD)
-	@$(call GIT_CLONE,$(BUILD),"bombela","backward-cpp")
+	@$(call GIT_CLONE_NO_RECURSE,$(BUILD),"bombela","backward-cpp")
 endif
 endif
 
 ifeq ($(USE_DEBUG_MACRO),1)
 $(TARGET): $(BUILD)/dbg-macro/dbg.h
 $(BUILD)/dbg-macro/dbg.h: | $(BUILD)
-	@$(call GIT_CLONE,$(BUILD),"sharkdp","dbg-macro")
+	@$(call GIT_CLONE_NO_RECURSE,$(BUILD),"sharkdp","dbg-macro")
 endif
 
 ###################################################
