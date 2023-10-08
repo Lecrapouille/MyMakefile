@@ -12,7 +12,7 @@ on:
 
 jobs:
 #  compilation_msys:
-#    name: Compilation on on Msys2
+#    name: Compilation on Msys2
 #    runs-on: windows-latest
 #    defaults:
 #      run:
@@ -29,7 +29,7 @@ jobs:
 #          install: mingw-w64-x86_64-gcc mingw-w64-x86_64-bc mingw-w64-x86_64-pkg-config
 
   compilation_linux:
-    name: Compilation on on Linux
+    name: Compilation on Linux
     runs-on: ubuntu-20.04
     steps:
       - name: Checkout
@@ -42,16 +42,43 @@ jobs:
           sudo apt-get install bc pkg-config lcov
       - name: Compile Example 00
         run: |
+          (cd examples/00 && make -j`nproc --all` && make run)
           (cd examples/00 && make -j`nproc --all` && ./build/HelloWorld00)
       - name: Compile Example 01
         run: |
+          (cd examples/01 && make -j`nproc --all` && make run)
           (cd examples/01 && make -j`nproc --all` && ./build/HelloWorld01)
       - name: Compile Example 02
         run: |
+          (cd examples/02 && make -j`nproc --all` && make run)
           (cd examples/02 && make -j`nproc --all` && ./build/HelloWorld02)
 
+  compilation_emscripten:
+    name: Compilation on Emscripten
+    runs-on: ubuntu-20.04
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+        with:
+          submodules: true
+      - name: Install packages
+        run: |
+          sudo apt-get update
+          sudo apt-get install bc pkg-config lcov
+      - name: Install Emscripten
+        uses: mymindstorm/setup-emsdk@v11
+      - name: Compile Example 00
+        run: |
+          (cd examples/00 && emmake make -j`nproc --all` && echo "emmake make run")
+      - name: Compile Example 01
+        run: |
+          (cd examples/01 && emmake make -j`nproc --all` && echo "emmake make run")
+      - name: Compile Example 02
+        run: |
+          (cd examples/02 && emmake make -j`nproc --all` && echo "emmake make run")
+
   compilation_macos:
-    name: Compilation on on MacOS X
+    name: Compilation on MacOS X
     runs-on: macos-latest
     steps:
       - name: Checkout
@@ -63,10 +90,13 @@ jobs:
           brew install bc pkg-config lcov
       - name: Compile Example 00
         run: |
+          (cd examples/00 && make -j`sysctl -n hw.logicalcpu` && make run)
           (cd examples/00 && make -j`sysctl -n hw.logicalcpu` && ./build/HelloWorld00)
       - name: Compile Example 01
         run: |
+          (cd examples/01 && make -j`sysctl -n hw.logicalcpu` && make run)
           (cd examples/01 && make -j`sysctl -n hw.logicalcpu` && ./build/HelloWorld01)
       - name: Compile Example 02
         run: |
+          (cd examples/02 && make -j`sysctl -n hw.logicalcpu` && make run)
           (cd examples/02 && make -j`sysctl -n hw.logicalcpu` && ./build/HelloWorld02)
