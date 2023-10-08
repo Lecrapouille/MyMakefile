@@ -51,26 +51,23 @@ $(TARGET): $(TARGET)$(EXT)
 endif
 
 $(TARGET)$(EXT): $(OBJS) $(THIRDPART_OBJS) $(THIRDPART_LIBS)
-ifeq ($(OBJS),)
-	echo "OBJS is empty and you requested to created a target" && exit 1
-endif
 	@$(call print-to,"Linking","$(TARGET)","$(BUILD)/$@","$(VERSION)")
-	$(Q)cd $(BUILD) && $(COMPILER) $(LDFLAGS) $(OBJS) $(THIRDPART_OBJS) -o $(TARGET) $(THIRDPART_LIBS) $(NOT_PKG_LIBS) $(PKGCFG_LIBS) $(LINKER_FLAGS)
-# Strip command: http://reverse.lostrealm.com/protect/strip.html
-ifneq ($(STRIP),)
-	@$(call print-to,"Stripping","$(TARGET)","$(BUILD)/$@","$(VERSION)")
-	$(Q)cd $(BUILD) && $(STRIP) $(TARGET)
+ifeq ($(OBJS),)
+	$(ECHO_COLOR) "$(CLR_RED)You are compiling an application but OBJS is empty$(CLR_DEFAULT)" && exit 1
 endif
-# Create MacOS bundle application (we do not check if we are on Darwin for allowing cross compilation)
+ifeq ($(ARCHI),Darwin)
+	$(Q)cd $(BUILD) && $(COMPILER) $(LDFLAGS) $(OBJS) $(THIRDPART_OBJS) -o $(TARGET) $(THIRDPART_LIBS) $(NOT_PKG_LIBS) $(PKGCFG_LIBS) $(LINKER_FLAGS)
 ifneq ($(BUILD_MACOS_APP_BUNDLE),)
 	$(Q)$(call CREATE_MACOS_APP_BUNDLE)
 endif
-# Add the extension to the binary name (except for MacOS since its a folder)
-ifneq ($(EXT),)
-ifneq ($(ARCHI),Darwin)
-	$(Q)cd $(BUILD) && cp $(TARGET) $(TARGET)$(EXT)
+else
+	$(Q)cd $(BUILD) && $(COMPILER) $(LDFLAGS) $(OBJS) $(THIRDPART_OBJS) -o $(TARGET)$(EXT) $(THIRDPART_LIBS) $(NOT_PKG_LIBS) $(PKGCFG_LIBS) $(LINKER_FLAGS)
+ifneq ($(STRIP),)
+	@$(call print-to,"Stripping","$(TARGET)","$(BUILD)/$@","$(VERSION)")
+	$(Q)cd $(BUILD) && $(STRIP) $(TARGET)$(EXT)
 endif
 endif
+
 
 ###################################################
 # Compile C++ sources. Note: abspath is needed for gcov
