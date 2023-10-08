@@ -52,6 +52,7 @@ cat <<EOF >$2/project_info.hpp
 #ifndef ${GUARD}
 #  define ${GUARD}
 
+#  include <cstdint>
 #  include <string>
 
 namespace project
