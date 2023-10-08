@@ -19,6 +19,12 @@
 ### The last important point to avoid polution, better to compile thirdparts as
 ### static library rather than shared lib to avoid telling your system where to
 ### find them when you'll start your application.
+###
+### Input of this script:
+### $1: architecture (i.e. Linux, Darwin, Windows, Emscripten)
+### $2: target (your application name)
+### $3: CC (C compiler)
+### $4: CXX (C++ compiler)
 ###############################################################################
 
 function fatal
@@ -39,11 +45,8 @@ if [ "$TARGET" == "" ]; then
     fatal "Define the binary target as $2"
 fi
 
-### Compile with Emscripten ?
-USE_EMSCRIPTEN="$5"
-
 ### Compilation flags if not using Emscripten
-if [[ -z "$USE_EMSCRIPTEN" ]]; then
+if [ "$ARCHI" != "Emscripten" ]; then
     CC="$3"
     CXX="$4"
     if [ "$3" == "" -o "$4" == "" ]; then
@@ -55,7 +58,7 @@ fi
 
 ### Number of CPU cores
 NPROC=
-if [[ "$ARCHI" == "Darwin" ]]; then
+if [ "$ARCHI" == "Darwin" ]; then
     NPROC=`sysctl -n hw.logicalcpu`
 else
     NPROC=`nproc`
@@ -72,27 +75,27 @@ function print-compile
 
 function call-configure
 {
-    if [[ -z "$USE_EMSCRIPTEN" ]]; then
-        ./configure $*
-    else
+    if [ "$ARCHI" == "Emscripten" ]; then
         emconfigure ./configure $*
-    fi
-}
-
-function call-make
-{
-    if [[ -z "$USE_EMSCRIPTEN" ]]; then
-        VERBOSE=1 make -j$NPROC $*
     else
-        VERBOSE=1 emmake make -j$NPROC $*
+        ./configure $*
     fi
 }
 
 function call-cmake
 {
-    if [[ -z "$USE_EMSCRIPTEN" ]]; then
-        cmake $*
-    else
+    if [ "$ARCHI" == "Emscripten" ]; then
         emcmake cmake $*
+    else
+        cmake $*
+    fi
+}
+
+function call-make
+{
+    if [ "$ARCHI" == "Emscripten" ]; then
+        VERBOSE=1 emmake make -j$NPROC $*
+    else
+        VERBOSE=1 make -j$NPROC $*
     fi
 }

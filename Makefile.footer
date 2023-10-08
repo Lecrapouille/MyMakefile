@@ -145,7 +145,7 @@ download-external-libs:
 compile-external-libs:
 	@$(call print-to,"Compiling third parts","$(TARGET)","$(THIRDPART)")
 	@if [ -e "$(THIRDPART)/compile-external-libs.sh" ] ; then \
-	(cd $(THIRDPART) && ./compile-external-libs.sh "$(ARCHI)" "$(TARGET)" "$(CC)" "$(CXX)" "$(EMSCRIPTEN)"); \
+	(cd $(THIRDPART) && ./compile-external-libs.sh "$(ARCHI)" "$(TARGET)" "$(CC)" "$(CXX)"); \
 	else \
 	$(ECHO_COLOR) "  $(CLR_YELLOW):( $(CLR_CYAN)Missing file $(THIRDPART)/compile-external-libs.sh $(CLR_YELLOW):("; \
 	$(ECHO_COLOR) "  $(CLR_YELLOW):) $(CLR_CYAN)Or no external libs to compile ! $(CLR_YELLOW):)$(CLR_DEFAULT)"; \
@@ -155,8 +155,8 @@ compile-external-libs:
 # Run the binary
 #
 .PHONY: run
-run:
-	@./$(BUILD)/$(TARGET); $(ECHO_COLOR) "  \033[33merror code: $$?\033[00m"
+run: $(TARGET)$(EXT)
+	@$(RUN) ./$(BUILD)/$(TARGET)$(EXT); $(ECHO_COLOR) "  $(CLR_RED)merror code: $$?$(CLR_DEFAULT)"
 
 ###################################################
 # Compile, launch unit tests and generate the code coverage html report.

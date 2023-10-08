@@ -46,6 +46,14 @@ ARCHI := Windows
 endif
 
 ###################################################
+# Emscripten
+#
+ifneq ($(EMSCRIPTEN),)
+$(warning Compiling with emscripten)
+ARCHI := Emscripten
+endif
+
+###################################################
 # Macros to override through Makefile command lines
 #
 
@@ -68,7 +76,7 @@ BUILD ?= build
 
 ###################################################
 # Define the directory holding third part libraries that shall be compiled (default: $(P)/external).
-THIRDPART ?= $(P)/external
+THIRDPART ?= $(abspath $(P)/external)
 
 ###################################################
 # Define the directory holding generated documentation (default: doc). Do not add $(P) to allow several folders
@@ -149,7 +157,7 @@ TMPDIR ?= /tmp
 ###################################################
 # Application extension
 #
-ifneq ($(EMSCRIPTEN),)
+ifeq ($(ARCHI),Emscripten)
 EXT := .html
 else ifeq ($(ARCHI),Darwin)
 EXT := .app
@@ -158,20 +166,22 @@ EXT :=
 else ifeq ($(ARCHI),Windows)
 EXT := .exe
 else
-$(error Unknown binary file extension for this architecture)
+$(error Unknown binary file extension for architecture '$(ARCHI)')
 endif
 
 ###################################################
 # Shared libraries file extension
 #
-ifeq ($(ARCHI),Darwin)
+ifeq ($(ARCHI),Emscripten)
+SO := dylib
+else ifeq ($(ARCHI),Darwin)
 SO := dylib
 else ifeq ($(ARCHI),Linux)
 SO := so
 else ifeq ($(ARCHI),Windows)
 SO := dll
 else
-$(error Unknown shared library file extension for this architecture)
+$(error Unknown shared library file extension for architecture $(ARCHI))
 endif
 DEFINES += -DDYLIB_EXT=\".$(SO)\"
 

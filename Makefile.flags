@@ -255,9 +255,13 @@ $(warning Warning: Cannot use backward-cpp lib for Windows. USE_BACKWARD will be
 USE_BACKWARD = 0
 endif
 
-# FIXME buggy with MacOS X
 ifeq ($(ARCHI),Darwin)
 $(warning Warning: Cannot use backward-cpp lib for MacOS X. USE_BACKWARD will be disabled)
+USE_BACKWARD = 0
+endif
+
+ifeq ($(ARCHI),Emscripten)
+$(warning Warning: Cannot use backward-cpp lib for Emscripten. USE_BACKWARD will be disabled)
 USE_BACKWARD = 0
 endif
 endif
@@ -301,14 +305,15 @@ INCLUDES := -I$(BUILD) $(INCLUDES)
 
 ###################################################
 #
+#
 CXXFLAGS += $(DLL_CXXFLAGS)
 CCFLAGS += $(DLL_CXXFLAGS)
 
 ###################################################
-# Emscripten
+# Configure for Emscripten
 #
 ifneq ($(EMSCRIPTEN),)
-$(warning Compiling with emscripten)
+RUN := emrun
 endif
 
 ###################################################

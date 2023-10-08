@@ -146,13 +146,18 @@ include $(M)/Makefile.footer
 
 #### Emscripten
 
-To compile your project with [Emscripten](https://emscripten.org)
+To compile your project with [Emscripten](https://emscripten.org) add `emmake` before the `make` command. Where
+`emmake` is a script offered by Emscripten that calls your makefile but set before all environement variables
+for you. For example:
 
 ```
-emmake make -j8
+make download-external-libs
+emmake make compile-external-libs
+V=1 emmake make -j8
+emmake make run
 ```
 
-`emmake` is a script offered by Emscripten that calls your makefile but set before all environement variables for you.
+The `emmake make run` will call `emrun` calling `python -m http.server 8080` and `localhost:8080/project_name.html`.
 
 #### Clang vs. GCC
 
