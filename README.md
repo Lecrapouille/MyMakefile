@@ -144,12 +144,13 @@ include $(M)/Makefile.footer
 - To force compiling in release mode: `make BUILD_TYPE=release CXX=clang++-6.0 -j8`
 - To force compiling in debug mode: `make BUILD_TYPE=debug CXX=clang++-6.0 -j8`
 
-#### Emscripten
+#### Emscripten and Emscripten-exa
 
-To compile your project with [Emscripten](https://emscripten.org) add `emmake` before the `make` command. Where
-`emmake` is a script offered by Emscripten that calls your makefile but set before all environement variables
-for you. For example:
+To compile your project with [Emscripten](https://emscripten.org) or with [Emscripten-exa](https://github.com/exaequos),
+add `emmake` before the `make` command. Where `emmake` is a script offered by Emscripten that calls your makefile but set
+before all environement variables for you.
 
+- For Emscripten:
 ```
 make download-external-libs
 emmake make compile-external-libs
@@ -158,6 +159,11 @@ emmake make run
 ```
 
 The `emmake make run` will call `emrun` calling `python -m http.server 8080` and `localhost:8080/project_name.html`.
+**Note:** small issue the whole project is compiled back everytime.
+
+- For Emscripten-exa:
+
+type the same command than for Emscripten but inside this [Docker](https://github.com/baudaux/docker-exa).
 
 #### Clang vs. GCC
 

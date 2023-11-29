@@ -54,6 +54,14 @@ ARCHI := Emscripten
 endif
 
 ###################################################
+# Exaequos https://github.com/exaequos
+#
+ifneq ($(EXAEQUOS),)
+$(warning Compiling with emscripten-exa for ExaequOS)
+ARCHI := ExaequOS
+endif
+
+###################################################
 # Macros to override through Makefile command lines
 #
 
