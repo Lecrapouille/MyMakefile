@@ -1,34 +1,38 @@
 # MyMakefile
 
-[MyMakefile](https://github.com/Lecrapouille/MyMakefile) is a central build system based on GNU Makefile for compiling my GitHub C++ projects for Linux, Mac OS X and Windows (through Msys2) architecture. `MyMakefile` allows me to reduce the size of my Makefiles by avoiding duplicating the same boring code over all my projects and therefore to update all my Makefiles in once. In the case, for your personal project, you are not interested by CMake or bored to Makefile syntax, you may be interested in this project. Two choices:
+[MyMakefile](https://github.com/Lecrapouille/MyMakefile) is a central build system based on GNU Makefile for compiling my GitHub C++ projects for Linux, Mac OS X (and certainly for Windows) architectures. `MyMakefile` reduces the number of lines to type for my Makefiles by avoiding duplicating the same boring code over all my projects and therefore to make consistent all my Makefiles. In the case, for your personal projects, you are not bored by CMake syntax or not interested with deadling with Makefile rules, you may be interested in this project. Two choices:
 * simply copy/paste this repo inside your project.
-* or better, use it as a git submodule to follow my evolutions.
+* or better, use it as a git submodule to track my evolutions.
 
 Here, the list of my personal projects using this repo as a git submodule:
 
+* https://github.com/Lecrapouille/TimedPetriNetEditor
+* https://github.com/Lecrapouille/Highway
+* https://github.com/Lecrapouille/OpenGLCppWrapper
+* https://github.com/Lecrapouille/OpenGlassBox
 * https://github.com/Lecrapouille/SimTaDyn
 * https://github.com/Lecrapouille/SimForth
-* https://github.com/Lecrapouille/OpenGLCppWrapper
 * https://github.com/Lecrapouille/ChessNeuNeu
-* https://github.com/Lecrapouille/OpenGlassBox
+* https://github.com/Lecrapouille/zipper
+* https://github.com/Lecrapouille/LinkAgainstMyLibs
 
-## Why this project?
+## Why do I care using this project?
 
-Or maybe: why not simply using CMake instead of this project? CMake is, after all, a Makefile generator and is architecture agnostic! The answer would be yes for big projects but I personally never liked CMake for generating makefiles containing more lines than the equivalent hand-made Makefile, especially for small projects such as mines.
+Or maybe: "why not simply using CMake instead of this project?" CMake is, after all, a Makefile generator and is architecture agnostic! The answer would be "maybe yes for big projects", but I personally never liked CMake for its syntax and for generating makefiles containing more lines than an equivalent Makefile, especially for small projects such as mines.
 
 **Similar project:**
 
-- https://github.com/Parrot-Developers/alchemy This project is a portage of Android Makefiles `Android.mk` and can manage several targets in a single file but this project is not fully 100% GNU Makefile.
+- MyMakefile is inspired by this build system https://github.com/Parrot-Developers/alchemy that I used in my previous firm. This project is a portage of Android Makefiles `Android.mk` and can manage several targets in a single file but this project is not fully 100% Makefile. MyMakefile is 90% Makefile and 10% bash scripts and one of its biggest drawback is that it cannot manage two targets with the same Makefile file.
 
 ## MyMakefile Features
 
 MyMakefile allows you to:
 
 * Define a target as a binary and/or a static/shared library for Linux, OS X, Windows.
-* Write Makefile without having to write rules for compiling files. You can add your own personal Makefile rules anyway.
-* In the case of a library, a [pkg-config](https://en.wikipedia.org/wiki/Pkg-config) file is automatically created and installed.
+* Write few lines Makefile by hidding the necessity to write rules for compiling files. You can add your own personal Makefile rules anyway.
+* In the case of your target is a library, a [pkg-config](https://en.wikipedia.org/wiki/Pkg-config) file is automatically created.
 * Define macros for installing your program, its resources, docs, libraries, include files, pkg-config inside your OS in the case you want a `make install` rule.
-* Define by default plenty of compilation flags for GCC and clang compilers. Some are made for hardening your binary.
+* Define by default plenty of compilation flags for GCC and clang compilers. Some are made for hardening your binary or striping your release binaries.
 * Enable/disable the good optimization flags (-Ox) as well as enabling/disabling asserts (NDEBUG) depending on if your project is in debug or release mode. If you do not like my default compilation/link flags, you can replace them by yours. If you do not like the default compiler, you can tell your own.
 * Offer rules such as gcov (code coverage report), Coverity Scan (static analyzer of code), doxgen (documentation generator), asan (AddressSanitizer), check for a hardened target.
 * Generate a Doxygen file with project parameters (such as project name, version ...). The generated HTML follows the theme used by the library SFML which is more proper than the default Doxygen theme.
@@ -41,14 +45,13 @@ with the percentage of compiled files (in the way of the CMake progress bar).
 * Generate .d files inside a build directory holding dependencies files (when one header file is modified, dependent source files are also compiled).
 
 **Current constraint:**
-* Currently, you have to define a single target by Makefile file. This can be easily bypassed as shown in examples given in this document by adding a makefile in a separate folder (source, tests, ...). A WIP solution which both fix and reduce the code is in gestation in the git branch dev-multitargets.
-* You cannot build a binary and libraries because of the previous point: multi-targets is not managed.
+* Currently, you have to define a single target by Makefile file (for example a library and its demo application). This can be easily bypassed as shown in examples given in this document by adding a makefile in a separate folder (source, lib, demo, tests, ...). A WIP solution which both fix and reduce the code is in gestation in the git branch dev-multitargets.
 
 **Prerequisites:**
 
 You probably have to install:
-- the basic calculator `bc` tool: `apt-get install bc` needed for my progress bar. I guessed it was a bash builtin but it seems not!
-- if needed, tools that can be called by MyMakefile: gcov, doxygen, hardening-check: `apt-get install gcovr doxygen devscripts`
+- the basic calculator `bc` tool: `apt-get install bc` needed for the progress bar (if not present the compilation does not fail).
+- if needed, install tools that can be called by MyMakefile: gcov, doxygen, hardening-check: `apt-get install gcovr doxygen devscripts`.
 
 ## Utility rules
 
@@ -73,7 +76,7 @@ You have to call `make download-external-libs` before. This command is also used
 
 ## MyMakefile examples
 
-Examples are given in the `examples/` folder. See my personal projects for more concrete examples.
+Examples are given in the `examples/` folder. Else, see my personal projects for more concrete examples.
 
 ### Hello-World MyMakefile example
 
@@ -81,11 +84,11 @@ Here is a minimal C++ project using MyMakefile:
 ```
 helloworld/
 ├── .makefile/
-├── Makefile
+├── VERSION.txt
 ├── src/
 │   ├── main.cpp
 │   └── main.hpp
-└── VERSION.txt
+└── Makefile
 ```
 
 - `.makefile/` is simply this MyMakefile repo cloned with the following command `git clone git@github.com:Lecrapouille/MyMakefile.git --depth=1 .makefile`.
@@ -93,15 +96,18 @@ A better solution would to use MyMakefile.git as sub-module for your pincipal pr
 I personally add the `.` to hide it in my workspace but this is not mandatory.
 
 - `VERSION.txt` is an ASCII file containing a version number such as `0.1` or `1.0.3`. It seems useless but it has a great role when installing
-your project in your operating system: you can install different versions of your project without they interfering each others. If not present a default file is created.
-Note: because of prossible conflict with C++ VERSION file when using `-I` since 2019 our VERSION file shall have a .txt extension.
+your project in your operating system: you can install different versions of your project without interfering each others. If not present a default file is created.
+*Note: since 2019, our VERSION file shall have a .txt extension, because of possible conflict with C++ VERSION file when using `-I.` with Mac OS X.*
+
 - `src/` is the folder containing your code source (you can use your own name) containing, for this example, a simple hello word named `main.cpp`. The name is not important as well: you can several sub-folders and source files.
-- `Makefile` contains, for this example, the following code (explanations come just after):
+
+- `Makefile` contains, for this example, the following code (explanations come just after) compile c++ files inside the src folder:
 
 ```
 PROJECT = CheckMyMakefile
 TARGET = Test
 DESCRIPTION = Project template testing MyMakefile
+STANDARD = --std=c++14
 BUILD_TYPE = release
 
 P := .
@@ -109,7 +115,6 @@ M := $(P)/.makefile
 include $(M)/Makefile.header
 
 OBJS += main.o
-
 DEFINES += -DFOO -UBAR
 VPATH += src
 INCLUDES += -Isrc
@@ -124,15 +129,16 @@ include $(M)/Makefile.footer
 * `P` and `M` are mandatory. `P` indicates the relative path of the folder holding the root project. `M` indicates the location of the folder holding this `MyMakefile` project.
 * You do not have to write compilation rules or rules such as `clean:` or `doc:` ... rules they are already defined in Makefile.footer. Generated documentation is placed on `$(P)`
 * `PROJECT` is the main project name. A project can have several targets (ie: main binary, unit tests ...).
-* `TARGET` is the name for your compiled binary.
+* `TARGET` is the name for your compiled binary by this Makefile.
 * `DESCRIPTION` explain your target in few words (optional but used for generated pkg-config files when you compile for libraries).
 * `BUILD_TYPE = release` to compile your project without debug elements (else replace it by `̀BUILD_TYPE = debug`).
+* `STANDARD = --std=c++14` tell which C++ standard you want (C++14 by default if not set).
 * `OBJS` contains the list of all .o files (separated by spaces) for compiling `TARGET`. Please just give their base names and not their source path.
-* `LIB_OBJS` contains the list of all .o files (separated by spaces) for compiling `TARGET`. Please just give their base names and not their source path.
 * Use `VPATH` (separated by spaces) to define folders for finding your source files. In our example with have a single folder holding source code: `src`.
 * Use `INCLUDES` (prepend by `-I` and separated by spaces) to define folders for finding your header files. In our example with have a single folder holding source code: `src`.
 * Use `DEFINES` for defining your personal C/C++ macros (if needed).
-* `all: $(TARGET)` for building your project. If you want to add new rules add them before or after `include $(M)/Makefile.footer`.
+* `all: $(TARGET)` for building your project. Notice it has empty rule.
+* If you want to add new rules add them before `include $(M)/Makefile.footer`.
 
 #### Compilation
 
@@ -151,6 +157,7 @@ add `emmake` before the `make` command. Where `emmake` is a script offered by Em
 before all environement variables for you.
 
 - For Emscripten:
+
 ```
 make download-external-libs
 emmake make compile-external-libs
@@ -161,9 +168,9 @@ emmake make run
 The `emmake make run` will call `emrun` calling `python -m http.server 8080` and `localhost:8080/project_name.html`.
 **Note:** small issue the whole project is compiled back everytime.
 
-- For Emscripten-exa:
+- For Emscripten-exa (experimental):
 
-type the same command than for Emscripten but inside this [Docker](https://github.com/baudaux/docker-exa).
+Type the same command than for Emscripten but inside this [Docker](https://github.com/baudaux/docker-exa).
 
 #### Clang vs. GCC
 
@@ -173,9 +180,10 @@ By default gcc is called (because of `$CXX`). To compile with clang++.
 make CXX=clang++-11 -j8
 ```
 
-### Hello-World MyMakefile with Unit-Tests example
+### Hello-World MyMakefile with unit-tests example
 
 Let suppose you want to add a unit test folder for your project. Just do this:
+
 ```
 foo/
 ├── .makefile/
@@ -193,10 +201,12 @@ foo/
 └── VERSION.txt
 ```
 
-- A `Makefile.common` can be added for holding shared information between `./Makefile` and `test/Makefile` (such as `PROJECT`, `VPATH`, `INCLUDES`, `DEFINES`, `THIRDPART_LIBS`, `LINKER_FLAGS`) and including `$(M)/Makefile.header`. This `Makefile.common` file is not mandatory.
+- An optional `Makefile.common` can be added. It is used for factorizing information between `Makefile` and `test/Makefile` (such as `PROJECT`, `VPATH`, `INCLUDES`, `DEFINES`, `THIRDPART_LIBS`, `LINKER_FLAGS`) and including `$(M)/Makefile.header`. This `Makefile.common` file is not mandatory.
+
 - Each `Makefile` defines `P` the path to the root of the project (`.` for `./Makefile` and `..` for `test/Makefile`) and include the `Makefile.common`.
 
 Example `Makefile.common`:
+
 ```
 PROJECT = CheckMyMakefile
 include $(M)/Makefile.header
@@ -206,6 +216,7 @@ INCLUDES += $(P)/src
 ```
 
 And `test/Makefile`:
+
 ```
 TARGET = $(PROJECT)-UnitTest
 DESCRIPTION = Unit tests for $(PROJECT)
@@ -224,7 +235,7 @@ include $(M)/Makefile.footer
 
 ### A more complex example
 
-This Makefile show lot of MyMakefil variables. Explanaitions are given in the next section.
+This Makefile show lot of MyMakefile variables. Explainations are given in the next section.
 
 ```
 P := .
@@ -267,7 +278,7 @@ include $(M)/Makefile.footer
 
 ## Inside MyMakefile
 
-### Description of Useful Macros
+### Description of useful macros
 
 Explanations of MyMakefile variables:
 
@@ -307,7 +318,7 @@ This avoids having git submodules (which I dislike).
 * **[Mandatory]** `all:` tell Makefile what to compile. In this case the binary `$(TARGET)` its libraries `$(STATIC_LIB_TARGET)`, `$(SHARED_LIB_TARGET)` and the pkg-config file `$(PKG_FILE)` (when typing `make install`).
 * Including `Makefile.footer` is mandatory.
 
-### Specific commands for MacOS
+### Specific commands for MacOS X
 
 You can create MacOS bundle application. For example:
 
@@ -345,7 +356,7 @@ LDFLAGS := $(LDFLAGS) $(THIRDPART_LIBS) $(NOT_PKG_LIBS) $(PKGCFG_LIBS) $(LINKER_
 * `$(THIRDPART_LIBS)` are defined by after having compiled your external libraries.
 * `$(NOT_PKG_LIBS)` are system libs when not define by a `pkg-config` file.
 
-### Description of Installation Macros
+### Description of installation macros
 
 - You have to write your own install rule (usually named `install:`). Place it after the `all:`.
 - Call `sudo make install` to install your project in your system but you can also modify `DESTDIR` and `PREFIX` to tell to the `make install` rule where to install your software:
@@ -361,7 +372,7 @@ Some macros are here to help you:
   - `$(call INSTALL_THIRDPART_FOLDER,ThirdPartLibrary/src,LibraryName,-name "*.h")` to copy recursively all `h` files from the folder `$(THIRDPART)/ThirdPartLibrary/src` into `$(DESTDIR)$(PREFIX)/include/$(PROJECT)-$(TARGET_VERSION.txt)/LibraryName`. The `-name "*.h"` is a parameter to the command `find`.
   - `$(call INSTALL_THIRDPART_FILES,ThirdPartLibrary,LibraryName,-name "*.h")` to copy all `h` files from the folder `$(THIRDPART)/ThirdPartLibrary/src` into `$(DESTDIR)$(PREFIX)/include/$(PROJECT)-$(TARGET_VERSION.txt)/LibraryName`. The `-name "*.h"` is a parameter to the command `find`.
 
-### Description of Internal Files
+### Description of internal files
 
 * `Makefile.header`: is the part of your Makefile to be included as header part. It contains the code for knowing your architecture, your compiler, destination folder for installation.
 It defines your project folder name (build, doc, external). It also checks against uninitialized variables.
