@@ -319,7 +319,6 @@ endif
 ###################################################
 # Disable strip command
 #
-STRIP := strip -R .comment -R .note -R .note.ABI-tag
 ifneq ($(EMSCRIPTEN),)
 STRIP :=
 endif
