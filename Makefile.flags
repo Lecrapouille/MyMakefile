@@ -304,7 +304,7 @@ VPATH := $(BUILD) $(VPATH)
 INCLUDES := -I$(BUILD) $(INCLUDES)
 
 ###################################################
-#
+# Final compilation flags
 #
 CXXFLAGS += $(DLL_CXXFLAGS)
 CCFLAGS += $(DLL_CXXFLAGS)
