@@ -269,7 +269,7 @@ define INSTALL_PROJECT_LIBRARIES
 endef
 
 ###################################################
-# Install .hpp files to the $(INSTALL_INCLUDEDIR) folder
+# Install all .hpp files to the $(INSTALL_INCLUDEDIR) folder
 # TODO need glob regex
 #
 define INSTALL_PROJECT_HEADERS
@@ -277,6 +277,14 @@ define INSTALL_PROJECT_HEADERS
 	@$(call INSTALL_FOLDER,include,$(INSTALL_INCLUDEDIR))
 	@$(call INSTALL_FOLDER,src,$(INSTALL_INCLUDEDIR),\
 	-name "*.[hit]pp" -o -name "*.incl" -o -name "*.h" -o -name "*.hh" -o -name "*.hxx")
+endef
+
+###################################################
+# Install hpp files from include folder to the $(INSTALL_INCLUDEDIR) folder
+#
+define INSTALL_PROJECT_INCLUDES
+	@$(call print-to,"Installing","headers","$(INSTALL_INCLUDEDIR)","")
+	@$(call INSTALL_FOLDER,include,$(INSTALL_INCLUDEDIR))
 endef
 
 ###################################################
