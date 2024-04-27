@@ -92,11 +92,22 @@ GENDOC ?= doc
 
 ###################################################
 # Define a temporary directory where the project will be installed: $(DESTDIR)$(PREFIX)/lib and $(DESTDIR)$(PREFIX)/bin (default: empty)
+# See https://www.gnu.org/prep/standards/html_node/Directory-Variables.html
 DESTDIR ?=
 
 ###################################################
-# Define where the project will be installed: $(DESTDIR)$(PREFIX)/lib and $(DESTDIR)$(PREFIX)/bin (default: /usr)
-PREFIX ?= /usr
+# Define where the project will be installed: $(DESTDIR)$(PREFIX)/lib and $(DESTDIR)$(PREFIX)/bin (default: /usr/local)
+# See https://www.gnu.org/prep/standards/html_node/Directory-Variables.html
+PREFIX ?= /usr/local
+
+###################################################
+# Define where to install exec, data, libraries, documentation ...
+# See https://www.gnu.org/prep/standards/html_node/Directory-Variables.html
+INCLUDEDIR ?= $(PREFIX)/include
+LIBDIR ?= $(PREFIX)/lib
+PKGLIBDIR ?= $(LIBDIR)/pkgconfig
+BINDIR ?= $(PREFIX)/bin
+DATADIR ?= $(PREFIX)/share
 
 ###################################################
 # Select the C++ standard (default is --std=c++14).
