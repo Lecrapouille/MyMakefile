@@ -75,7 +75,7 @@ ifeq ($(CCFLAGS),)
   CCFLAGS += -DCOMPILER_VERSION=$(COMPILER_VERSION)
 else
 
-$(warning CCFLAGS: info: You have replaced default compilation flags by your own flags)
+$(warning CCFLAGS: info: You have replaced default compilation flags by your own flags $(CCFLAGS))
 endif
 
 ifeq ($(CXXFLAGS),)
@@ -124,7 +124,7 @@ ifeq ($(CXXFLAGS),)
   CXXFLAGS += -DCOMPILER_VERSION=$(COMPILER_VERSION)
 else
 
-$(warning CXXFLAGS: info: You have replaced default compilation flags by your own flags)
+$(warning CXXFLAGS: info: You have replaced default compilation flags by your own flags $(CXXFLAGS))
 endif
 
 # Creating shared libraries from static ones
