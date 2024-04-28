@@ -4,7 +4,7 @@
 * simply copy/paste this repo inside your project.
 * or better, use it as a git submodule to track my evolutions.
 
-Here, the list of my personal projects using this repo as a git submodule:
+Here, the list of my personal projects using this repo as git submodule:
 
 * https://github.com/Lecrapouille/TimedPetriNetEditor
 * https://github.com/Lecrapouille/Highway
@@ -37,23 +37,25 @@ MyMakefile allows you to:
 * Offer rules such as gcov (code coverage report), Coverity Scan (static analyzer of code), doxgen (documentation generator), asan (AddressSanitizer), check for a hardened target.
 * Generate a Doxygen file with project parameters (such as project name, version ...). The generated HTML follows the theme used by the library SFML which is more proper than the default Doxygen theme.
 * Have a rule for compressing your project (without .git or generated documentation) in a tar.gz tarball with the date and the version. Names collision of tarballs is managed.
-* Auto-generate the help by parsing your comments placed before rules.
+* Auto-generate the Makefile help by parsing your comments placed before rules.
 * Work with parallel builds (-jX option, where X is the number of your CPU cores).
 * Hide by default all these awful lines made of GCC compilation flags. Colorful information messages are displayed instead
 with the percentage of compiled files (in the way of the CMake progress bar).
 * Create a build directory where compiled files are placed, instead of being created within source files.
 * Generate .d files inside a build directory holding dependencies files (when one header file is modified, dependent source files are also compiled).
+* For MacOS, you have option for obtaining bundle applications.
 
 **Current constraint:**
 * Currently, you have to define a single target by Makefile file (for example a library and its demo application). This can be easily bypassed as shown in examples given in this document by adding a makefile in a separate folder (source, lib, demo, tests, ...). A WIP solution which both fix and reduce the code is in gestation in the git branch dev-multitargets.
 
 **Prerequisites:**
 
-You probably have to install:
+You have to install:
+- a bash interpretor since some commands cannot be directly called as pure Makefile commands.
 - the basic calculator `bc` tool: `apt-get install bc` needed for the progress bar (if not present the compilation does not fail).
 - if needed, install tools that can be called by MyMakefile: gcov, doxygen, hardening-check: `apt-get install gcovr doxygen devscripts`.
 
-## Utility rules
+## Builtin utility rules
 
 - `make help` show your makefile rules (the display is an auto-generated).
 - `make clean` remove `$(BUILD)` `$(GENDOC)/coverage`, `$(GENDOC)/html` folders.
@@ -126,21 +128,21 @@ include $(M)/Makefile.footer
 
 #### Explanations
 
-* `P` and `M` are mandatory. `P` indicates the relative path of the folder holding the root project. `M` indicates the location of the folder holding this `MyMakefile` project.
-* You do not have to write compilation rules or rules such as `clean:` or `doc:` ... rules they are already defined in Makefile.footer. Generated documentation is placed on `$(P)`
-* `PROJECT` is the main project name. A project can have several targets (ie: main binary, unit tests ...).
-* `TARGET` is the name for your compiled binary by this Makefile.
+* `PROJECT` is the main project name. A project can have several targets (ie: main binary, unit tests, libraries, ...).
+* `TARGET` is the name for your compiled binary (or library) by this Makefile.
 * `DESCRIPTION` explain your target in few words (optional but used for generated pkg-config files when you compile for libraries).
 * `BUILD_TYPE = release` to compile your project without debug elements (else replace it by `̀BUILD_TYPE = debug`).
 * `STANDARD = --std=c++14` tell which C++ standard you want (C++14 by default if not set).
-* `OBJS` contains the list of all .o files (separated by spaces) for compiling `TARGET`. Please just give their base names and not their source path.
-* Use `VPATH` (separated by spaces) to define folders for finding your source files. In our example with have a single folder holding source code: `src`.
-* Use `INCLUDES` (prepend by `-I` and separated by spaces) to define folders for finding your header files. In our example with have a single folder holding source code: `src`.
+* `P` and `M` are mandatory and their placement **SHALL BE AFTER** previously lines. `P` (for Project) indicates the relative path of the folder holding the root project. `M` (for MyMakefile) indicates the location of the folder holding this `MyMakefile` project.
+* `OBJS` contains the list of all .o files (separated by spaces) for compiling `TARGET`. Please just give their base names and not their source path. The `+=` is mandatory since some objects are added by `include $(M)/Makefile.header`.
+* Use `VPATH` (separated by spaces) to define folders for finding your source files. In our example with have a single folder holding source code: `src`.  The `+=` is mandatory since some paths are added by `include $(M)/Makefile.header`.
+* Use `INCLUDES` (prepend by `-I` and separated by spaces) to define folders for finding your header files. In our example with have a single folder holding source code: `src`. The `+=` is mandatory since some includes are added by `include $(M)/Makefile.header`.
 * Use `DEFINES` for defining your personal C/C++ macros (if needed).
-* `all: $(TARGET)` for building your project. Notice it has empty rule.
+* `all: $(TARGET)` for building your project. Notice it has empty rule. Since an internal rule manages it already.
+* You do not have to write compilation rules or rules such as `clean:` or `doc:` ... rules they are already defined in Makefile.footer. The generated documentation is placed on `$(P)`.
 * If you want to add new rules add them before `include $(M)/Makefile.footer`.
 
-#### Compilation
+#### Compilation for Linux
 
 - To compile it just type `make` or `make -j8` change 8 to the number of cores of your CPU.
 - A `./build/Test` binary has been created (by default `BUILD = build/`).
@@ -149,8 +151,31 @@ include $(M)/Makefile.footer
 - If compiled with success, you can test it: `./build/Test` or `make run`.
 - To force compiling in release mode: `make BUILD_TYPE=release CXX=clang++-6.0 -j8`
 - To force compiling in debug mode: `make BUILD_TYPE=debug CXX=clang++-6.0 -j8`
+- To follow GNU directives https://www.gnu.org/prep/standards/html_node/Directory-Variables.html you can override variables `PREFIX`, `DESTDIR`, `INCLUDEDIR`, `LIBDIR`, `PKGLIBDIR`, `BINDIR`, `DATADIR`.
+- You can activate the verbose mode with `VERBOSE=1` (or shorter `V=1`) : `V=1 make BUILD_TYPE=debug CXX=clang++-6.0 -j8`.
 
-#### Emscripten and Emscripten-exa
+#### Compilation for Mac OS X
+
+Same principe than for Linux: a binary is created inside `$(BUILD)` folder. If you want to create a bundle application. You can add the following code:
+
+```
+ifeq ($(ARCHI),Darwin)
+BUILD_MACOS_APP_BUNDLE = 1
+APPLE_IDENTIFIER = lecrapouille
+MACOS_BUNDLE_ICON = data/icon.icns
+endif
+```
+
+* The `ifeq ($(ARCHI),Darwin) endif` if optional and allow to generated MacOS application if and only if your Makefile is called from a Mac device and therefore provide creating non-crossed compiled application from ie Linux.
+* `BUILD_MACOS_APP_BUNDLE` will add a `all: $(TARGET).app` for you.
+* `APPLE_IDENTIFIER` allows to create inside the `Info.plist` a field `com.$(APPLE_IDENTIFIER).$(TARGET)`.
+* `MACOS_BUNDLE_ICON` define the path of your bundle application icon. If not set a default icon will be used.
+
+#### Compilation for Windows
+
+TODO.
+
+#### Compilation with Emscripten or Emscripten-exa
 
 To compile your project with [Emscripten](https://emscripten.org) or with [Emscripten-exa](https://github.com/exaequos),
 add `emmake` before the `make` command. Where `emmake` is a script offered by Emscripten that calls your makefile but set
@@ -160,7 +185,7 @@ before all environement variables for you.
 
 ```
 make download-external-libs
-emmake make compile-external-libs
+V=1 emmake make compile-external-libs
 V=1 emmake make -j8
 emmake make run
 ```
@@ -172,7 +197,7 @@ The `emmake make run` will call `emrun` calling `python -m http.server 8080` and
 
 Type the same command than for Emscripten but inside this [Docker](https://github.com/baudaux/docker-exa).
 
-#### Clang vs. GCC
+#### Compilation Clang vs. GCC
 
 By default gcc is called (because of `$CXX`). To compile with clang++.
 
@@ -201,7 +226,7 @@ foo/
 └── VERSION.txt
 ```
 
-- An optional `Makefile.common` can be added. It is used for factorizing information between `Makefile` and `test/Makefile` (such as `PROJECT`, `VPATH`, `INCLUDES`, `DEFINES`, `THIRDPART_LIBS`, `LINKER_FLAGS`) and including `$(M)/Makefile.header`. This `Makefile.common` file is not mandatory.
+- An optional `Makefile.common` can be added for factorizing information between `Makefile` and `test/Makefile` (such as `PROJECT`, `VPATH`, `INCLUDES`, `DEFINES`, `THIRDPART_LIBS`, `LINKER_FLAGS`) and including `$(M)/Makefile.header`. This `Makefile.common` file is not mandatory.
 
 - Each `Makefile` defines `P` the path to the root of the project (`.` for `./Makefile` and `..` for `test/Makefile`) and include the `Makefile.common`.
 
@@ -318,26 +343,6 @@ This avoids having git submodules (which I dislike).
 * **[Mandatory]** `all:` tell Makefile what to compile. In this case the binary `$(TARGET)` its libraries `$(STATIC_LIB_TARGET)`, `$(SHARED_LIB_TARGET)` and the pkg-config file `$(PKG_FILE)` (when typing `make install`).
 * Including `Makefile.footer` is mandatory.
 
-### Specific commands for MacOS X
-
-You can create MacOS bundle application. For example:
-
-```
-ifeq ($(ARCHI),Darwin)
-BUILD_MACOS_APP_BUNDLE = 1
-APPLE_IDENTIFIER = lecrapouille
-MACOS_BUNDLE_ICON = data/icon.icns
-endif
-```
-
-* The `ifeq ($(ARCHI),Darwin) endif` if optional and allow to generated MacOS
-  application if and only if your Makefile is called from a Mac device and
-  therefore provide creating non-crossed compiled application from ie Linux.
-
-* `BUILD_MACOS_APP_BUNDLE` will add a `all: $(TARGET).app` for you.
-* `APPLE_IDENTIFIER` allows to create inside the `Info.plist` a field `com.$(APPLE_IDENTIFIER).$(TARGET)`.
-* `MACOS_BUNDLE_ICON` define the path of your bundle application icon. If not set a default icon will be set.
-
 ### How are made CXXFLAGS and LDFLAGS?
 
 Here how internally (privately) `CXXFLAGS` and `LDFLAGS` are made:
@@ -360,14 +365,17 @@ LDFLAGS := $(LDFLAGS) $(THIRDPART_LIBS) $(NOT_PKG_LIBS) $(PKGCFG_LIBS) $(LINKER_
 
 - You have to write your own install rule (usually named `install:`). Place it after the `all:`.
 - Call `sudo make install` to install your project in your system but you can also modify `DESTDIR` and `PREFIX` to tell to the `make install` rule where to install your software:
-  - PREFIX: determines where the package will go when it is installed, and where it will look for its associated files when it is run. It's what you should use if you're just compiling something for use on a single host.
-  - DESTDIR: is for installing to a temporary directory which is not where the package will be run from.
-  - Example: `sudo make DESTDIR=/usr PREFIX=/usr/local/foo/bar install` will install binaries in `/usr/local/foo/bar/usr/local/bin`.
+  - `PREFIX`: determines where the package will go when it is installed, and where it will look for its associated files when it is run. It's what you should use if you're just compiling something for use on a single host. Default value: `/usr/local`
+  - `DESTDIR`: is for installing to a temporary directory which is not where the package will be run from.
+  - Example: `sudo make DESTDIR=/foo PREFIX=/usr/local/bar install` will install binaries in `/foo/usr/local/bar/bin`.
+  - Other macros are `INCLUDEDIR ?= $(PREFIX)/include`, `LIBDIR ?= $(PREFIX)/lib/x86_64-linux-gnu`, `PKGLIBDIR ?= $(LIBDIR)/pkgconfig`, `BINDIR ?= $(PREFIX)/bin`, `DATADIR ?= $(PREFIX)/share`.
+  
 Some macros are here to help you:
   - `$(call INSTALL_BINARY)` to install your binary into `$(DESTDIR)$(PREFIX)/bin`.
   - `$(call INSTALL_DOCUMENTATION)` to install your documentation into `$(DESTDIR)$(PREFIX)/share/$(PROJECT)/$(TARGET_VERSION.txt)`. This will copy the followinf files and folders: `$(GENDOC) data/, examples/, AUTHORS, LICENSE, README.md, ChangeLog`.
   - `$(call INSTALL_PROJECT_LIBRARIES)` to install shared and static libraries into `$(DESTDIR)$(PREFIX)/lib` and pkg-confile file into `/usr/lib/pkgconfig`.
-  - `$(call INSTALL_PROJECT_HEADERS)` to install header files into `$(DESTDIR)$(PREFIX)/include/$(PROJECT)-$(TARGET_VERSION.txt)`.
+  - `$(call INSTALL_PROJECT_HEADERS)` to install header files (.hpp and .h) from include/ and src/ folders into `$(DESTDIR)$(PREFIX)/include/$(PROJECT)-$(TARGET_VERSION.txt)`.
+  - `$(call INSTALL_PROJECT_INCLUDES)` to install header files (from include/ folders into `$(DESTDIR)$(PREFIX)/include/$(PROJECT)-$(TARGET_VERSION.txt)`.
   - `$(call INSTALL_PROJECT_FOLDER,folder)` to install the folder into `$(DESTDIR)$(PREFIX)/share/$(PROJECT)/$(TARGET_VERSION.txt)`.
   - `$(call INSTALL_THIRDPART_FOLDER,ThirdPartLibrary/src,LibraryName,-name "*.h")` to copy recursively all `h` files from the folder `$(THIRDPART)/ThirdPartLibrary/src` into `$(DESTDIR)$(PREFIX)/include/$(PROJECT)-$(TARGET_VERSION.txt)/LibraryName`. The `-name "*.h"` is a parameter to the command `find`.
   - `$(call INSTALL_THIRDPART_FILES,ThirdPartLibrary,LibraryName,-name "*.h")` to copy all `h` files from the folder `$(THIRDPART)/ThirdPartLibrary/src` into `$(DESTDIR)$(PREFIX)/include/$(PROJECT)-$(TARGET_VERSION.txt)/LibraryName`. The `-name "*.h"` is a parameter to the command `find`.
