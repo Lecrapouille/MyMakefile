@@ -234,7 +234,7 @@ doc:
 # Create a backup of the code as a tarball file.
 .PHONY: tarball
 tarball:
-	@./$(M)/targz.sh $(PWD) $(TARGET)
+	@./$(M)/targz.sh $(P) $(TARGET)
 
 ###################################################
 # Generate a header file with the project information.
@@ -270,7 +270,7 @@ about:
 # Clean the project
 .PHONY: clean
 clean::
-	@$(call print-simple,"Cleaning","$(PWD)")
+	@$(call print-to,"Cleaning","$(TARGET)","$(abspath .)")
 	@rm -fr $(BUILD) $(GENDOC)/coverage $(GENDOC)/html $(GENDOC)/gprof 2> /dev/null
 
 ###################################################
