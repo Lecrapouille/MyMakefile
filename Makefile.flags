@@ -278,11 +278,32 @@ LINKER_FLAGS += -ldw
 endif
 
 ###################################################
+# Download private thirdpart backward-cpp
+#
+ifeq ($(USE_BACKWARD),1)
+ifeq ($(ARCHI),Darwin)
+backward.cpp: | $(BUILD)
+else
+$(BUILD)/backward-cpp/backward.cpp: | $(BUILD)
+	@$(call GIT_CLONE_NO_RECURSE,$(BUILD),"bombela","backward-cpp")
+endif
+endif
+
+###################################################
 # Use dbg-macro library for printf-style debugging
 #
 ifeq ($(USE_DEBUG_MACRO),1)
 INCLUDES += -I$(BUILD)/dbg-macro
 DEFINES += -DBG_MACRO_NO_WARNING
+endif
+
+###################################################
+# Download private thirdpart dbg-macro
+#
+ifeq ($(USE_DEBUG_MACRO),1)
+$(TARGET): $(BUILD)/dbg-macro/dbg.h
+$(BUILD)/dbg-macro/dbg.h: | $(BUILD)
+	@$(call GIT_CLONE_NO_RECURSE,$(BUILD),"sharkdp","dbg-macro")
 endif
 
 ###################################################
