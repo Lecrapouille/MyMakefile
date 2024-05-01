@@ -301,6 +301,51 @@ install: $(STATIC_LIB_TARGET) $(SHARED_LIB_TARGET)
 include $(M)/Makefile.footer
 ```
 
+### A very complex example
+
+Let suppose you have several folders for compiling internal libraries. In our cases:
+- src/folder/lib1/{Makefile, *.cpp, *.hpp}
+- src/folder/lib2/{Makefile, *.cpp, *.hpp}
+- src/folder/lib3/{Makefile, *.cpp, *.hpp}
+
+The top-level Makefile will refer them as follow:
+```
+# We refer libraires from the build folder of the project root folder.
+LIB1 = $(abspath $(P)/$(BUILD)/lib1.a)
+LIB2 = $(abspath $(P)/$(BUILD)/lib2.a)
+LIB3 = $(abspath $(P)/$(BUILD)/lib3.a)
+
+# Define them as THIRDPART_LIBS
+THIRDPART_LIBS += $(LIB_TPNE_GUI) $(LIB_TPNE_CORE) $(LIB_TPNE_JULIA)
+
+# Indicate the path of folders having the Makefile compiling libraries
+DIRS_WITH_MAKEFILE := src/Editor src/Net src/julia
+
+# Define dummy Makefile rules for compiling libraries
+$(LIB1): src/folder/lib1
+
+$(LIB2): src/folder/lib2
+
+$(LIB3): src/folder/lib3
+
+# Order their compilation
+src/folder/lib3: src/folder/lib2
+
+src/folder/lib2: src/folder/lib1
+```
+
+Makefiles for compiling librairies (`src/folder/lib/Makefile`) should refer the build folder to the top-level build folder.
+Note: since we are compiling librairies you shall use `LIB_OBJS` and the `all:` rule shall contains `$(STATIC_LIB_TARGET) $(SHARED_LIB_TARGET) $(PKG_FILE)`
+
+```
+...
+BUILD := $(P)/build
+LIB_OBJS += foo.o ...
+
+.PHONY: all
+all: $(STATIC_LIB_TARGET) $(SHARED_LIB_TARGET) $(PKG_FILE) $(P)/Makefile
+```
+
 ## Inside MyMakefile
 
 ### Description of useful macros
@@ -369,7 +414,7 @@ LDFLAGS := $(LDFLAGS) $(THIRDPART_LIBS) $(NOT_PKG_LIBS) $(PKGCFG_LIBS) $(LINKER_
   - `DESTDIR`: is for installing to a temporary directory which is not where the package will be run from.
   - Example: `sudo make DESTDIR=/foo PREFIX=/usr/local/bar install` will install binaries in `/foo/usr/local/bar/bin`.
   - Other macros are `INCLUDEDIR ?= $(PREFIX)/include`, `LIBDIR ?= $(PREFIX)/lib/x86_64-linux-gnu`, `PKGLIBDIR ?= $(LIBDIR)/pkgconfig`, `BINDIR ?= $(PREFIX)/bin`, `DATADIR ?= $(PREFIX)/share`.
-  
+
 Some macros are here to help you:
   - `$(call INSTALL_BINARY)` to install your binary into `$(DESTDIR)$(PREFIX)/bin`.
   - `$(call INSTALL_DOCUMENTATION)` to install your documentation into `$(DESTDIR)$(PREFIX)/share/$(PROJECT)/$(TARGET_VERSION.txt)`. This will copy the followinf files and folders: `$(GENDOC) data/, examples/, AUTHORS, LICENSE, README.md, ChangeLog`.

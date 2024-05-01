@@ -238,4 +238,9 @@ endif
 #
 COMPILER_VERSION := $(shell $(ECHO_COLOR) $(COMPILER_VERSION) | sed -e 's/\.\([0-9][0-9]\)/\1/g' -e 's/\.\([0-9]\)/0\1/g' -e 's/^[0-9]\{3,4\}$$//')
 
+###################################################
+# Recursive wildcard
+#
+rwildcard=$(wildcard $1$2) $(foreach d,$(wildcard $1*),$(call rwildcard,$d/,$2))
+
 include $(M)/Makefile.macros

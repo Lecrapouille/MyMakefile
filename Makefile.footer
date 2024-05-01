@@ -26,13 +26,22 @@
 include $(M)/Makefile.flags
 
 ###################################################
+# Internal librairies
+#
+ifneq ($(DIRS_WITH_MAKEFILE),)
+.PHONY: $(DIRS_WITH_MAKEFILE)
+$(DIRS_WITH_MAKEFILE):
+	$(MAKE) --directory=$@
+endif
+
+###################################################
 # Link sources
 #
 ifneq ($(EXT),)
 $(TARGET): $(TARGET)$(EXT)
 endif
 
-$(TARGET)$(EXT): $(OBJS) $(THIRDPART_OBJS) $(THIRDPART_LIBS)
+$(TARGET)$(EXT): $(DIRS_WITH_MAKEFILE) $(OBJS) $(THIRDPART_OBJS) $(THIRDPART_LIBS)
 	@$(call print-to,"Linking","$(TARGET)","$(BUILD)/$@","$(VERSION)")
 ifeq ($(OBJS),)
 	$(ECHO_COLOR) "$(CLR_RED)You are compiling an application but OBJS is empty$(CLR_DEFAULT)" && exit 1
