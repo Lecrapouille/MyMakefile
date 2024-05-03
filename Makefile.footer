@@ -76,6 +76,8 @@ endif
 	$(Q)$(CC) $(DEPFLAGS) $(CCFLAGS) $(PKGCFG_CFLAGS) $(OPTIM_FLAGS) $(DEFINES) $(INCLUDES) -c $(abspath $<) -o $(abspath $(BUILD)/$@) $(COMPIL_FLAGS)
 	@$(POSTCOMPILE)
 
+OBJS_FROM_THIRDPART_LIBS = $(addsuffix /*.o,$(addprefix _,$(basename $(notdir $(filter-out \,$(THIRDPART_LIBS))))))
+
 ###################################################
 # Static library
 #
@@ -86,7 +88,7 @@ endif
 	@$(call print-to,"Static lib","$(TARGET)","$(BUILD)/$@","$(VERSION)")
 ifneq ($(THIRDPART_LIBS),)
 	@./$(M)/alib.sh $(BUILD) $(THIRDPART_LIBS)
-	$(Q)cd $(BUILD) && $(AR) $(ARFLAGS) $@ $(LIB_OBJS) $(THIRDPART_OBJS) _lib*/*.o && ranlib $@
+	$(Q)cd $(BUILD) && $(AR) $(ARFLAGS) $@ $(LIB_OBJS) $(THIRDPART_OBJS) $(OBJS_FROM_THIRDPART_LIBS) && ranlib $@
 else
 	$(Q)cd $(BUILD) && $(AR) $(ARFLAGS) $@ $(LIB_OBJS) $(THIRDPART_OBJS) && ranlib $@
 endif
