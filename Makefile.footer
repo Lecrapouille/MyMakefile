@@ -227,7 +227,7 @@ doc:
 # Create a backup of the code as a tarball file.
 .PHONY: tarball
 tarball:
-	@./$(M)/targz.sh $(P) $(TARGET)
+	@./$(M)/targz.sh $(abspath $(P)) $(TARGET)
 
 ###################################################
 # Generate a header file with the project information.
