@@ -310,8 +310,8 @@ endif
 # Use ifdef because pkg-config does not like empty argument
 #
 ifdef PKG_LIBS
-PKGCFG_LIBS := `pkg-config --libs $(PKG_LIBS)`
-PKGCFG_CFLAGS := `pkg-config --cflags $(PKG_LIBS)`
+PKGCFG_LIBS := `PKG_CONFIG_PATH=$(PKG_CONFIG_PATH) pkg-config --libs $(PKG_LIBS)`
+PKGCFG_CFLAGS := `PKG_CONFIG_PATH=$(PKG_CONFIG_PATH) pkg-config --cflags $(PKG_LIBS)`
 endif
 
 ###################################################

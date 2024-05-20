@@ -46,9 +46,11 @@ TARGET_LOWER_CASE := $(shell echo $(TARGET) | tr A-Z a-z)
 #
 SHORT_LIB_TARGET := -l$(TARGET_LOWER_CASE)
 LIB_TARGET := lib$(TARGET_LOWER_CASE)
+ifeq ($(EXAEQUOS),)
 SHARED_LIB_TARGET_NOVERSION := $(LIB_TARGET).$(SO)
 SHARED_LIB_TARGET := $(SHARED_LIB_TARGET_NOVERSION).$(TARGET_VERSION)
 SHARED_LIB_TARGET_MAJOR := $(SHARED_LIB_TARGET_NOVERSION).$(TARGET_MAJOR_VERSION)
+endif
 STATIC_LIB_TARGET_NOVERSION :=  $(LIB_TARGET).a
 STATIC_LIB_TARGET := $(STATIC_LIB_TARGET_NOVERSION).$(TARGET_VERSION)
 STATIC_LIB_TARGET_MAJOR := $(STATIC_LIB_TARGET_NOVERSION).$(TARGET_MAJOR_VERSION)
@@ -58,8 +60,12 @@ STATIC_LIB_TARGET_MAJOR := $(STATIC_LIB_TARGET_NOVERSION).$(TARGET_MAJOR_VERSION
 #
 INSTALL_INCLUDEDIR = $(DESTDIR)$(INCLUDEDIR)/$(PROJECT_LOWER_CASE)/$(TARGET_VERSION)
 INSTALL_LIBDIR = $(DESTDIR)$(LIBDIR)
-INSTALL_BINDIR = $(DESTDIR)$(BINDIR)
 INSTALL_DATADIR = $(DESTDIR)$(DATADIR)
+ifneq ($(EXAEQUOS),)
+INSTALL_BINDIR := /media/localhost/$(TARGET)/exa
+else
+INSTALL_BINDIR = $(DESTDIR)$(BINDIR)
+endif
 
 ###################################################
 # Define where to install pkg-config file
@@ -170,12 +176,22 @@ endef
 ###################################################
 # Install the project binary
 #
+ifeq ($(EXAEQUOS),)
 define INSTALL_BINARY
 	@$(call print-to,"Installing","$(BUILD)/$(TARGET)","$(PROJECT_EXE)","")
 	@mkdir -p $(INSTALL_BINDIR)
 	@cp $(BUILD)/$(TARGET) $(PROJECT_EXE)
 	@ln -sf $(PROJECT_EXE) $(PROJECT_EXE_NO_VERSION)
 endef
+else
+define INSTALL_BINARY
+	@$(call print-to,"Installing exaequOS","$(BUILD)/$(TARGET)","$(PROJECT_EXE)","")
+	@mkdir -p $(INSTALL_BINDIR)
+	cp $(BUILD)/$(TARGET).js $(INSTALL_BINDIR)/$(TARGET).js
+	cp $(BUILD)/$(TARGET).wasm $(INSTALL_BINDIR)/$(TARGET).wasm
+	$(call CREATE_EXAEQUOS_HTML,exa.html)
+endef
+endif
 
 ###################################################
 # Install the project documentation.
@@ -243,6 +259,33 @@ define CREATE_PKG_CONFIG
 endef
 
 ###################################################
+# Create the exa.html file
+#
+define CREATE_EXAEQUOS_HTML
+	@$(call print-to,"Generating","$(TARGET)","$(1)","")
+	@echo "<!doctype html>" > $(INSTALL_BINDIR)/$(1)
+	@echo "<html lang=\"en-us\">" >> $(INSTALL_BINDIR)/$(1)
+	@echo "<head>" >> $(INSTALL_BINDIR)/$(1)
+	@echo "  <meta charset=\"utf-8\">" >> $(INSTALL_BINDIR)/$(1)
+	@echo "  <meta http-equiv=\"Content-Type\" content=\"text/html; charset=utf-8\">" >> $(INSTALL_BINDIR)/$(1)
+	@echo "  <title>Emscripten-Generated Code</title>" >> $(INSTALL_BINDIR)/$(1)
+	@echo "  <style>" >> $(INSTALL_BINDIR)/$(1)
+ 	@echo "   html, body {" >> $(INSTALL_BINDIR)/$(1)
+ 	@echo "     margin : 0;" >> $(INSTALL_BINDIR)/$(1)
+	@echo "      padding: 0;" >> $(INSTALL_BINDIR)/$(1)
+	@echo "      border: none;" >> $(INSTALL_BINDIR)/$(1)
+	@echo "      width: 100%;" >> $(INSTALL_BINDIR)/$(1)
+	@echo "      height: 100%;" >> $(INSTALL_BINDIR)/$(1)
+	@echo "    }" >> $(INSTALL_BINDIR)/$(1)
+	@echo "  </style>" >> $(INSTALL_BINDIR)/$(1)
+	@echo "</head>" >> $(INSTALL_BINDIR)/$(1)
+	@echo "<body>" >> $(INSTALL_BINDIR)/$(1)
+	@echo "  <script async type=\"text/javascript\" src=\"$(TARGET).js\"></script>" >> $(INSTALL_BINDIR)/$(1)
+	@echo "</body>" >> $(INSTALL_BINDIR)/$(1)
+	@echo "</html>" >> $(INSTALL_BINDIR)/$(1)
+endef
+
+###################################################
 # Install the pkg-config file (if the project is a library)
 #
 define INSTALL_PKG_CONFIG
@@ -256,17 +299,37 @@ endef
 # Install static and dynamic libraries (if the project
 # is not an application)
 #
-define INSTALL_PROJECT_LIBRARIES
-	@$(call print-to,"Installing","libs","$(INSTALL_LIBDIR)","")
-	@mkdir -p $(INSTALL_LIBDIR)
+define INSTALL_PROJECT_STATIC_LIBRARIES
 	@install -m 644 $(BUILD)/$(STATIC_LIB_TARGET) $(INSTALL_LIBDIR)
 	@ln -snf $(INSTALL_LIBDIR)/$(STATIC_LIB_TARGET) $(INSTALL_LIBDIR)/$(STATIC_LIB_TARGET_NOVERSION)
 	@ln -snf $(INSTALL_LIBDIR)/$(STATIC_LIB_TARGET) $(INSTALL_LIBDIR)/$(STATIC_LIB_TARGET_MAJOR)
+endef
+
+define INSTALL_PROJECT_SHARED_LIBRARIES
 	@install -m 644 $(BUILD)/$(SHARED_LIB_TARGET) $(INSTALL_LIBDIR)
 	@ln -snf $(INSTALL_LIBDIR)/$(SHARED_LIB_TARGET) $(INSTALL_LIBDIR)/$(SHARED_LIB_TARGET_NOVERSION)
 	@ln -snf $(INSTALL_LIBDIR)/$(SHARED_LIB_TARGET) $(INSTALL_LIBDIR)/$(SHARED_LIB_TARGET_MAJOR)
 	@$(call INSTALL_PKG_CONFIG)
 endef
+
+###################################################
+# Install static and dynamic libraries (if the project
+# is not an application)
+#
+ifeq ($(EXAEQUOS),)
+define INSTALL_PROJECT_LIBRARIES
+	@$(call print-to,"Installing","libs","$(INSTALL_LIBDIR)","")
+	@mkdir -p $(INSTALL_LIBDIR)
+	@$(call INSTALL_PROJECT_SHARED_LIBRARIES)
+	@$(call INSTALL_PROJECT_STATIC_LIBRARIES)
+endef
+else
+define INSTALL_PROJECT_LIBRARIES
+	@$(call print-to,"Installing","libs","$(INSTALL_LIBDIR)","")
+	@mkdir -p $(INSTALL_LIBDIR)
+	@$(call INSTALL_PROJECT_STATIC_LIBRARIES)
+endef
+endif
 
 ###################################################
 # Install all .hpp files to the $(INSTALL_INCLUDEDIR) folder

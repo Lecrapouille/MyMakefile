@@ -26,6 +26,16 @@
 include $(M)/Makefile.flags
 
 ###################################################
+# Disable shared lib for ExaequOS for the moment
+#
+ifneq ($(EXAEQUOS),)
+ifdef SHARED_LIB_TARGET
+$(warning Sorry for the moment no shared lib can be created for ExaequOS)
+SHARED_LIB_TARGET :=
+endif
+endif
+
+###################################################
 # Internal librairies
 #
 ifneq ($(DIRS_WITH_MAKEFILE),)
@@ -97,6 +107,7 @@ endif
 ###################################################
 # Shared library
 #
+ifeq ($(EXAEQUOS),)
 $(SHARED_LIB_TARGET): LDFLAGS += $(DLL_LDFLAGS)
 $(SHARED_LIB_TARGET): $(LIB_OBJS) $(THIRDPART_OBJS) $(THIRDPART_LIBS)
 ifeq ($(LIB_OBJS),)
@@ -105,6 +116,7 @@ endif
 	@$(call print-to,"Shared lib","$(TARGET)","$(BUILD)/$@","$(VERSION)")
 	$(Q)cd $(BUILD) && $(COMPILER) $(LDFLAGS) -o $@ $(LIB_OBJS) $(THIRDPART_OBJS) $(LINK_ALL_LOAD) $(THIRDPART_LIBS) $(NOT_PKG_LIBS) $(PKGCFG_LIBS) $(LINK_NO_ALL_LOAD) $(LINKER_FLAGS)
 	$(Q)cd $(BUILD) && cp $@ $(SHARED_LIB_TARGET_NOVERSION)
+endif
 
 ###################################################
 # Generate the pkg-config file

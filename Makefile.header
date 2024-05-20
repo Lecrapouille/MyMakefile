@@ -46,22 +46,6 @@ ARCHI := Windows
 endif
 
 ###################################################
-# Emscripten
-#
-ifneq ($(EMSCRIPTEN),)
-$(warning Compiling with emscripten)
-ARCHI := Emscripten
-endif
-
-###################################################
-# Exaequos https://github.com/exaequos
-#
-ifneq ($(EXAEQUOS),)
-$(warning Compiling with emscripten-exa for ExaequOS)
-ARCHI := ExaequOS
-endif
-
-###################################################
 # Macros to override through Makefile command lines
 #
 
@@ -132,6 +116,27 @@ PROJECT_INFO ?= project_info.hpp
 # MacOS X path to the application bundle icon
 MACOS_BUNDLE_ICON ?= .makefile/macos.icns
 
+PKG_CONFIG_PATH ?=
+
+###################################################
+# Emscripten
+#
+ifneq ($(EXAEQUOS),)
+$(warning Compiling with exaequOS-emscripten)
+ARCHI := Emscripten
+CXX := em++.py
+CC := emcc.py
+AR := emar.py
+ARFLAGS := crsv
+DEFINES += -DEXAEQUOS
+STRIP :=
+DESTDIR :=
+PKG_CONFIG_PATH := $(abspath $(P)/exapkgs/pkgconfigs)
+else ifneq ($(EMSCRIPTEN),)
+$(warning Compiling with emscripten)
+ARCHI := Emscripten
+endif
+
 ###################################################
 # Check if some variables have been defined
 #
@@ -177,7 +182,11 @@ TMPDIR ?= /tmp
 # Application extension
 #
 ifeq ($(ARCHI),Emscripten)
+ifneq ($(EXAEQUOS),)
+EXT := .js
+else
 EXT := .html
+endif
 else ifeq ($(ARCHI),Darwin)
 EXT := .app
 else ifeq ($(ARCHI),Linux)
@@ -216,13 +225,18 @@ $(error Supported SUFFIX are $(CC_SUFFIX) or $(CXX_SUFFIX))
 endif
 
 ###################################################
-# Determine compiler name
+# Determine compiler name. Exaequos em++.py does not work
 #
+ifeq ($(EXAEQUOS),)
 COMPILER_NAME := $(shell $(COMPILER) --version | head -1 | cut -d" " -f1 | cut -d"-" -f1)
+else
+COMPILER_NAME := em++.py
+endif
 
 ###################################################
 # Determine compiler version
 #
+ifeq ($(EXAEQUOS),)
 ifeq ("$(COMPILER_NAME)","clang")
 COMPILER_VERSION := $(shell $(COMPILER) --version | head -1 | grep -o -E '[0-9]+\.[0-9]+\.[0-9]+' | head -1)
 else ifeq ("$(COMPILER_NAME)","g++")
@@ -231,6 +245,7 @@ else ifeq ("$(COMPILER_NAME)","gcc")
 COMPILER_VERSION := $(shell $(COMPILER) --version | head -1 | grep -o -E '[0-9]+\.[0-9]+\.[0-9]+' | head -1)
 else
 COMPILER_VERSION := 0
+endif
 endif
 
 ###################################################
