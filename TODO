@@ -1,0 +1,19 @@
+make check KO
+Gerer/distinguer/chercher automatiquement DIRS_WITH_MAKEFILE dont on depend (libs) de DIRS_WITH_MAKEFILE de tests et dont on veut faire un seul make clean
+
+pkg config pas de minuscule
+
+emscripten en debug => du sens ?
+
+make rules pour downloader ou compiler 3parts
+rwildcard ne marche quand on donne plusieurs dossiers
+repenser cloning 3parts avec un SHA1
+
+
+FAIT Obtenir:
+./../build-release/TimedPetriNetGui/src/Editor/DearImGui/DearUtils.o: ../../src/Editor/DearImGui/DearUtils.cpp
+
+ar cr pas propre: virer les "../../build-release/objs"
+r - ../../build-release/objs/TimedPetriNetCore/src/Net/Algorithms.o
+
+de meme print: "[89%] Compiling C++ TimedPetriNetCore <= /home/qq/MyGitHub/TimedPetriNetEditor/src/Utils/Path.cpp"
