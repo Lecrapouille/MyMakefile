@@ -158,12 +158,6 @@ ifdef LIB_OBJS
     else
         TARGET_SHARED_LIB_NAME := $(BUILD_DIR)/$(SHARED_LIB_NAME)
     endif
-    # Define where to install pkg-config file
-    ifdef EXAEQUOS
-        PKG_CONFIG_SEARCH_PATH := $(abspath $(P)/exapkgs/pkgconfigs)
-    else
-        PKG_CONFIG_SEARCH_PATH ?=
-    endif
     PKG_FILE_NAME := $(TARGET_NAME).pc
     TARGET_PKG_FILE_NAME := $(BUILD_DIR)/$(PKG_FILE_NAME)
 endif
@@ -480,9 +474,17 @@ POSTCOMPILE = mv -f $(abspath $(OBJS_ROOT_DIR)/$*.Td $(OBJS_ROOT_DIR)/$*.d)
 ###############################################################################
 
 ifdef PKG_LIBS
+    # Define where to install pkg-config file
+    ifdef EXAEQUOS
+        PKG_CONFIG_SEARCH_PATH := $(abspath $(P)/exapkgs/pkgconfigs)
+    else
+        PKG_CONFIG_SEARCH_PATH ?=
+    endif
+
     ifdef PKG_CONFIG_SEARCH_PATH
         SEARCH_CMD := PKG_CONFIG_PATH="$(PKG_CONFIG_SEARCH_PATH)"
     endif
+
     PKGCFG_LIBS := `$(SEARCH_CMD) pkg-config --libs $(PKG_LIBS)`
     PKGCFG_CFLAGS := `$(SEARCH_CMD) pkg-config --cflags $(PKG_LIBS)`
     SEARCH_CMD :=
