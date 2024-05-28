@@ -887,9 +887,14 @@ $(OBJS_ROOT_DIR)/%.d: ;
 ###############################################################################
 #? Download external github code source needed by this project.
 ###############################################################################
-
+# FIXME: find something smarter for installing Exaequos packages
 .PHONY: download-external-libs
 download-external-libs:
+	@$(call print-to,Downloading ExaequOS packages,$(TARGET_NAME),$(THIRDPART_DIR))
+ifdef EXAEQUOS
+	$(Q)$(RM) exapkgs 2> /dev/null
+	$(Q)epm.py install exa-wayland glfw raylib
+endif
 	@$(call print-to,Downloading third-party libs,$(TARGET_NAME),$(THIRDPART_DIR))
 ifneq ("$(wildcard $(USER_SCRIPT_DOWNLOAD_THIRDPARTS))","")
 	$(Q)$(CD) $(THIRDPART_DIR) && ./$(notdir $(USER_SCRIPT_DOWNLOAD_THIRDPARTS)) $(SCRIPT_DOWNLOAD_THIRDPARTS) $(OS) $(TARGET_NAME) $(CC) $(CXX)
