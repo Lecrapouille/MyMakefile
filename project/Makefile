@@ -127,11 +127,9 @@ ifeq ($(OS),Windows_NT)
 # https://github.com/exaequos ? It is simpler to consider as OS rather than
 # target architecture.
 else ifdef EXAEQUOS
-    $(warning Compiling with emscripten-exa for ExaequOS)
     OS := Emscripten
     DEFINES += -DEXAEQUOS
 else ifdef EMSCRIPTEN
-    $(warning Compiling with emscripten)
     OS := Emscripten
 # Linux or Darwin (MacOS)
 else
@@ -174,6 +172,9 @@ YELLOW := \033[33m
 BLUE := \033[34m
 PURPLE := \033[35m
 CYAN := \033[36m
+COLOR_INFO := \033[42m
+COLOR_WARNING := \033[43m
+COLOR_ERROR := \033[41m
 
 ###############################################################################
 # Display predefined colorful messages
@@ -183,6 +184,9 @@ print-simple = $(ECHO_COLOR) "$(PURPLE)*** $1: $(CYAN)$2$(COLOR_DEFAULT)$3"
 print-from = $(ECHO_COLOR) "$(PURPLE)*** $1: $(CYAN)$2$(COLOR_DEFAULT) <= $(YELLOW)$3$(COLOR_DEFAULT)$4"
 print-to = $(ECHO_COLOR) "$(PURPLE)*** $1: $(CYAN)$2$(COLOR_DEFAULT) => $(YELLOW)$3$(COLOR_DEFAULT)$4"
 print-install = $(ECHO_COLOR) "$(PURPLE)*** Installing: $(CYAN)$1$(COLOR_DEFAULT) $(YELLOW)$2$(COLOR_DEFAULT) => $(YELLOW)$3$(COLOR_DEFAULT)$4"
+print-info = $(ECHO_COLOR) "$(COLOR_INFO)!!! $1 !!!$(COLOR_DEFAULT)"
+print-warning = $(ECHO_COLOR) "$(COLOR_WARNING)!!! $1 !!!$(COLOR_DEFAULT)"
+print-error = $(ECHO_COLOR) "$(COLOR_ERROR)!!! $1 !!!$(COLOR_DEFAULT)"
 
 ###############################################################################
 # Make does not offer a recursive recursive wildcard

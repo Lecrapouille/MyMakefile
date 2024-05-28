@@ -1021,6 +1021,11 @@ compiler-info:
 ifeq ($(abspath .), $(abspath $(P)))
 	@$(call print-simple,About compiler,$(COMPILER))
 	$(Q)$(COMPILER) --version
+  ifdef EXAEQUOS
+	@$(call print-info,Compiling with emscripten-exa for ExaequOS)
+  else ifdef ($(OS),Emscripten)
+	@$(call print-info,Compiling with emscripten)
+  endif
 endif
 
 ###############################################################################
