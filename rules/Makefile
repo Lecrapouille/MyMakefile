@@ -961,34 +961,34 @@ veryclean::
 .PHONY: install
 install:: $(TARGET_SHARED_LIB_NAME) $(TARGET_STATIC_LIB_NAME) $(TARGET_BINARY_NAME) $(PKG_FILE)
 ifdef INSTALL_LOCAL_PROJECT_DATA_DIR
-	@$(MKDIR) $(INSTALL_LOCAL_PROJECT_DATA_DIR)
+	$(Q)$(MKDIR) $(INSTALL_LOCAL_PROJECT_DATA_DIR)
 endif
 ifdef DIRS_WITH_MAKEFILE
-	@for d in $(DIRS_WITH_MAKEFILE); do \
+	$(Q)for d in $(DIRS_WITH_MAKEFILE); do \
 	$(MAKE) --no-print-directory --directory=$$d install; \
 	done
 endif
 ifdef TARGET_BINARY_NAME
     ifdef EXAEQUOS
-	@$(call INSTALL_EXAEQUOS_BINARY)
+	$(Q)$(call INSTALL_EXAEQUOS_BINARY)
     else
-	@$(call INSTALL_BINARY)
+	$(Q)$(call INSTALL_BINARY)
     endif
 endif
 ifneq ($(OS),Emscripten)
     ifneq ($(TARGET_STATIC_LIB_NAME)$(TARGET_SHARED_LIB_NAME)$(PKG_FILE_NAME),)
       ifdef TARGET_SHARED_LIB_NAME
-	@$(call INSTALL_PROJECT_SHARED_LIBRARIES)
+	$(Q)$(call INSTALL_PROJECT_SHARED_LIBRARIES)
       endif
       ifdef TARGET_STATIC_LIB_NAME
-	@$(call INSTALL_PROJECT_STATIC_LIBRARIES)
+	$(Q)$(call INSTALL_PROJECT_STATIC_LIBRARIES)
       endif
       ifdef PKG_FILE_NAME
-	@$(call INSTALL_PKG_CONFIG)
+	$(Q)$(call INSTALL_PKG_CONFIG)
       endif
-	@$(call INSTALL_PROJECT_HEADERS)
+	$(Q)$(call INSTALL_PROJECT_HEADERS)
     endif
-	$(call INSTALL_DOCUMENTATION)
+	$(Q)$(call INSTALL_DOCUMENTATION)
 endif
 
 ###############################################################################
