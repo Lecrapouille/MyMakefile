@@ -1,3 +1,4 @@
+#!/bin/bash -ex
 ###############################################################################
 ### This script is called by (make download-external-libs). It will git clone
 ### thirdparts needed for this project but does not compile them. It replaces
@@ -11,15 +12,15 @@ function fatal
 }
 
 ### $1 is given by ../Makefile and refers to the current architecture.
-OS="$1"
+OS="$2"
 if [ "$OS" == "" ]; then
-    fatal "Define the architecture as $1 (i.e Linux, Darwin or Windows)"
+    fatal "Define the architecture as $2 (i.e Linux, Darwin or Windows)"
 fi
 
 ### $2 is given by ../Makefile and refers to the current target.
-TARGET="$2"
+TARGET="$3"
 if [ "$TARGET" == "" ]; then
-    fatal "Define the binary target as $2"
+    fatal "Define the binary target as $3"
 fi
 
 ###

@@ -389,7 +389,7 @@ endif
 define GIT_CLONE_NO_RECURSE
 	$(MKDIR) "$(1)";
 	if [ ! -d "$(1)/$(3)" ]; then \
-		source $(SCRIPT_DOWNLOAD_THIRDPARTS) "$(OS)" "$(TARGET_NAME)" && \
+		source $(USER_SCRIPT_DOWNLOAD_THIRDPARTS) $(SCRIPT_DOWNLOAD_THIRDPARTS) $(OS) $(TARGET_NAME) $(CC) $(CXX) && \
 		cd $(1) && cloning_non_recurse $(2)/$(3); \
 	else \
 		echo "Already cloned"; \
@@ -403,7 +403,7 @@ endef
 define GIT_CLONE_RECURSE
 	$(MKDIR) "$(1)";
 	if [ ! -d "$(1)/$(3)" ]; then \
-		source $(SCRIPT_DOWNLOAD_THIRDPARTS) "$(OS)" "$(TARGET_NAME)" && \
+		source $(USER_SCRIPT_DOWNLOAD_THIRDPARTS) $(SCRIPT_DOWNLOAD_THIRDPARTS) $(OS) $(TARGET_NAME) $(CC) $(CXX) && \
 		cd $(1) && cloning $(2)/$(3); \
 	else \
 		echo "Already cloned"; \
