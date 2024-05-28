@@ -932,7 +932,11 @@ $(PKG_FILE_NAME):
 
 .PHONY: clean
 clean::
+ifeq ($(abspath .), $(abspath $(P)))
+	@$(call print-simple,Cleaning project,$(PROJECT_NAME))
+else
 	@$(call print-simple,Cleaning target,$(TARGET_NAME))
+endif
 	$(Q)$(RM) $(OBJS_ROOT_DIR) 2> /dev/null
 ifdef DIRS_WITH_MAKEFILE
 	@for d in $(DIRS_WITH_MAKEFILE); do \
