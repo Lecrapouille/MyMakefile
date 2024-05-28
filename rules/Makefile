@@ -151,11 +151,12 @@ ifdef LIB_OBJS
     endif
 
     # build/libfoo.a and build/libfoo.so
+    # For Emscripten and ExaequOS shared lib are not managed
     TARGET_STATIC_LIB_NAME := $(BUILD_DIR)/$(STATIC_LIB_NAME)
-    ifdef EXAEQUOS
-        $(warning Sorry for the moment no shared lib can be created for ExaequOS)
+    ifdef ($(OS),Emscripten)
         SHARED_LIB_TARGET :=
-    else
+    endif
+    ifdef SHARED_LIB_TARGET
         TARGET_SHARED_LIB_NAME := $(BUILD_DIR)/$(SHARED_LIB_NAME)
     endif
     PKG_FILE_NAME := $(TARGET_NAME).pc
