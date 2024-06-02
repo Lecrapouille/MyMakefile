@@ -195,11 +195,11 @@ print-error = $(ECHO_COLOR) "$(COLOR_ERROR)!!! $1 !!!$(COLOR_DEFAULT)"
 ###############################################################################
 # Make does not offer a recursive recursive wildcard
 # $1: list of folder to traverse
-# $2: pattern searching files
+# $2: list of patterns
 ###############################################################################
 
-inner-rwildcard=$(wildcard $1$2)$(foreach d,$(wildcard $1*),$(call inner-rwildcard,$d/,$2))
-rwildcard=$(sort $(foreach d,$1,$(call inner-rwildcard,$d,$2)))
+rwildcard=$(foreach d,$(wildcard $(1:=/*)),$(call rwildcard,$d,$2) $(filter $(subst *,%,$2),$d))
+list-folders=$(sort $(dir $(call rwildcard,$1,*)))
 
 ###############################################################################
 # Set extensions for applications, static and shared libraries.
