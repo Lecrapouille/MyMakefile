@@ -187,7 +187,7 @@ COLOR_ERROR := \033[41m
 print-simple = $(ECHO_COLOR) "$(PURPLE)*** $1: $(CYAN)$2$(COLOR_DEFAULT)$3"
 print-from = $(ECHO_COLOR) "$(PURPLE)*** $1: $(CYAN)$2$(COLOR_DEFAULT) <= $(YELLOW)$3$(COLOR_DEFAULT)$4"
 print-to = $(ECHO_COLOR) "$(PURPLE)*** $1: $(CYAN)$2$(COLOR_DEFAULT) => $(YELLOW)$3$(COLOR_DEFAULT)$4"
-print-install = $(ECHO_COLOR) "$(PURPLE)*** Installing: $(CYAN)$1$(COLOR_DEFAULT) $(YELLOW)$2$(COLOR_DEFAULT) => $(YELLOW)$3$(COLOR_DEFAULT)$4"
+print-install = $(ECHO_COLOR) "$(PURPLE)*** Installing $1: $(CYAN)$2$(COLOR_DEFAULT) => $(YELLOW)$3$(COLOR_DEFAULT)"
 print-info = $(ECHO_COLOR) "$(COLOR_INFO)!!! $1 !!!$(COLOR_DEFAULT)"
 print-warning = $(ECHO_COLOR) "$(COLOR_WARNING)!!! $1 !!!$(COLOR_DEFAULT)"
 print-error = $(ECHO_COLOR) "$(COLOR_ERROR)!!! $1 !!!$(COLOR_DEFAULT)"
@@ -279,9 +279,6 @@ endif
 
 # Project installation paths on the operating system folder
 INSTALL_PROJECT_DIR := $(INSTALL_DATADIR)/$(PROJECT_NAME)/$(PROJECT_VERSION)
-INSTALL_PROJECT_DATA_DIR := $(INSTALL_PROJECT_DIR)/data
-INSTALL_PROJECT_DOC_DIR := $(INSTALL_PROJECT_DIR)/doc
-PROJECT_TEMP_DIR := $(TMPDIR)/$(PROJECT_NAME)/$(PROJECT_VERSION)
 
 # Project installation paths on the user folder
 ifeq ($(OS),Linux)
@@ -357,6 +354,15 @@ endif
 
 PATH_PROJECT_LOGO ?= $(abspath $(M)/assets/icons/logo.png)
 DOXYGEN_INPUTS ?= $(abspath $(P)/README.md $(P)/src $(P)/include)
+
+# ? Path where to store temporary project files.
+PROJECT_TEMP_DIR ?= $(TMPDIR)/$(PROJECT_NAME)/$(PROJECT_VERSION)
+
+# Files that may not exist but giving information about the project.
+PROJECT_INFO_FILES := AUTHORS LICENSE README.md ChangeLog VERSION
+
+# File extensions matching for C++ header files.
+REGEXP_CXX_HEADER_FILES ?= *.hpp *.ipp *.tpp *.hh *.h *.hxx *.incl
 
 ###############################################################################
 # MyMakefile paths

@@ -509,147 +509,131 @@ progress-in = $(call progressbar-update-percent) $(ECHO_COLOR) "$(PURPLE)[$(PROG
 progress-out = $(call progressbar-update-percent) $(ECHO_COLOR) "$(PURPLE)[$(PROGRESSBAR_DISPLAY)%] $1 $(CYAN)$2$(COLOR_DEFAULT)$(COLOR_DEFAULT) => $(YELLOW)$3$(COLOR_DEFAULT)"
 
 ###############################################################################
-# Install files present in the folder $1 in the the folder $2. Optionaly add a
-# filter $3 for selecting desired files.
+# Installing a list of files $2 to destination $3. $1 is for the title.
 ###############################################################################
 
-define INSTALL_FILES
-	if [ -d $(1) ]; then \
-		cd $(1); \
-		$(MKDIR) $(2); \
-		for f in `find . $(3) -type f`; do install -m 644 "$$f" "$(2)/$$f"; done; \
-	fi
+define HELPER_INSTALL_LIST_OF_FILES
+	@$(call print-install,$(TARGET_NAME),$1,$2)
+	$(Q)$(foreach folder,$(sort $(dir $1)),install -d -m 755 "$(abspath $2/$(folder))";)
+ 	$(Q)$(foreach file,$1,install -m 644 "$(abspath $(file))" "$2/$(file)";)
 endef
 
 ###############################################################################
-# Universal macro for installing a folder $1 and all its files in the folder $2.
-# Optionaly a file filter can be adding in $3 for installing desired files.
+# Installing a list of folders $2 to destination $3. $1 is for the title.
 ###############################################################################
 
-define INSTALL_FOLDER
-	if [ -d $(1) ]; then \
-		$(call print-to,Installing,$(1),$(2)); \
-		cd $(1); \
-		for d in `find . -type d`; do install -d -m 755 "$$d" "$(2)/$$d"; done; \
-		for f in `find . $(3) -type f`; do install -m 644 "$$f" "$(2)/$$f"; done; \
-	fi
+# Does not work since * can be either folder or files and we do not have function
+# to distinguish them
+#@$(call HELPER_INSTALL_LIST_OF_FILES,$1,$(call rwildcard,$2,*),$3)
+
+define HELPER_INSTALL_LIST_OF_FOLDERS
+	@$(call print-install,$(TARGET_NAME),$1,$2)
+    $(Q)install -d -m 755 $(foreach d,$1,$2/$(d))
+    $(Q)$(foreach d,$1,cp -fr $(d)/. $2/$(d))
 endef
 
 ###############################################################################
-# Install a folder $1 and all its files in the folder $(INSTALL_PROJECT_DIR).
+# Installing a list of C++ header files from $2 to destination $3.
+# $1 is for the title.
 ###############################################################################
 
-define INSTALL_PROJECT_FOLDER
-	@$(call INSTALL_FOLDER,$(1),$(INSTALL_PROJECT_DIR)/$(1))
+define HELPER_INSTALL_CXX_HEADER_FILES
+	@$(call HELPER_INSTALL_LIST_OF_FILES,$(call rwildcard,$1,$(REGEXP_CXX_HEADER_FILES)),$2)
 endef
 
 ###############################################################################
-# Install the project binary.
+# Installing files that may not exist from folder $2 to destination folder $3.
+# $1 is for the title.
 ###############################################################################
 
-define INSTALL_BINARY
-	@$(call print-install,$(PROJECT_NAME),$(TARGET_NAME),$(INSTALL_BINDIR))
-	$(Q)$(MKDIR) $(INSTALL_BINDIR)
-	$(Q)$(CP) $(TARGET_BINARY_NAME) $(INSTALL_BINDIR)/$(TARGET_NAME)-$(PROJECT_VERSION)
+define HELPER_INSTALL_OPTIONAL_FILES
+	@$(call HELPER_INSTALL_LIST_OF_FILES,$(wildcard $1),$2)
+endef
+
+###############################################################################
+# Install the project doc and generated doc folders.
+###############################################################################
+
+define INSTALL_PROJECT_DOC
+	@$(call HELPER_INSTALL_LIST_OF_FOLDERS,$(PROJECT_DOC) $(PROJECT_GENERATED_DOC),$(INSTALL_PROJECT_DIR))
+endef
+
+###############################################################################
+# Install the project data folder and its content.
+###############################################################################
+
+define INSTALL_PROJECT_DATA
+	@$(call HELPER_INSTALL_LIST_OF_FOLDERS,$(PROJECT_DATA),$(INSTALL_PROJECT_DIR))
+endef
+
+###############################################################################
+# Install the project information files: license, readme, version, changelog ...
+###############################################################################
+
+define INSTALL_PROJECT_INFO_FILES
+	@$(call HELPER_INSTALL_OPTIONAL_FILES,$(PROJECT_INFO_FILES),$(INSTALL_PROJECT_DIR))
+endef
+
+###############################################################################
+# Install the project binary  (the project target shall be a stand alone app).
+###############################################################################
+
+ifndef EXAEQUOS
+  define INSTALL_PROJECT_BINARY
+	@$(call print-install,$(TARGET_NAME),$(TARGET_NAME),$(INSTALL_BINDIR))
+	$(Q)install -d -m 755 $(INSTALL_BINDIR)
+	$(Q)install -m 644 $(TARGET_BINARY_NAME) $(INSTALL_BINDIR)/$(TARGET_NAME)-$(PROJECT_VERSION)
 	$(Q)ln -sf $(INSTALL_BINDIR)/$(TARGET_NAME)-$(PROJECT_VERSION) $(INSTALL_BINDIR)/$(TARGET_NAME)
-endef
-
-define INSTALL_EXAEQUOS_BINARY
-	@$(call print-install,$(PROJECT_NAME),$(TARGET_NAME),$(INSTALL_BINDIR))
-	$(Q)$(MKDIR) $(INSTALL_BINDIR)
-	$(Q)$(CP) $(TARGET_BINARY_BASE_NAME).js $(INSTALL_BINDIR)/$(TARGET_NAME).js
-	$(Q)$(CP) $(TARGET_BINARY_BASE_NAME).wasm $(INSTALL_BINDIR)/$(TARGET_NAME).wasm
+  endef
+else
+  define INSTALL_PROJECT_BINARY
+	@$(call print-install,$(TARGET_NAME),$(TARGET_NAME),$(INSTALL_BINDIR))
+	$(Q)install -d -m 755 $(INSTALL_BINDIR)
+	$(Q)install -m 644 $(TARGET_BINARY_BASE_NAME).js $(INSTALL_BINDIR)/$(TARGET_NAME).js
+	$(Q)install -m 644 $(TARGET_BINARY_BASE_NAME).wasm $(INSTALL_BINDIR)/$(TARGET_NAME).wasm
 	$(call CREATE_EXAEQUOS_HTML,exa.html)
-endef
+  endef
+endif
 
 ###############################################################################
-# Install the project documentation.
-# TODO (call INSTALL_FOLDER,examples) to remove .git build external
+# Install the pkg-config file (the project target shall be a library).
 ###############################################################################
 
-define INSTALL_DOCUMENTATION
-    @$(call print-install,$(PROJECT_NAME),$(PROJECT_DOC),$(INSTALL_PROJECT_DOC_DIR))
-	$(Q)install -d -m 755 $(INSTALL_PROJECT_DOC_DIR)
-	@$(call INSTALL_PROJECT_FOLDER,$(PROJECT_DOC))
-	@$(call INSTALL_PROJECT_FOLDER,$(PROJECT_DATA))
-endef
-
-# FIXME   $(Q)install -m 644 $(P)/AUTHORS $(P)/LICENSE $(P)/README.md $(P)/ChangeLog $(INSTALL_PROJECT_DOC_DIR)
-
-###############################################################################
-# Install the pkg-config file (if the project is a library)
-###############################################################################
-
-define INSTALL_PKG_CONFIG
-    @$(call print-install,$(PROJECT_NAME),$(PKG_FILE_NAME),$(INSTALL_PKGLIBDIR))
-	$(Q)$(MKDIR) $(INSTALL_PKGLIBDIR)
+define INSTALL_PROJECT_PKG_CONFIG
+	@$(call print-install,$(TARGET_NAME),$(PKG_FILE_NAME),$(INSTALL_PKGLIBDIR))
+	$(Q)install -d -m 755 $(INSTALL_PKGLIBDIR)
 	$(Q)install -m 644 $(TARGET_PKG_FILE_NAME) $(INSTALL_PKGLIBDIR)/$(TARGET_NAME)-$(PROJECT_VERSION).pc
 	$(Q)ln -snf $(INSTALL_PKGLIBDIR)/$(TARGET_NAME)-$(PROJECT_VERSION).pc $(INSTALL_PKGLIBDIR)/$(PKG_FILE_NAME)
 endef
 
 ###############################################################################
-# Install static and dynamic libraries (if the project is not an application).
+# Install shared libraries (the project target shall be a library).
 ###############################################################################
 
 define INSTALL_PROJECT_SHARED_LIBRARIES
-    @$(call print-install,$(PROJECT_NAME),$(TARGET_SHARED_LIB_NAME),$(INSTALL_LIBDIR))
-	$(Q)$(MKDIR) $(INSTALL_LIBDIR)
+	@$(call print-install,$(TARGET_NAME),$(SHARED_LIB_NAME),$(INSTALL_LIBDIR))
+	$(Q)install -d -m 755 $(INSTALL_LIBDIR)
 	$(Q)install -m 644 $(TARGET_SHARED_LIB_NAME) $(INSTALL_LIBDIR)/$(SHARED_LIB_NAME).$(PROJECT_VERSION)
 	$(Q)ln -snf $(INSTALL_LIBDIR)/$(SHARED_LIB_NAME).$(PROJECT_VERSION) $(INSTALL_LIBDIR)/$(SHARED_LIB_NAME)
 	$(Q)ln -snf $(INSTALL_LIBDIR)/$(SHARED_LIB_NAME).$(PROJECT_VERSION) $(INSTALL_LIBDIR)/$(SHARED_LIB_NAME).$(PROJECT_VERSION_MAJOR)
 endef
 
+###############################################################################
+# Install static libraries (the project target shall be a library).
+###############################################################################
+
 define INSTALL_PROJECT_STATIC_LIBRARIES
-    @$(call print-install,$(PROJECT_NAME),$(TARGET_STATIC_LIB_NAME),$(INSTALL_LIBDIR))
-	$(Q)$(MKDIR) $(INSTALL_LIBDIR)
+	@$(call print-install,$(TARGET_NAME),$(STATIC_LIB_NAME),$(INSTALL_LIBDIR))
+	$(Q)install -d -m 755 $(INSTALL_LIBDIR)
 	$(Q)install -m 644 $(TARGET_STATIC_LIB_NAME) $(INSTALL_LIBDIR)
 endef
 
-define INSTALL_PROJECT_LIBRARIES
-	@$(call print-to,Installing,libs,$(INSTALL_LIBDIR))
-	@$(call INSTALL_PROJECT_SHARED_LIBRARIES)
-	@$(call INSTALL_PROJECT_STATIC_LIBRARIES)
-	@$(call INSTALL_PKG_CONFIG)
-	@$(call INSTALL_PROJECT_HEADERS)
-endef
-
 ###############################################################################
-# Install all .hpp files to the $(INSTALL_INCLUDEDIR) folder.
-# TODO need glob regex
+# Install all .hpp files (the project target shall be a library).
 ###############################################################################
 
 define INSTALL_PROJECT_HEADERS
-	@$(call print-install,$(PROJECT_NAME),headers,$(INSTALL_INCLUDEDIR))
-	@$(call INSTALL_FOLDER,include,$(INSTALL_INCLUDEDIR))
-	@$(call INSTALL_FOLDER,src,$(INSTALL_INCLUDEDIR),\
-	-name "*.[hit]pp" -o -name "*.incl" -o -name "*.h" -o -name "*.hh" -o -name "*.hxx")
-endef
-
-###############################################################################
-# Install hpp files from include folder to the $(INSTALL_INCLUDEDIR) folder.
-###############################################################################
-
-define INSTALL_PROJECT_INCLUDES
-	@$(call print-install,$(PROJECT_NAME),include,$(INSTALL_INCLUDEDIR))
-	@$(call INSTALL_FOLDER,include,$(INSTALL_INCLUDEDIR))
-endef
-
-###############################################################################
-# Install folder and files of third part libraries.
-###############################################################################
-
-define INSTALL_THIRDPART_FOLDER
-	@$(call print-install,$(PROJECT_NAME),$(THIRDPART_DIR),$(INSTALL_INCLUDEDIR))
-	@$(call INSTALL_FOLDER,$(THIRDPART_DIR)/$(1),$(INSTALL_INCLUDEDIR)/$(2),$(3))
-endef
-
-###############################################################################
-# Install files of third part libraries.
-###############################################################################
-
-define INSTALL_THIRDPART_FILES
-	@$(call print-install,$(PROJECT_NAME),$(THIRDPART_DIR)/$(1),$(INSTALL_INCLUDEDIR)/$(2))
-	@$(call INSTALL_FILES,$(THIRDPART_DIR)/$(1),$(INSTALL_INCLUDEDIR)/$(2),-maxdepth 1 -mindepth 1 $(3))
+	@$(call HELPER_INSTALL_CXX_HEADER_FILES,$(P)/include $(P)/src,$(INSTALL_INCLUDEDIR))
 endef
 
 ###############################################################################
@@ -764,7 +748,6 @@ all:: about compiler-info creating-build-folder $(TARGET_SHARED_LIB_NAME) $(TARG
 # Link sources to standalone application.
 ###############################################################################
 
-#ifdef TARGET_BINARY_NAME
 ifdef OBJS
 $(TARGET_BINARY_NAME): $(OBJS) $(LIST_MYMAKEFILES) $(DIRS_WITH_MAKEFILE)
 	@$(call print-to,Linking,$(TARGET_NAME),$@)
@@ -801,7 +784,7 @@ ifdef LIB_OBJS
 $(TARGET_SHARED_LIB_NAME): | $(TARGET_STATIC_LIB_NAME)
 $(TARGET_SHARED_LIB_NAME): $(LIB_OBJS) $(LIST_MYMAKEFILES) $(DIRS_WITH_MAKEFILE)
 	@$(call print-to,"Creating shared library","$(TARGET_NAME)","$@")
-	$(Q)$(COMPILER) $(LDFLAGS) $(DLL_LDFLAGS) -o $@ $(abspath $(LIB_OBJS)) $(LINKER_ALL_LOAD) $(THIRDPART_LIBS) $(NOT_PKG_LIBS) $(PKGCFG_LIBS) $(LINKER_NO_ALL_LOAD) $(LINKER_FLAGS) $(USER_LINKER_FLAGS)
+	$(Q)$(COMPILER) $(LDFLAGS) $(DLL_LDFLAGS) -o $@ $(abspath $(LIB_OBJS)) $(LINKER_ALL_LOAD) $(THIRDPART_LIBS) $(NOT_PKG_LIBS) $(PKGCFG_LIBS) $(LINKER_NO_ALL_LOAD) $(LINKER_FLAGS) $(USER_LDFLAGS)
 endif
 
 ###############################################################################
@@ -810,7 +793,7 @@ endif
 
 $(OBJS_ROOT_DIR)/%.o: %.cpp $(OBJS_ROOT_DIR)/%.d $(LIST_MYMAKEFILES)
 	@$(call progress-in,Compiling C++,$(TARGET_NAME),$<)
-	$(Q)$(CXX) $(CXX_STANDARD) $(DEPFLAGS) $(CXXFLAGS) $(PKGCFG_CFLAGS) $(OPTIM_FLAGS) $(DEFINES) $(INCLUDES) $(USER_CXX_FLAGS) -c $(abspath $<) -o $(abspath $@)
+	$(Q)$(CXX) $(CXX_STANDARD) $(DEPFLAGS) $(CXXFLAGS) $(PKGCFG_CFLAGS) $(OPTIM_FLAGS) $(DEFINES) $(INCLUDES) $(USER_CXXFLAGS) -c $(abspath $<) -o $(abspath $@)
 	@$(POSTCOMPILE)
 
 ###############################################################################
@@ -819,7 +802,7 @@ $(OBJS_ROOT_DIR)/%.o: %.cpp $(OBJS_ROOT_DIR)/%.d $(LIST_MYMAKEFILES)
 
 $(OBJS_ROOT_DIR)/%.o: %.c $(OBJS_ROOT_DIR)/%.d $(LIST_MYMAKEFILES)
 	@$(call progress-in,Compiling C,$(TARGET_NAME),$<)
-	$(Q)$(CC) $(DEPFLAGS) $(CCFLAGS) $(PKGCFG_CFLAGS) $(OPTIM_FLAGS) $(DEFINES) $(INCLUDES) $(USER_CC_FLAGS) -c $(abspath $<) -o $(abspath $@)
+	$(Q)$(CC) $(DEPFLAGS) $(CCFLAGS) $(PKGCFG_CFLAGS) $(OPTIM_FLAGS) $(DEFINES) $(INCLUDES) $(USER_CCFLAGS) -c $(abspath $<) -o $(abspath $@)
 	@$(POSTCOMPILE)
 
 ###############################################################################
@@ -962,7 +945,7 @@ veryclean::
 .PHONY: install
 install:: $(TARGET_SHARED_LIB_NAME) $(TARGET_STATIC_LIB_NAME) $(TARGET_BINARY_NAME) $(PKG_FILE)
 ifdef INSTALL_LOCAL_PROJECT_DATA_DIR
-	$(Q)$(MKDIR) $(INSTALL_LOCAL_PROJECT_DATA_DIR)
+	$(Q)install -d -m 755 $(INSTALL_LOCAL_PROJECT_DATA_DIR)
 endif
 ifdef DIRS_WITH_MAKEFILE
 	$(Q)for d in $(DIRS_WITH_MAKEFILE); do \
@@ -970,26 +953,26 @@ ifdef DIRS_WITH_MAKEFILE
 	done
 endif
 ifdef TARGET_BINARY_NAME
-    ifdef EXAEQUOS
-	$(Q)$(call INSTALL_EXAEQUOS_BINARY)
-    else
-	$(Q)$(call INSTALL_BINARY)
-    endif
+	$(Q)$(call INSTALL_PROJECT_BINARY)
 endif
 ifneq ($(OS),Emscripten)
-    ifneq ($(TARGET_STATIC_LIB_NAME)$(TARGET_SHARED_LIB_NAME)$(PKG_FILE_NAME),)
-      ifdef TARGET_SHARED_LIB_NAME
+  ifneq ($(TARGET_STATIC_LIB_NAME)$(TARGET_SHARED_LIB_NAME)$(PKG_FILE_NAME),)
+    ifdef TARGET_SHARED_LIB_NAME
 	$(Q)$(call INSTALL_PROJECT_SHARED_LIBRARIES)
-      endif
-      ifdef TARGET_STATIC_LIB_NAME
-	$(Q)$(call INSTALL_PROJECT_STATIC_LIBRARIES)
-      endif
-      ifdef PKG_FILE_NAME
-	$(Q)$(call INSTALL_PKG_CONFIG)
-      endif
-	$(Q)$(call INSTALL_PROJECT_HEADERS)
     endif
-	$(Q)$(call INSTALL_DOCUMENTATION)
+    ifdef TARGET_STATIC_LIB_NAME
+	$(Q)$(call INSTALL_PROJECT_STATIC_LIBRARIES)
+    endif
+    ifdef PKG_FILE_NAME
+	$(Q)$(call INSTALL_PROJECT_PKG_CONFIG)
+    endif
+	$(Q)$(call INSTALL_PROJECT_HEADERS)
+  endif
+  ifeq ($(abspath .), $(abspath $(P)))
+	$(Q)$(call INSTALL_PROJECT_DOC)
+	$(Q)$(call INSTALL_PROJECT_DATA)
+	$(Q)$(call INSTALL_PROJECT_INFO_FILES)
+  endif
 endif
 
 ###############################################################################
