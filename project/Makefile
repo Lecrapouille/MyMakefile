@@ -98,13 +98,17 @@ ifdef VERBOSE
 endif
 
 ###############################################################################
-# Use bash instead of shell for Unix systems.
-# Uncomment these two last commands for enabling debuging.
+# Use bash instead of shell for Unix systems. Activate debug mode for Makefile.
 ###############################################################################
 
 SHELL := /bin/bash
-#OLD_SHELL := $(SHELL)
-#SHELL = $(warning [$@])$(OLD_SHELL) -x
+ifdef D
+    DEBUG := $(D)
+endif
+ifdef DEBUG
+    OLD_SHELL := $(SHELL)
+    SHELL = $(warning [$@])$(OLD_SHELL) -x
+endif
 
 ###############################################################################
 # Detect the operating system: Unix, OSX and Windows and architecture.
