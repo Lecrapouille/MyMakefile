@@ -154,9 +154,9 @@ ifdef LIB_OBJS
     # For Emscripten and ExaequOS shared lib are not managed
     TARGET_STATIC_LIB_NAME := $(BUILD_DIR)/$(STATIC_LIB_NAME)
     ifdef ($(OS),Emscripten)
-        SHARED_LIB_TARGET :=
+        SHARED_LIB_NAME :=
     endif
-    ifdef SHARED_LIB_TARGET
+    ifdef SHARED_LIB_NAME
         TARGET_SHARED_LIB_NAME := $(BUILD_DIR)/$(SHARED_LIB_NAME)
     endif
     PKG_FILE_NAME := $(TARGET_NAME).pc
