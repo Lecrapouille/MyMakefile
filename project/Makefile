@@ -90,10 +90,10 @@ PROJECT_VERSION_MAJOR := $(shell echo $(PROJECT_VERSION) | cut -d"." -f1)
 ###############################################################################
 
 Q := @
-ifdef VERBOSE
-    Q :=
-endif
 ifdef V
+    VERBOSE := $(V)
+endif
+ifdef VERBOSE
    Q :=
 endif
 
