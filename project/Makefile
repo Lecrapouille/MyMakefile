@@ -325,19 +325,19 @@ PROJECT_DOC ?= doc
 PROJECT_DOC_DIR := $(abspath $(P)/$(PROJECT_DOC))
 
 #? Name of the directory holding generated reports.
-GENERATED_PROJECT_DOC ?= doc
-GENERATED_PROJECT_DOC_DIR := $(abspath $(P)/$(GENERATED_PROJECT_DOC))
+PROJECT_GENERATED_DOC ?= doc
+PROJECT_GENERATED_DOC_DIR := $(abspath $(P)/$(PROJECT_GENERATED_DOC))
 
 #? Directory where Doxygen is generated
-GENERATED_DOXYGEN_DIR ?= $(GENERATED_PROJECT_DOC_DIR)/doxygen
+GENERATED_DOXYGEN_DIR ?= $(PROJECT_GENERATED_DOC_DIR)/doxygen
 DOXYGEN_INDEX_HTML := $(GENERATED_DOXYGEN_DIR)/html/index.html
 
 #? Path of the generated profiling analysis
-GPROF_ANALYSIS ?= $(GENERATED_PROJECT_DOC_DIR)/profiling/analysis.txt
+GPROF_ANALYSIS ?= $(PROJECT_GENERATED_DOC_DIR)/profiling/analysis.txt
 GPROF_ANALYSIS_FOLDER := $(dir $(GPROF_ANALYSIS))
 
 #? Path of the generated code coverage report
-COVERAGE_RAPPORT ?= $(GENERATED_PROJECT_DOC_DIR)/code-coverage/coverage.html
+COVERAGE_RAPPORT ?= $(PROJECT_GENERATED_DOC_DIR)/code-coverage/coverage.html
 
 #? Define the directory holding project data.
 PROJECT_DATA ?= data
