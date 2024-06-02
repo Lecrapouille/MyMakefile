@@ -81,10 +81,11 @@ endif
 #  - data folder inside the project (when compiled in debug mode).
 #  - data folder inside the user operating system (read-write access).
 #  - data folder installed on the operating system (read-only access).
+#  - folder data on the same folder than the exectuable (maybe read-only access).
 #  - folder local to the executable (maybe read-only access).
 ###############################################################################
 
-SEARCH_DATA_PATHS :=$(INSTALL_LOCAL_PROJECT_DATA_DIR):$(INSTALL_PROJECT_DATA_DIR):.
+SEARCH_DATA_PATHS :=$(INSTALL_LOCAL_PROJECT_DATA_DIR):$(INSTALL_PROJECT_DIR)/$(PROJECT_DATA):$(PROJECT_DATA):.
 ifeq ($(COMPILATION_MODE),debug)
     SEARCH_DATA_PATHS := $(PROJECT_DATA_DIR):$(SEARCH_DATA_PATHS)
 endif
