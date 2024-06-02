@@ -388,10 +388,10 @@ endif
 ###############################################################################
 
 define GIT_CLONE_NO_RECURSE
-	$(MKDIR) "$(1)";
-	if [ ! -d "$(1)/$(3)" ]; then \
+	$(MKDIR) "$1";
+	if [ ! -d "$1/$3" ]; then \
 		source $(USER_SCRIPT_DOWNLOAD_THIRDPARTS) $(SCRIPT_DOWNLOAD_THIRDPARTS) $(OS) $(TARGET_NAME) $(CC) $(CXX) && \
-		cd $(1) && cloning_non_recurse $(2)/$(3); \
+		cd $1 && cloning_non_recurse $2/$3; \
 	else \
 		echo "Already cloned"; \
     fi
@@ -402,10 +402,10 @@ endef
 ###############################################################################
 
 define GIT_CLONE_RECURSE
-	$(MKDIR) "$(1)";
-	if [ ! -d "$(1)/$(3)" ]; then \
+	$(MKDIR) "$1";
+	if [ ! -d "$1/$3" ]; then \
 		source $(USER_SCRIPT_DOWNLOAD_THIRDPARTS) $(SCRIPT_DOWNLOAD_THIRDPARTS) $(OS) $(TARGET_NAME) $(CC) $(CXX) && \
-		cd $(1) && cloning $(2)/$(3); \
+		cd $1 && cloning $2/$3; \
 	else \
 		echo "Already cloned"; \
     fi
@@ -656,24 +656,24 @@ endef
 ###############################################################################
 
 define CREATE_MACOS_INFO_PLIST
-	@$(ECHO) "<?xml version=\"1.0\" encoding=\"UTF-8\"?>" > $(OBJS_ROOT_DIR)/$(1)
-	@$(ECHO) "<!DOCTYPE plist PUBLIC \"-//Apple//DTD PLIST 1.0//EN\" \"http://www.apple.com/DTDs/PropertyList-1.0.dtd\">" >> $(OBJS_ROOT_DIR)/$(1)
-	@$(ECHO) "<plist version=\"1.0\">" >> $(OBJS_ROOT_DIR)/$(1)
-	@$(ECHO) "<dict>" >> $(OBJS_ROOT_DIR)/$(1)
-	@$(ECHO) "    <key>CFBundleExecutable</key>" >> $(OBJS_ROOT_DIR)/$(1)
-	@$(ECHO) "    <string>${TARGET}</string>" >> $(OBJS_ROOT_DIR)/$(1)
-	@$(ECHO) "    <key>CFBundleIdentifier</key>" >> $(OBJS_ROOT_DIR)/$(1)
-	@$(ECHO) "    <string>com.${APPLE_IDENTIFIER}.${TARGET}</string>" >> $(OBJS_ROOT_DIR)/$(1)
-	@$(ECHO) "    <key>CFBundleInfoDictionaryVersion</key>" >> $(OBJS_ROOT_DIR)/$(1)
-	@$(ECHO) "    <string>6.0</string>" >> $(OBJS_ROOT_DIR)/$(1)
-	@$(ECHO) "    <key>CFBundleName</key>" >> $(OBJS_ROOT_DIR)/$(1)
-	@$(ECHO) "    <string>${TARGET}</string>" >> $(OBJS_ROOT_DIR)/$(1)
-	@$(ECHO) "    <key>CFBundlePackageType</key>" >> $(OBJS_ROOT_DIR)/$(1)
-	@$(ECHO) "    <string>APPL</string>" >> $(OBJS_ROOT_DIR)/$(1)
-	@$(ECHO) "    <key>CFBundleIconFile</key>" >> $(OBJS_ROOT_DIR)/$(1)
-	@$(ECHO) "    <string>${TARGET}.icns</string>" >> $(OBJS_ROOT_DIR)/$(1)
-	@$(ECHO) "</dict>" >> $(OBJS_ROOT_DIR)/$(1)
-	@$(ECHO) "</plist>" >> $(OBJS_ROOT_DIR)/$(1)
+	@$(ECHO) "<?xml version=\"1.0\" encoding=\"UTF-8\"?>" > $(OBJS_ROOT_DIR)/$1
+	@$(ECHO) "<!DOCTYPE plist PUBLIC \"-//Apple//DTD PLIST 1.0//EN\" \"http://www.apple.com/DTDs/PropertyList-1.0.dtd\">" >> $(OBJS_ROOT_DIR)/$1
+	@$(ECHO) "<plist version=\"1.0\">" >> $(OBJS_ROOT_DIR)/$1
+	@$(ECHO) "<dict>" >> $(OBJS_ROOT_DIR)/$1
+	@$(ECHO) "    <key>CFBundleExecutable</key>" >> $(OBJS_ROOT_DIR)/$1
+	@$(ECHO) "    <string>${TARGET}</string>" >> $(OBJS_ROOT_DIR)/$1
+	@$(ECHO) "    <key>CFBundleIdentifier</key>" >> $(OBJS_ROOT_DIR)/$1
+	@$(ECHO) "    <string>com.${APPLE_IDENTIFIER}.${TARGET}</string>" >> $(OBJS_ROOT_DIR)/$1
+	@$(ECHO) "    <key>CFBundleInfoDictionaryVersion</key>" >> $(OBJS_ROOT_DIR)/$1
+	@$(ECHO) "    <string>6.0</string>" >> $(OBJS_ROOT_DIR)/$1
+	@$(ECHO) "    <key>CFBundleName</key>" >> $(OBJS_ROOT_DIR)/$1
+	@$(ECHO) "    <string>${TARGET}</string>" >> $(OBJS_ROOT_DIR)/$1
+	@$(ECHO) "    <key>CFBundlePackageType</key>" >> $(OBJS_ROOT_DIR)/$1
+	@$(ECHO) "    <string>APPL</string>" >> $(OBJS_ROOT_DIR)/$1
+	@$(ECHO) "    <key>CFBundleIconFile</key>" >> $(OBJS_ROOT_DIR)/$1
+	@$(ECHO) "    <string>${TARGET}.icns</string>" >> $(OBJS_ROOT_DIR)/$1
+	@$(ECHO) "</dict>" >> $(OBJS_ROOT_DIR)/$1
+	@$(ECHO) "</plist>" >> $(OBJS_ROOT_DIR)/$1
 endef
 
 ###############################################################################
@@ -681,7 +681,7 @@ endef
 ###############################################################################
 
 define CREATE_MACOS_APP_BUNDLE
-	@$(call print-to,Generating bundle application,$(TARGET_NAME),$(1))
+	@$(call print-to,Generating bundle application,$(TARGET_NAME),$1)
 	$(Q)$(RM) $(OBJS_ROOT_DIR)/$(TARGET_NAME)$(EXT) 2> /dev/null
 	$(Q)$(MKDIR) $(OBJS_ROOT_DIR)/$(TARGET_NAME)$(EXT)/Contents/{MacOS,Resources}
 	$(Q)$(CP) $(OBJS_ROOT_DIR)/$(TARGET_NAME) $(OBJS_ROOT_DIR)/$(TARGET_NAME)$(EXT)/Contents/MacOS
@@ -695,43 +695,43 @@ endef
 ###############################################################################
 
 define CREATE_PKG_CONFIG
-	@$(call print-to,Generating pkg-config,$(TARGET_NAME),$(abspath $(1)))
-	@$(ECHO) "prefix=$(PREFIX)" > $(1)
-	@$(ECHO) "exec_prefix=$(PREFIX)" >> $(1)
-	@$(ECHO) "libdir=$(LIBDIR)" >> $(1)
-	@$(ECHO) "includedir=$(INCLUDEDIR)/$(PROJECT_NAME)/$(PROJECT_VERSION)" >> $(1)
-	@$(ECHO) "Name: lib$(TARGET_NAME)" >> $(1)
-	@$(ECHO) "Description: $(DESCRIPTION)" >> $(1)
-	@$(ECHO) "Version: $(PROJECT_VERSION)" >> $(1)
-	@$(ECHO) "Libs: -L$$""{libdir} $(SHORT_LIB_TARGET) $(NOT_PKG_LIBS) $(PKGCFG_LIBS)" >> $(1)
-	@$(ECHO) "Cflags: -I$$""{includedir}" >> $(1)
+	@$(call print-to,Generating pkg-config,$(TARGET_NAME),$(abspath $1))
+	@$(ECHO) "prefix=$(PREFIX)" > $1
+	@$(ECHO) "exec_prefix=$(PREFIX)" >> $1
+	@$(ECHO) "libdir=$(LIBDIR)" >> $1
+	@$(ECHO) "includedir=$(INCLUDEDIR)/$(PROJECT_NAME)/$(PROJECT_VERSION)" >> $1
+	@$(ECHO) "Name: lib$(TARGET_NAME)" >> $1
+	@$(ECHO) "Description: $(DESCRIPTION)" >> $1
+	@$(ECHO) "Version: $(PROJECT_VERSION)" >> $1
+	@$(ECHO) "Libs: -L$$""{libdir} $(SHORT_LIB_TARGET) $(NOT_PKG_LIBS) $(PKGCFG_LIBS)" >> $1
+	@$(ECHO) "Cflags: -I$$""{includedir}" >> $1
 endef
 
 ###############################################################################
 # Create the exa.html file for ExaequOS
 ###############################################################################
 define CREATE_EXAEQUOS_HTML
-	@$(call print-to,"Generating","$(TARGET_NAME)","$(1)","")
-	@$(ECHO) "<!doctype html>" > $(INSTALL_BINDIR)/$(1)
-	@$(ECHO) "<html lang=\"en-us\">" >> $(INSTALL_BINDIR)/$(1)
-	@$(ECHO) "<head>" >> $(INSTALL_BINDIR)/$(1)
-	@$(ECHO) "  <meta charset=\"utf-8\">" >> $(INSTALL_BINDIR)/$(1)
-	@$(ECHO) "  <meta http-equiv=\"Content-Type\" content=\"text/html; charset=utf-8\">" >> $(INSTALL_BINDIR)/$(1)
-	@$(ECHO) "  <title>Emscripten-Generated Code</title>" >> $(INSTALL_BINDIR)/$(1)
-	@$(ECHO) "  <style>" >> $(INSTALL_BINDIR)/$(1)
- 	@$(ECHO) "   html, body {" >> $(INSTALL_BINDIR)/$(1)
- 	@$(ECHO) "     margin : 0;" >> $(INSTALL_BINDIR)/$(1)
-	@$(ECHO) "      padding: 0;" >> $(INSTALL_BINDIR)/$(1)
-	@$(ECHO) "      border: none;" >> $(INSTALL_BINDIR)/$(1)
-	@$(ECHO) "      width: 100%;" >> $(INSTALL_BINDIR)/$(1)
-	@$(ECHO) "      height: 100%;" >> $(INSTALL_BINDIR)/$(1)
-	@$(ECHO) "    }" >> $(INSTALL_BINDIR)/$(1)
-	@$(ECHO) "  </style>" >> $(INSTALL_BINDIR)/$(1)
-	@$(ECHO) "</head>" >> $(INSTALL_BINDIR)/$(1)
-	@$(ECHO) "<body>" >> $(INSTALL_BINDIR)/$(1)
-	@$(ECHO) "  <script async type=\"text/javascript\" src=\"$(TARGET_NAME).js\"></script>" >> $(INSTALL_BINDIR)/$(1)
-	@$(ECHO) "</body>" >> $(INSTALL_BINDIR)/$(1)
-	@$(ECHO) "</html>" >> $(INSTALL_BINDIR)/$(1)
+	@$(call print-to,"Generating","$(TARGET_NAME)","$1","")
+	@$(ECHO) "<!doctype html>" > $(INSTALL_BINDIR)/$1
+	@$(ECHO) "<html lang=\"en-us\">" >> $(INSTALL_BINDIR)/$1
+	@$(ECHO) "<head>" >> $(INSTALL_BINDIR)/$1
+	@$(ECHO) "  <meta charset=\"utf-8\">" >> $(INSTALL_BINDIR)/$1
+	@$(ECHO) "  <meta http-equiv=\"Content-Type\" content=\"text/html; charset=utf-8\">" >> $(INSTALL_BINDIR)/$1
+	@$(ECHO) "  <title>Emscripten-Generated Code</title>" >> $(INSTALL_BINDIR)/$1
+	@$(ECHO) "  <style>" >> $(INSTALL_BINDIR)/$1
+ 	@$(ECHO) "   html, body {" >> $(INSTALL_BINDIR)/$1
+ 	@$(ECHO) "     margin : 0;" >> $(INSTALL_BINDIR)/$1
+	@$(ECHO) "      padding: 0;" >> $(INSTALL_BINDIR)/$1
+	@$(ECHO) "      border: none;" >> $(INSTALL_BINDIR)/$1
+	@$(ECHO) "      width: 100%;" >> $(INSTALL_BINDIR)/$1
+	@$(ECHO) "      height: 100%;" >> $(INSTALL_BINDIR)/$1
+	@$(ECHO) "    }" >> $(INSTALL_BINDIR)/$1
+	@$(ECHO) "  </style>" >> $(INSTALL_BINDIR)/$1
+	@$(ECHO) "</head>" >> $(INSTALL_BINDIR)/$1
+	@$(ECHO) "<body>" >> $(INSTALL_BINDIR)/$1
+	@$(ECHO) "  <script async type=\"text/javascript\" src=\"$(TARGET_NAME).js\"></script>" >> $(INSTALL_BINDIR)/$1
+	@$(ECHO) "</body>" >> $(INSTALL_BINDIR)/$1
+	@$(ECHO) "</html>" >> $(INSTALL_BINDIR)/$1
 endef
 
 ###############################################################################
