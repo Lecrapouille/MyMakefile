@@ -188,7 +188,7 @@ DEFINES += -DCOMPILER_VERSION=\"$(COMPILER_VERSION)\"
 
 # C++ flags
 ifdef CXXFLAGS
-    $(warning You have override default compilation flags CXXFLAGS by your own flags $(CXXFLAGS))
+    $(warning You have override default compilation flags CXXFLAGS by your own flags $(CXXFLAGS) better to set $(USER_CXXFLAGS))
 endif
 
 # Avoid temporary files, speeding up builds
@@ -233,7 +233,7 @@ endif
 
 # C flags
 ifdef CCFLAGS
-    $(warning You have override default compilation flags CCFLAGS by your own flags $(CCFLAGS))
+    $(warning You have override default compilation flags CCFLAGS by your own flags $(CCFLAGS) better to set $(USER_CCFLAGS))
 endif
 
 # Avoid temporary files, speeding up builds
