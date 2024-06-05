@@ -529,7 +529,7 @@ endef
 define HELPER_INSTALL_LIST_OF_FOLDERS
 	@$(call print-install,$(TARGET_NAME),$1,$2)
     $(Q)install -d -m 755 $(foreach d,$1,$2/$(d))
-    $(Q)$(foreach d,$1,cp -fr $(d)/. $2/$(d))
+    $(Q)$(foreach d,$1,cp -fr $(d)/. $2/$(d); )
 endef
 
 ###############################################################################
@@ -538,7 +538,7 @@ endef
 ###############################################################################
 
 define HELPER_INSTALL_CXX_HEADER_FILES
-	@$(call HELPER_INSTALL_LIST_OF_FILES,$(call rwildcard,$1,$(REGEXP_CXX_HEADER_FILES)),$2)
+	@$(call HELPER_INSTALL_LIST_OF_FILES,$(abspath $(call rwildcard,$1,$(REGEXP_CXX_HEADER_FILES))),$2)
 endef
 
 ###############################################################################
@@ -966,7 +966,13 @@ ifneq ($(OS),Emscripten)
     ifdef PKG_FILE_NAME
 	$(Q)$(call INSTALL_PROJECT_PKG_CONFIG)
     endif
+# FIXME: Actuellement on copie plusieurs fois les memes fichiers. Seul la regle
+# du Makefile a la racine devrait le faire mais actuellement il faut compiler une
+# lib. Si on compile une application et des sous lib, on ne compie pas les fichiers
+# headers.
+#    ifeq ($(abspath .), $(abspath $(P)))
 	$(Q)$(call INSTALL_PROJECT_HEADERS)
+#    endif
   endif
   ifeq ($(abspath .), $(abspath $(P)))
 	$(Q)$(call INSTALL_PROJECT_DOC)
