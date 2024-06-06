@@ -106,13 +106,13 @@ endif
 # you have to extract first their object files then combined them into a new
 # static lib.
 define extract-objs-from-static-libs
-    @$(SCRIPT_EXTRACT_STATIC_LIB) $(OBJS_ROOT_DIR) $(THIRDPART_LIBS)
-    $(eval EXTRACTED_OBJS=$(addsuffix /*.o,$(addprefix $(OBJS_ROOT_DIR)/,$(basename $(notdir $(filter-out \,$(THIRDPART_LIBS)))))))
+    @$(SCRIPT_EXTRACT_STATIC_LIB) $(OBJS_ROOT_DIR) $(THIRDPART_LIBS) $(INTERNAL_LIBS)
+    $(eval EXTRACTED_OBJS=$(addsuffix /*.o,$(addprefix $(OBJS_ROOT_DIR)/,$(basename $(notdir $(filter-out \,$(THIRDPART_LIBS) $(INTERNAL_LIBS)))))))
 endef
 
 # Internal libs are supposed to be compiled previously and are by consequent
 # present on the build folder.
-ifdef INTERNAL_LIBS
+ifneq ($(THIRDPART_LIBS)$(INTERNAL_LIBS),)
     INTERNAL_LIBS := $(addsuffix .a,$(addprefix $(BUILD_DIR)/lib,$(INTERNAL_LIBS)))
 endif
 
@@ -771,7 +771,7 @@ endif
 ifdef LIB_OBJS
 $(TARGET_STATIC_LIB_NAME): $(LIB_OBJS) $(LIST_MYMAKEFILES) $(DIRS_WITH_MAKEFILE)
 	@$(call print-to,"Creating static library","$(TARGET_NAME)","$@")
-ifdef THIRDPART_LIBS
+ifneq ($(THIRDPART_LIBS)$(INTERNAL_LIBS),)
 	@$(call extract-objs-from-static-libs)
 endif
 	$(Q)$(CD) $(abspath $(OBJS_ROOT_DIR)) && \
@@ -786,7 +786,7 @@ ifdef LIB_OBJS
 $(TARGET_SHARED_LIB_NAME): | $(TARGET_STATIC_LIB_NAME)
 $(TARGET_SHARED_LIB_NAME): $(LIB_OBJS) $(LIST_MYMAKEFILES) $(DIRS_WITH_MAKEFILE)
 	@$(call print-to,"Creating shared library","$(TARGET_NAME)","$@")
-	$(Q)$(COMPILER) $(LDFLAGS) $(DLL_LDFLAGS) -o $@ $(abspath $(LIB_OBJS)) $(LINKER_ALL_LOAD) $(THIRDPART_LIBS) $(NOT_PKG_LIBS) $(PKGCFG_LIBS) $(LINKER_NO_ALL_LOAD) $(LINKER_FLAGS) $(USER_LDFLAGS)
+	$(Q)$(COMPILER) $(LDFLAGS) $(DLL_LDFLAGS) -o $@ $(abspath $(LIB_OBJS)) $(LINKER_ALL_LOAD) $(THIRDPART_LIBS) $(INTERNAL_LIBS) $(NOT_PKG_LIBS) $(PKGCFG_LIBS) $(LINKER_NO_ALL_LOAD) $(LINKER_FLAGS) $(USER_LDFLAGS)
 endif
 
 ###############################################################################
