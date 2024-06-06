@@ -156,7 +156,7 @@ ifdef LIB_OBJS
     # build/libfoo.a and build/libfoo.so
     # For Emscripten and ExaequOS shared lib are not managed
     TARGET_STATIC_LIB_NAME := $(BUILD_DIR)/$(STATIC_LIB_NAME)
-    ifdef ($(OS),Emscripten)
+    ifneq ($(OS),Emscripten)
         SHARED_LIB_NAME :=
     endif
     ifdef SHARED_LIB_NAME
@@ -1013,10 +1013,12 @@ compiler-info:
 ifeq ($(abspath .), $(abspath $(P)))
 	@$(call print-simple,About compiler,$(COMPILER))
 	$(Q)$(COMPILER) --version
-  ifdef EXAEQUOS
+  ifeq ($(OS),Emscripten)
+    ifdef EXAEQUOS
 	@$(call print-info,Compiling with emscripten-exa for ExaequOS)
-  else ifdef ($(OS),Emscripten)
+    else
 	@$(call print-info,Compiling with emscripten)
+    endif
   endif
 endif
 
