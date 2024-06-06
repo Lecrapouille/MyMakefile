@@ -845,7 +845,7 @@ $(OBJS) $(LIB_OBJS): $(DIRS_WITH_MAKEFILE)
 
 .PHONY: $(DIRS_WITH_MAKEFILE)
 $(DIRS_WITH_MAKEFILE):
-	$(Q)$(MAKE) --no-print-directory --directory=$@ all
+	$(Q)$(MAKE) --no-print-directory $(addprefix --directory=,$@) all
 endif
 
 ###############################################################################
@@ -929,7 +929,7 @@ endif
 	$(Q)$(RM) $(OBJS_ROOT_DIR) 2> /dev/null
 ifdef DIRS_WITH_MAKEFILE
 	@for d in $(DIRS_WITH_MAKEFILE); do \
-	$(MAKE) --no-print-directory --directory=$$d clean; \
+	$(MAKE) --no-print-directory $(addprefix --directory=,$$d) clean; \
 	done
 endif
 
@@ -953,7 +953,7 @@ ifdef INSTALL_LOCAL_PROJECT_DATA_DIR
 endif
 ifdef DIRS_WITH_MAKEFILE
 	$(Q)for d in $(DIRS_WITH_MAKEFILE); do \
-	$(MAKE) --no-print-directory --directory=$$d install; \
+	$(MAKE) --no-print-directory $(addprefix --directory=,$$d) install; \
 	done
 endif
 ifdef TARGET_BINARY_NAME
