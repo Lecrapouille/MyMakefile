@@ -157,13 +157,12 @@ ifdef LIB_OBJS
     # For Emscripten and ExaequOS shared lib are not managed
     TARGET_STATIC_LIB_NAME := $(BUILD_DIR)/$(STATIC_LIB_NAME)
     ifneq ($(OS),Emscripten)
+        TARGET_SHARED_LIB_NAME := $(BUILD_DIR)/$(SHARED_LIB_NAME)
+        PKG_FILE_NAME := $(TARGET_NAME).pc
+        TARGET_PKG_FILE_NAME := $(BUILD_DIR)/$(PKG_FILE_NAME)
+    else
         SHARED_LIB_NAME :=
     endif
-    ifdef SHARED_LIB_NAME
-        TARGET_SHARED_LIB_NAME := $(BUILD_DIR)/$(SHARED_LIB_NAME)
-    endif
-    PKG_FILE_NAME := $(TARGET_NAME).pc
-    TARGET_PKG_FILE_NAME := $(BUILD_DIR)/$(PKG_FILE_NAME)
 endif
 ifdef OBJS
     TARGET_BINARY_BASE_NAME := $(BUILD_DIR)/$(TARGET_NAME)
@@ -744,7 +743,7 @@ endef
 ###############################################################################
 
 .PHONY: all
-all:: about compiler-info creating-build-folder $(TARGET_SHARED_LIB_NAME) $(TARGET_STATIC_LIB_NAME) $(TARGET_BINARY_NAME) $(PKG_FILE_NAME)
+all:: about compiler-info creating-build-folder $(TARGET_SHARED_LIB_NAME) $(TARGET_STATIC_LIB_NAME) $(TARGET_BINARY_NAME) $(TARGET_PKG_FILE_NAME)
 
 ###############################################################################
 # Link sources to standalone application.
@@ -787,6 +786,16 @@ $(TARGET_SHARED_LIB_NAME): | $(TARGET_STATIC_LIB_NAME)
 $(TARGET_SHARED_LIB_NAME): $(LIB_OBJS) $(LIST_MYMAKEFILES) $(DIRS_WITH_MAKEFILE)
 	@$(call print-to,"Creating shared library","$(TARGET_NAME)","$@")
 	$(Q)$(COMPILER) $(LDFLAGS) $(DLL_LDFLAGS) -o $@ $(abspath $(LIB_OBJS)) $(LINKER_ALL_LOAD) $(THIRDPART_LIBS) $(INTERNAL_LIBS) $(NOT_PKG_LIBS) $(PKGCFG_LIBS) $(LINKER_NO_ALL_LOAD) $(LINKER_FLAGS) $(USER_LDFLAGS)
+endif
+
+###############################################################################
+# Generate the pkg-config file.
+###############################################################################
+
+ifdef LIB_OBJS
+$(TARGET_PKG_FILE_NAME): | $(TARGET_SHARED_LIB_NAME)
+$(TARGET_PKG_FILE_NAME): $(LIB_OBJS) $(LIST_MYMAKEFILES) $(DIRS_WITH_MAKEFILE)
+	@$(call CREATE_PKG_CONFIG,$(TARGET_PKG_FILE_NAME))
 endif
 
 ###############################################################################
@@ -907,13 +916,6 @@ else
 endif
 
 ###############################################################################
-# Generate the pkg-config file.
-###############################################################################
-
-$(PKG_FILE_NAME):
-	@$(call CREATE_PKG_CONFIG,$(TARGET_PKG_FILE_NAME))
-
-###############################################################################
 #? Clean the project target build and other Makefiles cleaning.
 ###############################################################################
 
@@ -945,7 +947,7 @@ veryclean::
 ###############################################################################
 
 .PHONY: install
-install:: $(TARGET_SHARED_LIB_NAME) $(TARGET_STATIC_LIB_NAME) $(TARGET_BINARY_NAME) $(PKG_FILE)
+install:: $(TARGET_SHARED_LIB_NAME) $(TARGET_STATIC_LIB_NAME) $(TARGET_BINARY_NAME) $(TARGET_PKG_FILE_NAME)
 ifdef INSTALL_LOCAL_PROJECT_DATA_DIR
 	$(Q)install -d -m 755 $(INSTALL_LOCAL_PROJECT_DATA_DIR)
 endif
