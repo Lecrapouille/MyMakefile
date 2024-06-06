@@ -766,7 +766,6 @@ endif
 # Link sources as static library.
 ###############################################################################
 
-#ifdef TARGET_STATIC_LIB_NAME
 ifdef LIB_OBJS
 $(TARGET_STATIC_LIB_NAME): $(LIB_OBJS) $(LIST_MYMAKEFILES) $(DIRS_WITH_MAKEFILE)
 	@$(call print-to,"Creating static library","$(TARGET_NAME)","$@")
@@ -928,7 +927,7 @@ else
 endif
 	$(Q)$(RM) $(OBJS_ROOT_DIR) 2> /dev/null
 ifdef DIRS_WITH_MAKEFILE
-	@for d in $(DIRS_WITH_MAKEFILE); do \
+	$(Q)for d in $(DIRS_WITH_MAKEFILE); do \
 	$(MAKE) --no-print-directory $(addprefix --directory=,$$d) clean; \
 	done
 endif
