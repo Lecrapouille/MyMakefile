@@ -773,7 +773,8 @@ ifneq ($(THIRDPART_LIBS)$(INTERNAL_LIBS),)
 	@$(call extract-objs-from-static-libs)
 endif
 	$(Q)$(CD) $(abspath $(OBJS_ROOT_DIR)) && \
-    $(AR) $(ARFLAGS) $@ $(patsubst $(abspath $(BUILD_DIR)/objs)/%,%,$(abspath $(LIB_OBJS) $(EXTRACTED_OBJS)))
+    $(AR) $(ARFLAGS) $@ $(patsubst $(abspath $(BUILD_DIR)/objs)/%,%,$(abspath $(LIB_OBJS) $(EXTRACTED_OBJS))) && \
+    ranlib $@
 endif
 
 ###############################################################################
