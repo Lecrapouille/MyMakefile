@@ -43,7 +43,9 @@ ifeq ($(OS),Emscripten)
     AR := $(EMAR)
 
     # Force default flags for ar command.
-    ARFLAGS := crs
+    ifdef EXAEQUOS
+        ARFLAGS := crs
+    endif
 
     #? command for running the application
     RUN := emrun
