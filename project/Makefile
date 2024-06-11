@@ -202,6 +202,14 @@ rwildcard=$(foreach d,$(wildcard $(1:=/*)),$(call rwildcard,$d,$2) $(filter $(su
 list-folders=$(sort $(dir $(call rwildcard,$1,*)))
 
 ###############################################################################
+# Internal libs are supposed to be compiled previously and are by consequent
+# present on the build folder.
+###############################################################################
+define internal-lib
+    $(addsuffix .a,$(addprefix $(BUILD_DIR)/lib,$1))
+endef
+
+###############################################################################
 # Set extensions for applications, static and shared libraries.
 # Beware: for MacOS target a bundle application (xxx.app) is a folder not a
 # binary which is inside the folder. See macro CREATE_MACOS_APP_BUNDLE.

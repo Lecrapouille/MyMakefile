@@ -110,12 +110,6 @@ define extract-objs-from-static-libs
     $(eval EXTRACTED_OBJS=$(addsuffix /*.o,$(addprefix $(OBJS_ROOT_DIR)/,$(basename $(notdir $(filter-out \,$(THIRDPART_LIBS) $(INTERNAL_LIBS)))))))
 endef
 
-# Internal libs are supposed to be compiled previously and are by consequent
-# present on the build folder.
-ifneq ($(THIRDPART_LIBS)$(INTERNAL_LIBS),)
-    INTERNAL_LIBS := $(addsuffix .a,$(addprefix $(BUILD_DIR)/lib,$(INTERNAL_LIBS)))
-endif
-
 # Else, the user have supposed given some C/C++ file to compile. Check if at least one is present.
 ifeq ($(LIB_FILES)$(SRC_FILES),)
     $(error Found no C/C++ object files to compile. Please set correctly LIB_DIRS or/and SRC_DIRS)
@@ -743,14 +737,14 @@ endef
 ###############################################################################
 
 .PHONY: all
-all:: about compiler-info creating-build-folder $(TARGET_SHARED_LIB_NAME) $(TARGET_STATIC_LIB_NAME) $(TARGET_BINARY_NAME) $(TARGET_PKG_FILE_NAME)
+all:: about compiler-info creating-build-folder $(DIRS_WITH_MAKEFILE) $(TARGET_BINARY_NAME) $(TARGET_SHARED_LIB_NAME) $(TARGET_STATIC_LIB_NAME) $(TARGET_PKG_FILE_NAME)
 
 ###############################################################################
 # Link sources to standalone application.
 ###############################################################################
 
 ifdef OBJS
-$(TARGET_BINARY_NAME): $(OBJS) $(LIST_MYMAKEFILES) $(DIRS_WITH_MAKEFILE)
+$(TARGET_BINARY_NAME): $(OBJS) $(LIST_MYMAKEFILES)
 	@$(call print-to,Linking,$(TARGET_NAME),$@)
 	$(Q)$(COMPILER) $(LDFLAGS) $(OBJS) $(THIRDPART_OBJS) -o $(TARGET_BINARY_NAME) $(THIRDPART_LIBS) $(INTERNAL_LIBS) $(NOT_PKG_LIBS) $(PKGCFG_LIBS) $(LINKER_FLAGS)
 ifdef STRIP
@@ -767,7 +761,7 @@ endif
 ###############################################################################
 
 ifdef LIB_OBJS
-$(TARGET_STATIC_LIB_NAME): $(LIB_OBJS) $(LIST_MYMAKEFILES) $(DIRS_WITH_MAKEFILE)
+$(TARGET_STATIC_LIB_NAME): $(LIB_OBJS) $(INTERNAL_LIBS) $(LIST_MYMAKEFILES)
 	@$(call print-to,"Creating static library","$(TARGET_NAME)","$@")
 ifneq ($(THIRDPART_LIBS)$(INTERNAL_LIBS),)
 	@$(call extract-objs-from-static-libs)
@@ -783,7 +777,7 @@ endif
 
 ifdef LIB_OBJS
 $(TARGET_SHARED_LIB_NAME): | $(TARGET_STATIC_LIB_NAME)
-$(TARGET_SHARED_LIB_NAME): $(LIB_OBJS) $(LIST_MYMAKEFILES) $(DIRS_WITH_MAKEFILE)
+$(TARGET_SHARED_LIB_NAME): $(LIB_OBJS) $(INTERNAL_LIBS) $(LIST_MYMAKEFILES)
 	@$(call print-to,"Creating shared library","$(TARGET_NAME)","$@")
 	$(Q)$(COMPILER) $(LDFLAGS) $(DLL_LDFLAGS) -o $@ $(abspath $(LIB_OBJS)) $(LINKER_ALL_LOAD) $(THIRDPART_LIBS) $(INTERNAL_LIBS) $(NOT_PKG_LIBS) $(PKGCFG_LIBS) $(LINKER_NO_ALL_LOAD) $(LINKER_FLAGS) $(USER_LDFLAGS)
 endif
@@ -794,7 +788,7 @@ endif
 
 ifdef LIB_OBJS
 $(TARGET_PKG_FILE_NAME): | $(TARGET_SHARED_LIB_NAME)
-$(TARGET_PKG_FILE_NAME): $(LIB_OBJS) $(LIST_MYMAKEFILES) $(DIRS_WITH_MAKEFILE)
+$(TARGET_PKG_FILE_NAME): $(LIB_OBJS) $(INTERNAL_LIBS) $(LIST_MYMAKEFILES)
 	@$(call CREATE_PKG_CONFIG,$(TARGET_PKG_FILE_NAME))
 endif
 
@@ -841,7 +835,7 @@ endif
 ###############################################################################
 
 ifdef DIRS_WITH_MAKEFILE
-$(OBJS) $(LIB_OBJS): $(DIRS_WITH_MAKEFILE)
+$(OBJS) $(LIB_OBJS): $(INTERNAL_LIBS)
 
 .PHONY: $(DIRS_WITH_MAKEFILE)
 $(DIRS_WITH_MAKEFILE):
