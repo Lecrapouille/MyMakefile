@@ -1,4 +1,4 @@
-#!/bin/bash -ex
+#!/bin/bash -e
 ###############################################################################
 ### This script is called by (make download-external-libs). It will git clone
 ### thirdparts needed for this project but does not compile them. It replaces
@@ -11,50 +11,15 @@ function fatal
     exit 1
 }
 
-### $1 is given by ../Makefile and refers to the current architecture.
-OS="$2"
-if [ "$OS" == "" ]; then
-    fatal "Define the architecture as $2 (i.e Linux, Darwin or Windows)"
-fi
-
-### $2 is given by ../Makefile and refers to the current target.
-TARGET="$3"
-if [ "$TARGET" == "" ]; then
-    fatal "Define the binary target as $3"
-fi
-
-###
 readonly GITHUB_URL="https://github.com"
-readonly SAVANA_URL="http://git.savannah.gnu.org/git"
 
-### Git clone a GitHub repository $1
-URL=$GITHUB_URL
-function cloning
+TARGET=$1
+function do_cloning_
 {
-    REPO=$1
-
-    echo -e "\033[35m*** Cloning: \033[36m$TARGET\033[00m <= \033[33m$URL/$REPO\033[00m"
-    if [ "$URL" == "$GITHUB_URL" ]; then
-        ARR=(${REPO//\// })
-        if [ "${ARR[1]}" == "" ]; then
-            fatal "Malform repository. Shall be user_name/repo_name"
-        else
-            rm -fr ${ARR[1]}
-        fi
-    else
-        rm -fr $REPO
-    fi
-
+    URL=$1
+    REPO=$2
     shift
-    git clone $URL/$REPO --depth=1 --recurse $* > /dev/null
-
-    # Restore
-    URL=$GITHUB_URL
-}
-
-function cloning_non_recurse
-{
-    REPO=$1
+    shift
 
     echo -e "\033[35m*** Cloning: \033[36m$URL/$REPO\033[00m => \033[33m$TARGET\033[00m"
     if [ "$URL" == "$GITHUB_URL" ]; then
@@ -65,12 +30,26 @@ function cloning_non_recurse
             rm -fr ${ARR[1]}
         fi
     else
-        rm -fr $REPO
+        fatal "Only GitHub repo is managed for now"
     fi
 
-    shift
     git clone $URL/$REPO --depth=1 $* > /dev/null
-
-    # Restore
-    URL=$GITHUB_URL
 }
+
+function cloning_non_recurse
+{
+    REPO=$1
+    shift
+    do_cloning_ $GITHUB_URL $REPO $*
+}
+
+function cloning
+{
+    REPO=$1
+    shift
+    do_cloning_ $GITHUB_URL $REPO --recurse $*
+}
+
+if [ ! -z "$2" ]; then
+    source $2
+fi

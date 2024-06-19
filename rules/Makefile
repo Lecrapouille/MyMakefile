@@ -380,34 +380,6 @@ ifdef USE_COVERAGE
 endif
 
 ###############################################################################
-# git clone non-recursively a project with depth history set to 1.
-###############################################################################
-
-define GIT_CLONE_NO_RECURSE
-	$(MKDIR) "$1";
-	if [ ! -d "$1/$3" ]; then \
-		source $(USER_SCRIPT_DOWNLOAD_THIRDPARTS) $(SCRIPT_DOWNLOAD_THIRDPARTS) $(OS) $(TARGET_NAME) $(CC) $(CXX) && \
-		cd $1 && cloning_non_recurse $2/$3; \
-	else \
-		echo "Already cloned"; \
-    fi
-endef
-
-###############################################################################
-# git clone a project recursively a project with depth history set to 1.
-###############################################################################
-
-define GIT_CLONE_RECURSE
-	$(MKDIR) "$1";
-	if [ ! -d "$1/$3" ]; then \
-		source $(USER_SCRIPT_DOWNLOAD_THIRDPARTS) $(SCRIPT_DOWNLOAD_THIRDPARTS) $(OS) $(TARGET_NAME) $(CC) $(CXX) && \
-		cd $1 && cloning $2/$3; \
-	else \
-		echo "Already cloned"; \
-    fi
-endef
-
-###############################################################################
 # Activate backward-cpp library if desired.
 ###############################################################################
 
@@ -733,6 +705,34 @@ define RULE_CREATE_DOXYFILES
 endef
 
 ###############################################################################
+# git clone non-recursively a project with depth history set to 1.
+###############################################################################
+
+define GIT_CLONE_NO_RECURSE
+	$(MKDIR) "$1";
+	if [ ! -d "$1/$3" ]; then \
+		source $(SCRIPT_DOWNLOAD_THIRDPARTS) $(PROJECT_NAME) && \
+		cd $1 && cloning_non_recurse $2/$3; \
+	else \
+		echo "Already cloned"; \
+    fi
+endef
+
+###############################################################################
+# git clone a project recursively a project with depth history set to 1.
+###############################################################################
+
+define GIT_CLONE_RECURSE
+	$(MKDIR) "$1";
+	if [ ! -d "$1/$3" ]; then \
+		source $(SCRIPT_DOWNLOAD_THIRDPARTS) $(PROJECT_NAME) && \
+		cd $1 && cloning $2/$3; \
+	else \
+		echo "Already cloned"; \
+    fi
+endef
+
+###############################################################################
 #? Compile the standalone application or static/shared libraries.
 ###############################################################################
 
@@ -889,7 +889,7 @@ ifdef EXAEQUOS
 endif
 	@$(call print-to,Downloading third-party libs,$(TARGET_NAME),$(THIRDPART_DIR))
 ifneq ("$(wildcard $(USER_SCRIPT_DOWNLOAD_THIRDPARTS))","")
-	$(Q)$(CD) $(THIRDPART_DIR) && ./$(notdir $(USER_SCRIPT_DOWNLOAD_THIRDPARTS)) $(SCRIPT_DOWNLOAD_THIRDPARTS) $(OS) $(TARGET_NAME) $(CC) $(CXX)
+	$(Q)cd $(THIRDPART_DIR) && $(SCRIPT_DOWNLOAD_THIRDPARTS) $(PROJECT_NAME) $(USER_SCRIPT_DOWNLOAD_THIRDPARTS)
 else
 	$(Q)$(ECHO_COLOR) "  $(YELLOW):( $(CYAN)Missing file $(USER_SCRIPT_DOWNLOAD_THIRDPARTS) $(YELLOW):("
 	$(Q)$(ECHO_COLOR) "  $(YELLOW):) $(CYAN)Or no third-party libs to download ! $(YELLOW):)$(COLOR_DEFAULT)"
