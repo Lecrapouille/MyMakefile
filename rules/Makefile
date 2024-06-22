@@ -93,84 +93,10 @@ ifeq ($(COMPILATION_MODE),debug)
 endif
 
 ###############################################################################
-# Manage the C/C++ project.
-###############################################################################
-
-# Rebuild the whole project if a Makefile has been modified
-LIST_MYMAKEFILES := $(M)/project/Makefile $(M)/rules/Makefile $(P)/Makefile
-ifneq (,$(wildcard $(P)/Makefile.common))
-    LIST_MYMAKEFILES += $(P)/Makefile.common
-endif
-
-# static libs are just zipped object files. When you want to merge static libs
-# you have to extract first their object files then combined them into a new
-# static lib.
-define extract-objs-from-static-libs
-    @$(SCRIPT_EXTRACT_STATIC_LIB) $(OBJS_ROOT_DIR) $(THIRDPART_LIBS) $(INTERNAL_LIBS)
-    $(eval EXTRACTED_OBJS=$(addsuffix /*.o,$(addprefix $(OBJS_ROOT_DIR)/,$(basename $(notdir $(filter-out \,$(THIRDPART_LIBS) $(INTERNAL_LIBS)))))))
-endef
-
-# Else, the user have supposed given some C/C++ file to compile. Check if at least one is present.
-ifeq ($(LIB_FILES)$(SRC_FILES),)
-    $(error Found no C/C++ object files to compile. Please set correctly LIB_DIRS or/and SRC_DIRS)
-endif
-
-# Subfolders to create inside build folder
-BUILD_FOLDERS :=
-
-# Convert C/C++ application files to object files
-ifdef SRC_FILES
-    SRC_FILES := $(foreach d,$(SRC_FILES),$(abspath $d))
-    SRC_FILES := $(patsubst $(abspath $(P))/%,%,$(SRC_FILES))
-    BUILD_FOLDERS += $(dir $(SRC_FILES))
-    OBJS := $(addprefix $(OBJS_ROOT_DIR)/,$(addsuffix .o,$(basename $(SRC_FILES))))
-endif
-
-# Convert C/C++ library files to object files
-ifdef LIB_FILES
-    LIB_FILES := $(foreach d,$(LIB_FILES),$(abspath $d))
-    LIB_FILES := $(patsubst $(abspath $(P))/%,%,$(LIB_FILES))
-    BUILD_FOLDERS += $(dir $(LIB_FILES))
-    LIB_OBJS := $(addprefix $(OBJS_ROOT_DIR)/,$(addsuffix .o,$(basename $(LIB_FILES))))
-endif
-
-BUILD_FOLDERS := $(sort $(BUILD_FOLDERS))
-VPATH += $(abspath $(P))
-
-# Do we compile a library or a standalone application ?
-ifdef LIB_OBJS
-    # libfoo.a and libfoo.so and avoid adding extra lib if already set
-    SHARED_LIB_NAME := $(TARGET_NAME)$(EXT_DYNAMIC_LIB)
-    STATIC_LIB_NAME := $(TARGET_NAME)$(EXT_STATIC_LIB)
-    ifneq "$(filter lib%,$(TARGET_NAME))" "$(TARGET_NAME)"
-        SHARED_LIB_NAME := lib$(SHARED_LIB_NAME)
-        STATIC_LIB_NAME := lib$(STATIC_LIB_NAME)
-    endif
-
-    # build/libfoo.a and build/libfoo.so
-    # For Emscripten and ExaequOS shared lib are not managed
-    TARGET_STATIC_LIB_NAME := $(BUILD_DIR)/$(STATIC_LIB_NAME)
-    ifneq ($(OS),Emscripten)
-        TARGET_SHARED_LIB_NAME := $(BUILD_DIR)/$(SHARED_LIB_NAME)
-        PKG_FILE_NAME := $(TARGET_NAME).pc
-        TARGET_PKG_FILE_NAME := $(BUILD_DIR)/$(PKG_FILE_NAME)
-    else
-        SHARED_LIB_NAME :=
-    endif
-endif
-ifdef OBJS
-    TARGET_BINARY_BASE_NAME := $(BUILD_DIR)/$(TARGET_NAME)
-    TARGET_BINARY_NAME := $(TARGET_BINARY_BASE_NAME)$(EXT_BINARY)
-endif
-
-# Include generated folders
-INCLUDES := $(addprefix -I,$(abspath $(INCLUDES) $(GENERATION_DIR) $(DOWNLOAD_DIR)))
-
-###############################################################################
 # Compilation flags. Mimic a -Wwhole-flags if it would have existed.
 ###############################################################################
 
-ifneq ($(filter %.cpp,$(SRC_FILES) $(LIB_FILES)),)
+ifneq ($(filter %.cpp,$(strip $(SRC_FILES) $(LIB_FILES))),)
     COMPILER := $(CXX) $(CXX_STANDARD)
 else
     COMPILER := $(CC)
@@ -342,6 +268,7 @@ endif
 # TODO: -O0 seems better for debuging with g++
 # GCC and clang Optimization flags
 ###############################################################################
+
 ifeq ($(COMPILATION_MODE),debug)
     ifeq ($(OS),Linux)
         USE_BACKWARD := 1
@@ -404,8 +331,8 @@ ifdef USE_BACKWARD
 endif
 
 ifdef USE_BACKWARD
-    SRC_FILES += $(DOWNLOAD_DIR)/backward-cpp/backward.cpp
-    LIB_FILES += $(DOWNLOAD_DIR)/backward-cpp/backward.cpp
+    PRIVATE_SRC_FILES += $(DOWNLOAD_DIR)/backward-cpp/backward.cpp
+    PRIVATE_SLIB_FILES += $(DOWNLOAD_DIR)/backward-cpp/backward.cpp
     INCLUDES += -I$(DOWNLOAD_DIR)/backward-cpp
     VPATH += $(DOWNLOAD_DIR)/backward-cpp
     DEFINES += -DBACKWARD_HAS_DW=1 -DBACKWARD_HAS_BFD=0 -DBACKWARD_HAS_DWARF=0
@@ -429,6 +356,79 @@ ifdef USE_DEBUG_MACRO
     INCLUDES += -I$(OBJS_ROOT_DIR)/dbg-macro
     DEFINES += -DBG_MACRO_NO_WARNING
 endif
+
+###############################################################################
+# Manage the C/C++ project.
+###############################################################################
+
+# Rebuild the whole project if a Makefile has been modified
+LIST_MYMAKEFILES := $(M)/project/Makefile $(M)/rules/Makefile $(P)/Makefile
+ifneq (,$(wildcard $(P)/Makefile.common))
+    LIST_MYMAKEFILES += $(P)/Makefile.common
+endif
+
+# static libs are just zipped object files. When you want to merge static libs
+# you have to extract first their object files then combined them into a new
+# static lib.
+define extract-objs-from-static-libs
+    @$(SCRIPT_EXTRACT_STATIC_LIB) $(OBJS_ROOT_DIR) $(THIRDPART_LIBS) $(INTERNAL_LIBS)
+    $(eval EXTRACTED_OBJS=$(addsuffix /*.o,$(addprefix $(OBJS_ROOT_DIR)/,$(basename $(notdir $(filter-out \,$(THIRDPART_LIBS) $(INTERNAL_LIBS)))))))
+endef
+
+# Else, the user have supposed given some C/C++ file to compile. Check if at least one is present.
+ifeq ($(strip $(LIB_FILES) $(SRC_FILES)),)
+    $(error Found no C/C++ object files to compile. Please set correctly LIB_DIRS or/and SRC_DIRS)
+endif
+
+# Subfolders to create inside build folder
+BUILD_FOLDERS :=
+
+# Convert C/C++ application files to object files
+ifdef SRC_FILES
+    SRC_FILES := $(foreach d,$(SRC_FILES) $(PRIVATE_SRC_FILES),$(abspath $d))
+    SRC_FILES := $(patsubst $(abspath $(P))/%,%,$(SRC_FILES))
+    BUILD_FOLDERS += $(dir $(SRC_FILES))
+    OBJS := $(addprefix $(OBJS_ROOT_DIR)/,$(addsuffix .o,$(basename $(SRC_FILES))))
+endif
+
+# Convert C/C++ library files to object files
+ifdef LIB_FILES
+    LIB_FILES := $(foreach d,$(LIB_FILES) $(PRIVATE_LIB_FILES),$(abspath $d))
+    LIB_FILES := $(patsubst $(abspath $(P))/%,%,$(LIB_FILES))
+    BUILD_FOLDERS += $(dir $(LIB_FILES))
+    LIB_OBJS := $(addprefix $(OBJS_ROOT_DIR)/,$(addsuffix .o,$(basename $(LIB_FILES))))
+endif
+
+BUILD_FOLDERS := $(sort $(BUILD_FOLDERS))
+VPATH += $(abspath $(P))
+
+# Do we compile a library or a standalone application ?
+ifdef LIB_OBJS
+    # libfoo.a and libfoo.so and avoid adding extra lib if already set
+    SHARED_LIB_NAME := $(TARGET_NAME)$(EXT_DYNAMIC_LIB)
+    STATIC_LIB_NAME := $(TARGET_NAME)$(EXT_STATIC_LIB)
+    ifneq "$(filter lib%,$(TARGET_NAME))" "$(TARGET_NAME)"
+        SHARED_LIB_NAME := lib$(SHARED_LIB_NAME)
+        STATIC_LIB_NAME := lib$(STATIC_LIB_NAME)
+    endif
+
+    # build/libfoo.a and build/libfoo.so
+    # For Emscripten and ExaequOS shared lib are not managed
+    TARGET_STATIC_LIB_NAME := $(BUILD_DIR)/$(STATIC_LIB_NAME)
+    ifneq ($(OS),Emscripten)
+        TARGET_SHARED_LIB_NAME := $(BUILD_DIR)/$(SHARED_LIB_NAME)
+        PKG_FILE_NAME := $(TARGET_NAME).pc
+        TARGET_PKG_FILE_NAME := $(BUILD_DIR)/$(PKG_FILE_NAME)
+    else
+        SHARED_LIB_NAME :=
+    endif
+endif
+ifdef OBJS
+    TARGET_BINARY_BASE_NAME := $(BUILD_DIR)/$(TARGET_NAME)
+    TARGET_BINARY_NAME := $(TARGET_BINARY_BASE_NAME)$(EXT_BINARY)
+endif
+
+INCLUDES := $(addprefix -I,$(abspath $(INCLUDES) $(GENERATION_DIR) $(DOWNLOAD_DIR)))
 
 ###############################################################################
 # Store files dependencies in *.d files: when a file is modified this will
