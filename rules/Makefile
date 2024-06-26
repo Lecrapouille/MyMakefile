@@ -361,12 +361,6 @@ endif
 # Manage the C/C++ project.
 ###############################################################################
 
-# Rebuild the whole project if a Makefile has been modified
-LIST_MYMAKEFILES := $(M)/project/Makefile $(M)/rules/Makefile $(P)/Makefile
-ifneq (,$(wildcard $(P)/Makefile.common))
-    LIST_MYMAKEFILES += $(P)/Makefile.common
-endif
-
 # static libs are just zipped object files. When you want to merge static libs
 # you have to extract first their object files then combined them into a new
 # static lib.
@@ -737,31 +731,14 @@ endef
 ###############################################################################
 
 .PHONY: all
-all:: about compiler-info creating-build-folder $(DIRS_WITH_MAKEFILE) $(TARGET_BINARY_NAME) $(TARGET_SHARED_LIB_NAME) $(TARGET_STATIC_LIB_NAME) $(TARGET_PKG_FILE_NAME)
-
-###############################################################################
-# Link sources to standalone application.
-###############################################################################
-
-ifdef OBJS
-$(TARGET_BINARY_NAME): $(OBJS) $(LIST_MYMAKEFILES)
-	@$(call print-to,Linking,$(TARGET_NAME),$@)
-	$(Q)$(COMPILER) $(LDFLAGS) $(OBJS) $(THIRDPART_OBJS) -o $(TARGET_BINARY_NAME) $(THIRDPART_LIBS) $(INTERNAL_LIBS) $(NOT_PKG_LIBS) $(PKGCFG_LIBS) $(LINKER_FLAGS)
-ifdef STRIP
-	@$(call print-to,Stripping,$(TARGET_NAME),$@)
-	$(Q)$(CD) $(OBJS_ROOT_DIR) && $(STRIP) $(TARGET_BINARY_NAME)
-endif
-ifdef BUILD_MACOS_APP_BUNDLE
-	$(Q)$(call CREATE_MACOS_APP_BUNDLE,$(TARGET_BINARY_NAME)$(EXT))
-endif
-endif
+all:: about compiler-info creating-build-folder $(DIRS_WITH_MAKEFILE) $(TARGET_SHARED_LIB_NAME) $(TARGET_STATIC_LIB_NAME) $(TARGET_PKG_FILE_NAME) $(TARGET_BINARY_NAME)
 
 ###############################################################################
 # Link sources as static library.
 ###############################################################################
 
 ifdef LIB_OBJS
-$(TARGET_STATIC_LIB_NAME): $(LIB_OBJS) $(INTERNAL_LIBS) $(LIST_MYMAKEFILES)
+$(TARGET_STATIC_LIB_NAME): $(LIB_OBJS) $(INTERNAL_LIBS) $(LIST_MYMAKEFILES) $(DIRS_WITH_MAKEFILE)
 	@$(call print-to,"Creating static library","$(TARGET_NAME)","$@")
 ifneq ($(THIRDPART_LIBS)$(INTERNAL_LIBS),)
 	@$(call extract-objs-from-static-libs)
@@ -777,7 +754,7 @@ endif
 
 ifdef LIB_OBJS
 $(TARGET_SHARED_LIB_NAME): | $(TARGET_STATIC_LIB_NAME)
-$(TARGET_SHARED_LIB_NAME): $(LIB_OBJS) $(INTERNAL_LIBS) $(LIST_MYMAKEFILES)
+$(TARGET_SHARED_LIB_NAME): $(LIB_OBJS) $(INTERNAL_LIBS) $(LIST_MYMAKEFILES) $(DIRS_WITH_MAKEFILE)
 	@$(call print-to,"Creating shared library","$(TARGET_NAME)","$@")
 	$(Q)$(COMPILER) $(LDFLAGS) $(DLL_LDFLAGS) -o $@ $(abspath $(LIB_OBJS)) $(LINKER_ALL_LOAD) $(THIRDPART_LIBS) $(INTERNAL_LIBS) $(NOT_PKG_LIBS) $(PKGCFG_LIBS) $(LINKER_NO_ALL_LOAD) $(LINKER_FLAGS) $(USER_LDFLAGS)
 endif
@@ -788,15 +765,32 @@ endif
 
 ifdef LIB_OBJS
 $(TARGET_PKG_FILE_NAME): | $(TARGET_SHARED_LIB_NAME)
-$(TARGET_PKG_FILE_NAME): $(LIB_OBJS) $(INTERNAL_LIBS) $(LIST_MYMAKEFILES)
+$(TARGET_PKG_FILE_NAME): $(LIB_OBJS) $(INTERNAL_LIBS) $(LIST_MYMAKEFILES) $(DIRS_WITH_MAKEFILE)
 	@$(call CREATE_PKG_CONFIG,$(TARGET_PKG_FILE_NAME))
+endif
+
+###############################################################################
+# Link sources to standalone application.
+###############################################################################
+
+ifdef OBJS
+$(TARGET_BINARY_NAME): $(OBJS) $(INTERNAL_LIBS) $(LIST_MYMAKEFILES) $(DIRS_WITH_MAKEFILE)
+	@$(call print-to,Linking,$(TARGET_NAME),$@)
+	$(Q)$(COMPILER) $(LDFLAGS) $(OBJS) $(THIRDPART_OBJS) -o $(TARGET_BINARY_NAME) $(THIRDPART_LIBS) $(INTERNAL_LIBS) $(NOT_PKG_LIBS) $(PKGCFG_LIBS) $(LINKER_FLAGS)
+ifdef STRIP
+	@$(call print-to,Stripping,$(TARGET_NAME),$@)
+	$(Q)$(CD) $(OBJS_ROOT_DIR) && $(STRIP) $(TARGET_BINARY_NAME)
+endif
+ifdef BUILD_MACOS_APP_BUNDLE
+	$(Q)$(call CREATE_MACOS_APP_BUNDLE,$(TARGET_BINARY_NAME)$(EXT))
+endif
 endif
 
 ###############################################################################
 # Compile C++ sources. Note: abspath is needed for gcov.
 ###############################################################################
 
-$(OBJS_ROOT_DIR)/%.o: %.cpp $(OBJS_ROOT_DIR)/%.d $(LIST_MYMAKEFILES)
+$(OBJS_ROOT_DIR)/%.o: %.cpp $(OBJS_ROOT_DIR)/%.d $(LIST_MYMAKEFILES) $(INTERNAL_LIBS)
 	@$(call progress-in,Compiling C++,$(TARGET_NAME),$<)
 	$(Q)$(CXX) $(CXX_STANDARD) $(DEPFLAGS) $(CXXFLAGS) $(PKGCFG_CFLAGS) $(OPTIM_FLAGS) $(DEFINES) $(INCLUDES) $(USER_CXXFLAGS) -c $(abspath $<) -o $(abspath $@)
 	@$(POSTCOMPILE)
@@ -805,7 +799,7 @@ $(OBJS_ROOT_DIR)/%.o: %.cpp $(OBJS_ROOT_DIR)/%.d $(LIST_MYMAKEFILES)
 # Compile C sources. Note: abspath is needed for gcov.
 ###############################################################################
 
-$(OBJS_ROOT_DIR)/%.o: %.c $(OBJS_ROOT_DIR)/%.d $(LIST_MYMAKEFILES)
+$(OBJS_ROOT_DIR)/%.o: %.c $(OBJS_ROOT_DIR)/%.d $(LIST_MYMAKEFILES) $(INTERNAL_LIBS)
 	@$(call progress-in,Compiling C,$(TARGET_NAME),$<)
 	$(Q)$(CC) $(DEPFLAGS) $(CCFLAGS) $(PKGCFG_CFLAGS) $(OPTIM_FLAGS) $(DEFINES) $(INCLUDES) $(USER_CCFLAGS) -c $(abspath $<) -o $(abspath $@)
 	@$(POSTCOMPILE)
@@ -835,8 +829,6 @@ endif
 ###############################################################################
 
 ifdef DIRS_WITH_MAKEFILE
-$(OBJS) $(LIB_OBJS): $(INTERNAL_LIBS)
-
 .PHONY: $(DIRS_WITH_MAKEFILE)
 $(DIRS_WITH_MAKEFILE):
 	$(Q)$(MAKE) --no-print-directory $(addprefix --directory=,$@) all

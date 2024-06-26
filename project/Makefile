@@ -373,6 +373,15 @@ PROJECT_INFO_FILES := AUTHORS LICENSE README.md ChangeLog VERSION
 REGEXP_CXX_HEADER_FILES ?= *.hpp *.ipp *.tpp *.hh *.h *.hxx *.incl
 
 ###############################################################################
+# Rebuild the whole project if a Makefile has been modified
+###############################################################################
+
+LIST_MYMAKEFILES := $(M)/project/Makefile $(M)/rules/Makefile $(P)/Makefile
+ifneq (,$(wildcard $(P)/Makefile.common))
+    LIST_MYMAKEFILES += $(P)/Makefile.common
+endif
+
+###############################################################################
 # MyMakefile paths
 ###############################################################################
 
