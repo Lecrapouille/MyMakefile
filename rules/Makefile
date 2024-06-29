@@ -422,6 +422,10 @@ ifdef OBJS
     TARGET_BINARY_NAME := $(TARGET_BINARY_BASE_NAME)$(EXT_BINARY)
 endif
 
+# Convert <path>/libtoto.a into -ltoto
+SHORT_INTERNAL_LIBS := $(subst $(BUILD_DIR)/lib,-l,$(INTERNAL_LIBS))
+SHORT_INTERNAL_LIBS := $(subst .a,,$(SHORT_INTERNAL_LIBS))
+
 INCLUDES := $(addprefix -I,$(abspath $(INCLUDES) $(GENERATION_DIR) $(DOWNLOAD_DIR)))
 
 ###############################################################################
@@ -660,13 +664,14 @@ define CREATE_PKG_CONFIG
 	@$(ECHO) "Name: lib$(TARGET_NAME)" >> $1
 	@$(ECHO) "Description: $(DESCRIPTION)" >> $1
 	@$(ECHO) "Version: $(PROJECT_VERSION)" >> $1
-	@$(ECHO) "Libs: -L$$""{libdir} $(SHORT_LIB_TARGET) $(NOT_PKG_LIBS) $(PKGCFG_LIBS)" >> $1
+	@$(ECHO) "Libs: -L$$""{libdir} $(strip -l$(TARGET_NAME) $(SHORT_INTERNAL_LIBS) $(NOT_PKG_LIBS) $(PKGCFG_LIBS))" >> $1
 	@$(ECHO) "Cflags: -I$$""{includedir}" >> $1
 endef
 
 ###############################################################################
 # Create the exa.html file for ExaequOS
 ###############################################################################
+
 define CREATE_EXAEQUOS_HTML
 	@$(call print-to,"Generating","$(TARGET_NAME)","$1","")
 	@$(ECHO) "<!doctype html>" > $(INSTALL_BINDIR)/$1
@@ -751,7 +756,7 @@ all:: about compiler-info creating-build-folder $(DIRS_WITH_MAKEFILE) $(TARGET_S
 ifdef LIB_OBJS
 $(TARGET_STATIC_LIB_NAME): $(LIB_OBJS) $(INTERNAL_LIBS) $(LIST_MYMAKEFILES) $(DIRS_WITH_MAKEFILE)
 	@$(call print-to,"Creating static library","$(TARGET_NAME)","$@")
-ifneq ($(THIRDPART_LIBS)$(INTERNAL_LIBS),)
+ifdef THIRDPART_LIBS
 	@$(call extract-objs-from-static-libs)
 endif
 	$(Q)$(CD) $(abspath $(OBJS_ROOT_DIR)) && \
@@ -774,7 +779,7 @@ endif
 # Generate the pkg-config file.
 ###############################################################################
 
-ifdef LIB_OBJS
+ifdef TARGET_PKG_FILE_NAME
 $(TARGET_PKG_FILE_NAME): | $(TARGET_SHARED_LIB_NAME)
 $(TARGET_PKG_FILE_NAME): $(LIB_OBJS) $(INTERNAL_LIBS) $(LIST_MYMAKEFILES) $(DIRS_WITH_MAKEFILE)
 	@$(call CREATE_PKG_CONFIG,$(TARGET_PKG_FILE_NAME))
@@ -957,24 +962,22 @@ ifdef TARGET_BINARY_NAME
 	$(Q)$(call INSTALL_PROJECT_BINARY)
 endif
 ifneq ($(OS),Emscripten)
-  ifneq ($(TARGET_STATIC_LIB_NAME)$(TARGET_SHARED_LIB_NAME)$(PKG_FILE_NAME),)
-    ifdef TARGET_SHARED_LIB_NAME
+  ifdef TARGET_SHARED_LIB_NAME
 	$(Q)$(call INSTALL_PROJECT_SHARED_LIBRARIES)
-    endif
-    ifdef TARGET_STATIC_LIB_NAME
+  endif
+  ifdef TARGET_STATIC_LIB_NAME
 	$(Q)$(call INSTALL_PROJECT_STATIC_LIBRARIES)
-    endif
-    ifdef PKG_FILE_NAME
+  endif
+  ifdef TARGET_PKG_FILE_NAME
 	$(Q)$(call INSTALL_PROJECT_PKG_CONFIG)
-    endif
+  endif
 # FIXME: Actuellement on copie plusieurs fois les memes fichiers. Seul la regle
 # du Makefile a la racine devrait le faire mais actuellement il faut compiler une
 # lib. Si on compile une application et des sous lib, on ne compie pas les fichiers
 # headers.
-#    ifeq ($(abspath .), $(abspath $(P)))
+#  ifeq ($(abspath .), $(abspath $(P)))
 	$(Q)$(call INSTALL_PROJECT_HEADERS)
-#    endif
-  endif
+#  endif
   ifeq ($(abspath .), $(abspath $(P)))
 	$(Q)$(call INSTALL_PROJECT_DOC)
 	$(Q)$(call INSTALL_PROJECT_DATA)
