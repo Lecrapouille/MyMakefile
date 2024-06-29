@@ -32,7 +32,7 @@ shift
 for LIB in $*;
 do
    FOLDER=$BUILD/`basename $LIB .a`
-   rm -fr $FOLDER 2> /dev/null
+   rm -fr $FOLDER
    mkdir -p $FOLDER
    (cd $FOLDER; ar -x $LIB)
 done
