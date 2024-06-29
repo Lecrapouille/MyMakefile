@@ -364,8 +364,12 @@ endif
 # static libs are just zipped object files. When you want to merge static libs
 # you have to extract first their object files then combined them into a new
 # static lib.
+# BEWARE: do not include $(INTERNAL_LIBS) since we do not want internal libs
+# include each others: let them independent and let the generated pkg_config
+# include them. Let only include static thirdpart libs inside internal libs
+# since we do not want to force installing them on the user system.
 define extract-objs-from-static-libs
-    @$(SCRIPT_EXTRACT_STATIC_LIB) $(OBJS_ROOT_DIR) $(THIRDPART_LIBS) $(INTERNAL_LIBS)
+    @$(SCRIPT_EXTRACT_STATIC_LIB) $(OBJS_ROOT_DIR) $(THIRDPART_LIBS)
     $(eval EXTRACTED_OBJS=$(addsuffix /*.o,$(addprefix $(OBJS_ROOT_DIR)/,$(basename $(notdir $(filter-out \,$(THIRDPART_LIBS) $(INTERNAL_LIBS)))))))
 endef
 
