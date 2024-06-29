@@ -187,7 +187,7 @@ COLOR_ERROR := \033[41m
 print-simple = $(ECHO_COLOR) "$(PURPLE)*** $1: $(CYAN)$2$(COLOR_DEFAULT)$3"
 print-from = $(ECHO_COLOR) "$(PURPLE)*** $1: $(CYAN)$2$(COLOR_DEFAULT) <= $(YELLOW)$3$(COLOR_DEFAULT)$4"
 print-to = $(ECHO_COLOR) "$(PURPLE)*** $1: $(CYAN)$2$(COLOR_DEFAULT) => $(YELLOW)$3$(COLOR_DEFAULT)$4"
-print-install = $(ECHO_COLOR) "$(PURPLE)*** Installing $1: $(CYAN)$2$(COLOR_DEFAULT) => $(YELLOW)$3$(COLOR_DEFAULT)"
+print-install = $(ECHO_COLOR) "$(PURPLE)*** Installing $1: $(CYAN)$2$(COLOR_DEFAULT) => $(YELLOW)$3$(COLOR_DEFAULT)$4"
 print-info = $(ECHO_COLOR) "$(COLOR_INFO)!!! $1 !!!$(COLOR_DEFAULT)"
 print-warning = $(ECHO_COLOR) "$(COLOR_WARNING)!!! $1 !!!$(COLOR_DEFAULT)"
 print-error = $(ECHO_COLOR) "$(COLOR_ERROR)!!! $1 !!!$(COLOR_DEFAULT)"

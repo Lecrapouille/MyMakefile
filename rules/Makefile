@@ -470,13 +470,23 @@ progress-in = $(call progressbar-update-percent) $(ECHO_COLOR) "$(PURPLE)[$(PROG
 progress-out = $(call progressbar-update-percent) $(ECHO_COLOR) "$(PURPLE)[$(PROGRESSBAR_DISPLAY)%] $1 $(CYAN)$2$(COLOR_DEFAULT)$(COLOR_DEFAULT) => $(YELLOW)$3$(COLOR_DEFAULT)"
 
 ###############################################################################
-# Installing a list of files $2 to destination $3. $1 is for the title.
+# Installing a list of files $1 to destination $2.
 ###############################################################################
 
 define HELPER_INSTALL_LIST_OF_FILES
 	@$(call print-install,$(TARGET_NAME),$1,$2)
 	$(Q)$(foreach folder,$(sort $(dir $1)),install -d -m 755 "$(abspath $2/$(folder))";)
  	$(Q)$(foreach file,$1,install -m 644 "$(abspath $(file))" "$2/$(file)";)
+endef
+
+###############################################################################
+# From $1, install a list of files $2 to destination $3.
+###############################################################################
+
+define HELPER_INSTALL_LIST_OF_FILES_FROM_FOLDER
+	@$(call print-install,$(TARGET_NAME),$2,$3, [$(abspath $1)])
+	$(Q)$(foreach folder,$(sort $(dir $2)),install -d -m 755 "$(abspath $3/$(folder))";)
+	$(Q)$(foreach file,$2,install -m 644 "$(abspath $1/$(file))" "$3/$(file)";)
 endef
 
 ###############################################################################
@@ -499,7 +509,7 @@ endef
 ###############################################################################
 
 define HELPER_INSTALL_CXX_HEADER_FILES
-	@$(call HELPER_INSTALL_LIST_OF_FILES,$(abspath $(call rwildcard,$1,$(REGEXP_CXX_HEADER_FILES))),$2)
+	@$(call HELPER_INSTALL_LIST_OF_FILES_FROM_FOLDER,$1,$(strip $(subst $1/,,$(call rwildcard,$1,$(REGEXP_CXX_HEADER_FILES)))),$2)
 endef
 
 ###############################################################################
@@ -594,7 +604,8 @@ endef
 ###############################################################################
 
 define INSTALL_PROJECT_HEADERS
-	@$(call HELPER_INSTALL_CXX_HEADER_FILES,$(P)/include $(P)/src,$(INSTALL_INCLUDEDIR))
+	@$(call HELPER_INSTALL_CXX_HEADER_FILES,$(P)/include,$(INSTALL_INCLUDEDIR))
+	@$(call HELPER_INSTALL_CXX_HEADER_FILES,$(P)/src,$(INSTALL_INCLUDEDIR))
 endef
 
 ###############################################################################
@@ -933,7 +944,7 @@ veryclean::
 ###############################################################################
 
 .PHONY: install
-install:: $(TARGET_SHARED_LIB_NAME) $(TARGET_STATIC_LIB_NAME) $(TARGET_BINARY_NAME) $(TARGET_PKG_FILE_NAME)
+install::
 ifdef INSTALL_LOCAL_PROJECT_DATA_DIR
 	$(Q)install -d -m 755 $(INSTALL_LOCAL_PROJECT_DATA_DIR)
 endif
