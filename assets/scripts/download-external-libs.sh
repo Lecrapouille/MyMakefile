@@ -4,6 +4,12 @@
 ### thirdparts needed for this project but does not compile them. It replaces
 ### git submodules that I dislike.
 ###############################################################################
+###
+### Input of this script:
+### $1: target (your application name)
+### $2: script to include owning what to git clone.
+### $3: GitHub_user_name/GitHub_repo_name
+###############################################################################
 
 function fatal
 {
@@ -13,7 +19,7 @@ function fatal
 
 readonly GITHUB_URL="https://github.com"
 
-TARGET=$1
+PROJECT_NAME=$1
 function do_cloning_
 {
     URL=$1
@@ -21,7 +27,7 @@ function do_cloning_
     shift
     shift
 
-    echo -e "\033[35m*** Cloning: \033[36m$URL/$REPO\033[00m => \033[33m$TARGET\033[00m"
+    echo -e "\033[35m*** Cloning: \033[36m$URL/$REPO\033[00m => \033[33m$PROJECT_NAME\033[00m"
     if [ "$URL" == "$GITHUB_URL" ]; then
         ARR=(${REPO//\// })
         if [ "${ARR[1]}" == "" ]; then
