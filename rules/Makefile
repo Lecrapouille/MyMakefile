@@ -511,9 +511,12 @@ define HELPER_INSTALL_LIST_OF_FOLDERS
     $(Q)$(foreach d,$1,cp -fr $(d)/. $2/$(d); )
 endef
 
+define HELPER_INSTALL_OPTIONAL_FOLDERS
+	@$(if $(wildcard $1),$(call HELPER_INSTALL_LIST_OF_FOLDERS,$(wildcard $1),$2))
+endef
+
 ###############################################################################
-# Installing a list of C++ header files from $2 to destination $3.
-# $1 is for the title.
+# Installing a list of C++ header files from $1 to destination $2.
 ###############################################################################
 
 define HELPER_INSTALL_CXX_HEADER_FILES
@@ -521,8 +524,7 @@ define HELPER_INSTALL_CXX_HEADER_FILES
 endef
 
 ###############################################################################
-# Installing files that may not exist from folder $2 to destination folder $3.
-# $1 is for the title.
+# Installing files that may not exist from folder $1 to destination folder $2.
 ###############################################################################
 
 define HELPER_INSTALL_OPTIONAL_FILES
@@ -534,7 +536,7 @@ endef
 ###############################################################################
 
 define INSTALL_PROJECT_DOC
-	@$(call HELPER_INSTALL_LIST_OF_FOLDERS,$(PROJECT_DOC) $(PROJECT_GENERATED_DOC),$(INSTALL_PROJECT_DIR))
+	@$(call HELPER_INSTALL_OPTIONAL_FOLDERS,$(PROJECT_DOC) $(PROJECT_GENERATED_DOC),$(INSTALL_PROJECT_DIR))
 endef
 
 ###############################################################################
@@ -542,7 +544,7 @@ endef
 ###############################################################################
 
 define INSTALL_PROJECT_DATA
-	@$(call HELPER_INSTALL_LIST_OF_FOLDERS,$(PROJECT_DATA),$(INSTALL_PROJECT_DIR))
+	@$(call HELPER_INSTALL_OPTIONAL_FOLDERS,$(PROJECT_DATA),$(INSTALL_PROJECT_DIR))
 endef
 
 ###############################################################################
