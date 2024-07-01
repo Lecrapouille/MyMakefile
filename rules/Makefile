@@ -915,7 +915,7 @@ endif
 compile-external-libs:
 	@$(call print-to,Compiling third-party libs,$(TARGET_NAME),$(THIRDPART_DIR))
 ifneq ("$(wildcard $(USER_SCRIPT_COMPILE_THIRDPARTS))","")
-	$(Q)$(CD) $(THIRDPART_DIR) && ./$(notdir $(USER_SCRIPT_COMPILE_THIRDPARTS)) $(SCRIPT_COMPILE_THIRDPARTS) $(OS) $(TARGET_NAME) $(CC) $(CXX)
+	$(Q)$(CD) $(THIRDPART_DIR) && $(SCRIPT_COMPILE_THIRDPARTS) $(PROJECT_NAME) $(USER_SCRIPT_COMPILE_THIRDPARTS) $(OS) $(CC) $(CXX)
 else
 	$(Q)$(ECHO_COLOR) "  $(YELLOW):( $(CYAN)Missing file $(USER_SCRIPT_COMPILE_THIRDPARTS) $(YELLOW):("
 	$(Q)$(ECHO_COLOR) "  $(YELLOW):) $(CYAN)Or no third-party libs to compile ! $(YELLOW):)$(COLOR_DEFAULT)"
