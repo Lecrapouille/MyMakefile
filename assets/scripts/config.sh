@@ -39,7 +39,7 @@ PATCH_VERSION=`echo "$VERSION" | cut -d'.' -f3`
 
 ### Get git SHA1 and branch
 SHA1=`git log 2> /dev/null | head -n1 | cut -d" " -f2`
-BRANCH=`git rev-parse --abbrev-ref HEAD 2> /dev/null`
+BRANCH=`git rev-parse --abbrev-ref HEAD || echo "" | 2> /dev/null`
 
 ### Header guard
 GUARD=`echo "${PROJECT}_${TARGET}_GENERATED_PROJECT_INFO_HPP" | tr '[:lower:]' '[:upper:]' | tr "\-." "__"`
