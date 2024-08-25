@@ -312,7 +312,7 @@ BUILD ?= build
 BUILD_DIR := $(abspath $(P)/$(BUILD))
 
 # Root directory holding compiled C/C++ files.
-OBJS_ROOT_DIR := $(BUILD_DIR)/$(COMPILATION_MODE)/objs/$(TARGET_NAME)
+OBJS_ROOT_DIR := $(BUILD_DIR)/$(COMPILATION_MODE)/objs-$(OS)/$(TARGET_NAME)
 
 # Directory holding generated files.
 GENERATION_DIR := $(BUILD_DIR)/generated
