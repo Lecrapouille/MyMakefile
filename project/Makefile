@@ -282,7 +282,7 @@ INSTALL_DATADIR := $(DESTDIR)$(DATADIR)
 
 # Override install folder for ExaequOS
 ifdef EXAEQUOS
-    INSTALL_BINDIR := /media/localhost/$(TARGET_NAME)/exa
+    INSTALL_BINDIR := $(abspath $(P)/media/localhost/$(TARGET_NAME)/exa)
 endif
 
 # Project installation paths on the operating system folder
