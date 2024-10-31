@@ -1074,17 +1074,15 @@ endif
 #? Call unit-tests with code coverage.
 ###############################################################################
 
-.PHONY: check
+.PHONY: check tests
 check:
+tests:
 	@$(call print-simple,"Compiling unit tests")
 ifneq ($(wildcard $(PROJECT_TESTS)/.),)
 	@$(MAKE) -C $(PROJECT_TESTS) coverage
 else
 	@$(MAKE) coverage
 endif
-
-.PHONY: tests
-tests:
 
 ###############################################################################
 #? Launch the executable with address sanitizer (if enabled).
