@@ -1036,7 +1036,15 @@ endif
 
 .PHONY: about
 about:
-	@$(call print-to,Compiling target,$(TARGET_NAME),$(TARGET_DESCRIPTION), [$(COMPILATION_MODE)])
+	@$(ECHO) $(TARGET_DESCRIPTION)
+
+###############################################################################
+#? Display the version of the project.
+###############################################################################
+
+.PHONY: get-version
+get-version:
+	@$(ECHO) $(PROJECT_VERSION)
 
 ###############################################################################
 #? Check if your project is harden
