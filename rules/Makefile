@@ -378,14 +378,11 @@ ifeq ($(strip $(LIB_FILES) $(SRC_FILES)),)
     $(error Found no C/C++ object files to compile. Please set correctly LIB_DIRS or/and SRC_DIRS)
 endif
 
-# Subfolders to create inside build folder
-BUILD_FOLDERS :=
-
 # Convert C/C++ application files to object files
 ifdef SRC_FILES
     SRC_FILES := $(foreach d,$(SRC_FILES) $(PRIVATE_SRC_FILES),$(abspath $d))
     SRC_FILES := $(patsubst $(abspath $(P))/%,%,$(SRC_FILES))
-    BUILD_FOLDERS += $(dir $(SRC_FILES))
+    _SRC_DIRS := $(dir $(SRC_FILES))
     OBJS := $(addprefix $(OBJS_ROOT_DIR)/,$(addsuffix .o,$(basename $(SRC_FILES))))
 endif
 
@@ -393,11 +390,11 @@ endif
 ifdef LIB_FILES
     LIB_FILES := $(foreach d,$(LIB_FILES) $(PRIVATE_LIB_FILES),$(abspath $d))
     LIB_FILES := $(patsubst $(abspath $(P))/%,%,$(LIB_FILES))
-    BUILD_FOLDERS += $(dir $(LIB_FILES))
+    _LIB_DIRS := $(dir $(LIB_FILES))
     LIB_OBJS := $(addprefix $(OBJS_ROOT_DIR)/,$(addsuffix .o,$(basename $(LIB_FILES))))
 endif
 
-BUILD_FOLDERS := $(sort $(BUILD_FOLDERS))
+BUILD_FOLDERS := $(sort $(_SRC_DIRS) $(_LIB_DIRS))
 VPATH += $(abspath $(P))
 
 # Do we compile a library or a standalone application ?
