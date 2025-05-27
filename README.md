@@ -102,13 +102,11 @@ Here are some of my projects that use MyMakefile instead of CMake:
 
 ## 📋 Prerequisites
 
-- 🐚 Bash interpreter
-- 🔢 `bc` calculator (for progress bar)
+- 🐚 Bash interpreter (MyMakefile requires some bash assistance)
 - 🛠️ Optional tools, called by MyMakefile:
   - `g++` or `clang++` (for compilation)
   - `gcovr` (for code coverage)
   - `doxygen` (for documentation)
-  - `bash` (MyMakefile requires some bash assistance)
 
 ## 🔧 Compiling for ExaequOS
 

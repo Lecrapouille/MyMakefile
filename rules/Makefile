@@ -781,18 +781,18 @@ ifneq ($(words $(OBJS) $(LIB_OBJS)),0)
     PROGRESSBAR_PERCENT := 0
     PROGRESSBAR_DISPLAY := 0
     PROGRESSBAR_COUNT_ELEMENTS := $(words $(OBJS) $(LIB_OBJS))
-    PROGRESSBAR_INCREMENT := $(shell echo "scale=2; 100 / $(PROGRESSBAR_COUNT_ELEMENTS)" | bc -l 2>/dev/null || echo "1")
+    PROGRESSBAR_INCREMENT := $(shell expr 10000 / $(PROGRESSBAR_COUNT_ELEMENTS))
     
     # Track compilation start time
     COMPILE_START_TIME := $(shell date +%s)
     
     define progressbar-update-percent
-        $(eval PROGRESSBAR_PERCENT=$(shell echo "$(PROGRESSBAR_PERCENT) + $(PROGRESSBAR_INCREMENT)" | bc -l 2>/dev/null || echo "0"))
-        $(eval PROGRESSBAR_DISPLAY=$(shell echo "($(PROGRESSBAR_PERCENT) + 0.5) / 1" | bc 2>/dev/null || echo "0"))
+        $(eval PROGRESSBAR_PERCENT=$(shell expr $(PROGRESSBAR_PERCENT) + $(PROGRESSBAR_INCREMENT)))
+        $(eval PROGRESSBAR_DISPLAY=$(shell expr $(PROGRESSBAR_PERCENT) / 100))
         $(eval CURRENT_TIME=$(shell date +%s))
-        $(eval ELAPSED_TIME=$(shell echo "$(CURRENT_TIME) - $(COMPILE_START_TIME)" | bc 2>/dev/null || echo "0"))
-        $(eval ESTIMATED_TOTAL=$(shell echo "scale=0; $(ELAPSED_TIME) * 100 / $(PROGRESSBAR_PERCENT)" | bc -l 2>/dev/null || echo "0"))
-        $(eval REMAINING_TIME=$(shell echo "$(ESTIMATED_TOTAL) - $(ELAPSED_TIME)" | bc 2>/dev/null || echo "0"))
+        $(eval ELAPSED_TIME=$(shell expr $(CURRENT_TIME) - $(COMPILE_START_TIME)))
+        $(eval ESTIMATED_TOTAL=$(shell expr $(ELAPSED_TIME) \* 100 / $(PROGRESSBAR_PERCENT)))
+        $(eval REMAINING_TIME=$(shell expr $(ESTIMATED_TOTAL) - $(ELAPSED_TIME)))
     endef
     
     progress-in = $(call progressbar-update-percent) $(ECHO_COLOR) "$(PURPLE)[$(PROGRESSBAR_DISPLAY)%] $1 $(CYAN)$2$(COLOR_DEFAULT) <= $(YELLOW)$3$(COLOR_DEFAULT) $(if $(filter-out 0,$(REMAINING_TIME)),(ETA: $(REMAINING_TIME)s))"
