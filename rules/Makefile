@@ -753,7 +753,18 @@ endef
 ###############################################################################
 
 .PHONY: all
-all:: about compiler-info creating-build-folder $(DIRS_WITH_MAKEFILE) $(TARGET_SHARED_LIB_NAME) $(TARGET_STATIC_LIB_NAME) $(TARGET_PKG_FILE_NAME) $(TARGET_BINARY_NAME)
+all:: ensure-clang-format about compiler-info creating-build-folder $(DIRS_WITH_MAKEFILE) $(TARGET_SHARED_LIB_NAME) $(TARGET_STATIC_LIB_NAME) $(TARGET_PKG_FILE_NAME) $(TARGET_BINARY_NAME)
+
+###############################################################################
+#? Ensure .clang-format file exists at the project root.
+###############################################################################
+
+.PHONY: ensure-clang-format
+ensure-clang-format:
+ifeq ("$(wildcard $(P)/.clang-format)","")
+	@$(call print-to,Copying default clang-format,$(M)/assets/format/clang-format,$(P)/.clang-format)
+	$(Q)$(CP) $(M)/assets/format/clang-format $(P)/.clang-format
+endif
 
 ###############################################################################
 # Link sources as static library.
