@@ -93,7 +93,7 @@ ifeq ($(COMPILATION_MODE),debug)
 endif
 
 ###############################################################################
-# Compilation flags. Mimic a -Wwhole-flags if it would have existed.
+# Compiler detection and version management
 ###############################################################################
 
 ifneq ($(filter %.cpp,$(strip $(SRC_FILES) $(LIB_FILES))),)
@@ -107,104 +107,215 @@ COMPILER_VERSION := $(shell $(COMPILER) --version | head -1 | grep -o -E '[0-9]+
 DEFINES += -DCOMPILER_NAME=\"$(COMPILER_NAME)\"
 DEFINES += -DCOMPILER_VERSION=\"$(COMPILER_VERSION)\"
 
-# C++ flags
-ifdef CXXFLAGS
-    $(warning You have override default compilation flags CXXFLAGS by your own flags $(CXXFLAGS) better to set $(USER_CXXFLAGS))
-endif
+# Version comparison helpers for GCC
+GCC_GREATER_V4_8 := $(shell expr $(COMPILER_VERSION) \>= 40800)
+GCC_GREATER_V4_9 := $(shell expr $(COMPILER_VERSION) \>= 40900)
+GCC_GREATER_V6 := $(shell expr $(COMPILER_VERSION) \>= 60000)
+GCC_GREATER_V7 := $(shell expr $(COMPILER_VERSION) \>= 70000)
+GCC_GREATER_V8 := $(shell expr $(COMPILER_VERSION) \>= 80000)
+GCC_GREATER_V9 := $(shell expr $(COMPILER_VERSION) \>= 90000)
+GCC_GREATER_V10 := $(shell expr $(COMPILER_VERSION) \>= 100000)
+GCC_GREATER_V11 := $(shell expr $(COMPILER_VERSION) \>= 110000)
+GCC_GREATER_V12 := $(shell expr $(COMPILER_VERSION) \>= 120000)
 
-# Avoid temporary files, speeding up builds
-CXXFLAGS += -pipe
+# Version comparison helpers for Clang
+CLANG_VERSION_NUM := $(shell echo $(COMPILER_VERSION) | sed 's/\([0-9]*\)\.\([0-9]*\).*/\1\2/')
+CLANG_GREATER_V10 := $(shell expr $(CLANG_VERSION_NUM) \>= 100)
+CLANG_GREATER_V12 := $(shell expr $(CLANG_VERSION_NUM) \>= 120)
+CLANG_GREATER_V14 := $(shell expr $(CLANG_VERSION_NUM) \>= 140)
+CLANG_GREATER_V15 := $(shell expr $(CLANG_VERSION_NUM) \>= 150)
 
-# Clang and GCC common flags
-CXXFLAGS += -Wall -Wextra -Wuninitialized -Wundef -Wunused \
--Wunused-result -Wunused-parameter -Wtype-limits \
--Wcast-align -Wcast-qual -Wconversion -Wfloat-equal \
--Wpointer-arith -Wswitch-enum -Wpedantic -Wpacked \
--Wdeprecated -Wvariadic-macros -Wvla -Wsign-conversion -Wshadow -Wold-style-cast
+###############################################################################
+# Base compilation flags (common to C and C++)
+###############################################################################
 
-# Clang specific
-ifeq ($(COMPILER_NAME),clang)
-    CXXFLAGS += -Wconditional-uninitialized \
+# Base flags common to all compilers
+BASE_FLAGS := -pipe
+
+# Performance flags
+PERFORMANCE_FLAGS := -ffast-math -funroll-loops
+
+# Modern warning flags common to C and C++
+COMMON_WARNING_FLAGS := -Wall -Wextra -Wuninitialized -Wundef -Wunused \
+    -Wunused-result -Wunused-parameter -Wtype-limits \
+    -Wcast-align -Wcast-qual -Wconversion -Wfloat-equal \
+    -Wpointer-arith -Wswitch-enum -Wpedantic -Wpacked \
+    -Wdeprecated -Wvariadic-macros -Wvla -Wsign-conversion -Wshadow \
+    -Wduplicated-cond -Wduplicated-branches -Wlogical-op \
+    -Wnull-dereference -Wdouble-promotion -Wformat=2
+
+# Advanced security and hardening flags
+HARDENING_FLAGS := -Wformat -Wformat-security -Werror=format-security \
+    -D_FORTIFY_SOURCE=2 -fPIE -fexceptions \
+    -fstack-clash-protection -fcf-protection=full
+
+# Modern Clang-specific warning flags
+CLANG_WARNING_FLAGS := -Wconditional-uninitialized \
     -Wused-but-marked-unused -Wunused-member-function \
     -Wunused-getter-return-value -Wunused-exception-parameter \
     -Wunneeded-member-function -Wunneeded-internal-declaration -Wshadow-all \
     -Wunreachable-code-aggressive -Wvector-conversion -Wzero-length-array \
     -Wthread-safety -Werror=implicit-function-declaration \
-    -Wtautological-compare -Wno-unused-command-line-argument -Wundefined-reinterpret-cast -Wsuper-class-method-mismatch
-    # GCC specific
-else ifeq ($(COMPILER_NAME),$(filter $(COMPILER_NAME),g++ gcc))
-    GCC_GREATER_V4_8 := $(shell expr $(COMPILER_VERSION) \>= 40800)
-    GCC_GREATER_V4_9 := $(shell expr $(COMPILER_VERSION) \>= 40900)
-    GCC_GREATER_V6 := $(shell expr $(COMPILER_VERSION) \>= 60000)
-    GCC_GREATER_V9 := $(shell expr $(COMPILER_VERSION) \>= 90000)
-    ifeq ($(GCC_GREATER_V6),1)
-        CXXFLAGS += -Wtautological-compare
-    else ifeq ($(GCC_GREATER_V9),1)
-        CXXFLAGS += -Wpessimizzing-move
-    endif
-endif
+    -Wcomma -Wdocumentation -Wloop-analysis -Wshift-sign-overflow \
+    -Wstring-conversion -Wtautological-overlap-compare
 
-# Flags for hardening the binary
-CXXFLAGS += -Wformat -Wformat-security -Werror=format-security -D_FORTIFY_SOURCE=2 -fPIE -fexceptions
-ifeq ($(COMPILER_NAME),$(filter $(COMPILER_NAME),g++ gcc))
+# Advanced GCC-specific warning flags (version dependent)
+define add_gcc_version_flags
     ifeq ($(GCC_GREATER_V4_9),1)
-        CXXFLAGS += -fstack-protector-strong
+        $(1) += -fstack-protector-strong
+    endif
+    ifeq ($(GCC_GREATER_V6),1)
+        $(1) += -Wtautological-compare -Wshift-overflow=2 -Wshift-negative-value
+    endif
+    ifeq ($(GCC_GREATER_V7),1)
+        $(1) += -Wduplicated-branches -Walloc-zero -Walloca
+    endif
+    ifeq ($(GCC_GREATER_V8),1)
+        $(1) += -Wcast-align=strict -Wcatch-value=3 -Wextra-semi
+    endif
+    ifeq ($(GCC_GREATER_V9),1)
+        $(1) += -Wpessimizing-move -Wredundant-move
+    endif
+    ifeq ($(GCC_GREATER_V10),1)
+        $(1) += -Warith-conversion -Wcomma-subscript
+    endif
+    ifeq ($(GCC_GREATER_V11),1)
+        $(1) += -Wrange-loop-construct -Wmismatched-tags
+    endif
+    ifeq ($(GCC_GREATER_V12),1)
+        $(1) += -Wbidi-chars=any -Wopenacc-parallelism
+    endif
+endef
+
+# Advanced Clang version-specific flags
+define add_clang_version_flags
+    ifeq ($(CLANG_GREATER_V10),1)
+        $(1) += -Wrange-loop-analysis -Wfor-loop-analysis
+    endif
+    ifeq ($(CLANG_GREATER_V12),1)
+        $(1) += -Wbitwise-instead-of-logical -Wsuspicious-bzero
+    endif
+    ifeq ($(CLANG_GREATER_V14),1)
+        $(1) += -Warray-parameter -Wbitwise-op-parentheses
+    endif
+    ifeq ($(CLANG_GREATER_V15),1)
+        $(1) += -Wunsafe-buffer-usage -Wcast-function-type-strict
+    endif
+endef
+
+# Optional performance flags (can be enabled by user)
+ifdef USE_FAST_MATH
+    PERFORMANCE_FLAGS += -ffast-math
+endif
+
+ifdef USE_NATIVE_ARCH
+    PERFORMANCE_FLAGS += -march=native -mtune=native
+endif
+
+ifdef USE_VECTORIZATION
+    PERFORMANCE_FLAGS += -ftree-vectorize -fopt-info-vec
+    ifeq ($(COMPILER_NAME),$(filter $(COMPILER_NAME),g++ gcc))
+        ifeq ($(GCC_GREATER_V9),1)
+            PERFORMANCE_FLAGS += -fopt-info-vec-optimized
+        endif
     endif
 endif
 
-# C flags
-ifdef CCFLAGS
-    $(warning You have override default compilation flags CCFLAGS by your own flags $(CCFLAGS) better to set $(USER_CCFLAGS))
+# Optional strict flags for extra pedantic compilation
+ifdef USE_STRICT_FLAGS
+    STRICT_FLAGS := -Werror -Wconversion -Wsign-conversion -Wcast-qual \
+        -Wwrite-strings -Wredundant-decls -Winline -Wdisabled-optimization
+    
+    ifeq ($(COMPILER_NAME),$(filter $(COMPILER_NAME),g++ gcc))
+        STRICT_FLAGS += -Weffc++ -Wstrict-null-sentinel
+    endif
+    
+    ifeq ($(COMPILER_NAME),clang)
+        STRICT_FLAGS += -Weverything -Wno-c++98-compat -Wno-c++98-compat-pedantic \
+            -Wno-padded -Wno-weak-vtables -Wno-exit-time-destructors \
+            -Wno-global-constructors
+    endif
 endif
 
-# Avoid temporary files, speeding up builds
-CCFLAGS += -pipe
+###############################################################################
+# C++ specific compilation flags
+###############################################################################
 
-# Warms about C
+# Check for user override
+ifdef CXXFLAGS
+    $(warning You have overridden default compilation flags CXXFLAGS with your own flags $(CXXFLAGS). Better to set USER_CXXFLAGS)
+endif
+
+# Initialize C++ flags
+CXXFLAGS := $(BASE_FLAGS) $(COMMON_WARNING_FLAGS) $(HARDENING_FLAGS) $(PERFORMANCE_FLAGS) $(STRICT_FLAGS)
+
+# C++ specific warnings
+CXXFLAGS += -Wold-style-cast
+
+# Modern C++ specific warnings
+CXX_SPECIFIC_FLAGS := -Woverloaded-virtual -Wnon-virtual-dtor -Wctor-dtor-privacy \
+    -Wdelete-non-virtual-dtor -Wuseless-cast
+
+# C++11/14/17/20 specific warnings based on standard
+ifeq ($(findstring c++11,$(CXX_STANDARD)),c++11)
+    CXX_SPECIFIC_FLAGS += -Wc++11-compat
+else ifeq ($(findstring c++14,$(CXX_STANDARD)),c++14)
+    CXX_SPECIFIC_FLAGS += -Wc++14-compat
+else ifeq ($(findstring c++17,$(CXX_STANDARD)),c++17)
+    CXX_SPECIFIC_FLAGS += -Wc++17-compat
+else ifeq ($(findstring c++20,$(CXX_STANDARD)),c++20)
+    CXX_SPECIFIC_FLAGS += -Wc++20-compat
+endif
+
+CXXFLAGS += $(CXX_SPECIFIC_FLAGS)
+
+# Compiler-specific flags for C++
+ifeq ($(COMPILER_NAME),clang)
+    CXXFLAGS += $(CLANG_WARNING_FLAGS) \
+        -Wtautological-compare -Wno-unused-command-line-argument \
+        -Wundefined-reinterpret-cast -Wsuper-class-method-mismatch \
+        -Winconsistent-missing-override -Wabstract-vbase-init
+    $(eval $(call add_clang_version_flags,CXXFLAGS))
+else ifeq ($(COMPILER_NAME),$(filter $(COMPILER_NAME),g++ gcc))
+    CXXFLAGS += -Wnoexcept -Wstrict-null-sentinel -Wlogical-op
+    $(eval $(call add_gcc_version_flags,CXXFLAGS))
+endif
+
+###############################################################################
+# C specific compilation flags
+###############################################################################
+
+# Check for user override
+ifdef CCFLAGS
+    $(warning You have overridden default compilation flags CCFLAGS with your own flags $(CCFLAGS). Better to set USER_CCFLAGS)
+endif
+
+# Initialize C flags
+CCFLAGS := $(BASE_FLAGS) $(COMMON_WARNING_FLAGS) $(HARDENING_FLAGS) $(PERFORMANCE_FLAGS) $(STRICT_FLAGS)
+
+# C specific warnings
 CCFLAGS += -Wstrict-prototypes
 
-# Clang and GCC common flags
-CCFLAGS += -Wall -Wextra -Wuninitialized -Wundef -Wunused \
--Wunused-result -Wunused-parameter -Wtype-limits \
--Wcast-align -Wcast-qual -Wconversion -Wfloat-equal \
--Wpointer-arith -Wswitch-enum -Wpedantic -Wpacked \
--Wdeprecated -Wvariadic-macros -Wvla -Wsign-conversion -Wshadow
+# Additional C-specific warnings
+C_SPECIFIC_FLAGS := -Wmissing-prototypes -Wmissing-declarations \
+    -Wbad-function-cast -Wnested-externs -Wold-style-definition
 
-# Clang specific
+CCFLAGS += $(C_SPECIFIC_FLAGS)
+
+# Compiler-specific flags for C
 ifeq ($(COMPILER_NAME),clang)
-    CCFLAGS += -Wconditional-uninitialized \
-    -Wused-but-marked-unused -Wunused-member-function \
-    -Wunused-getter-return-value -Wunused-exception-parameter \
-    -Wunneeded-member-function -Wunneeded-internal-declaration -Wshadow-all \
-    -Wunreachable-code-aggressive -Wvector-conversion -Wzero-length-array \
-    -Wthread-safety -Werror=implicit-function-declaration \
-    -Wtautological-compare -Wno-unused-command-line-argument
-# GCC specific
+    CCFLAGS += $(CLANG_WARNING_FLAGS)
+    $(eval $(call add_clang_version_flags,CCFLAGS))
 else ifeq ($(COMPILER_NAME),$(filter $(COMPILER_NAME),g++ gcc))
-    GCC_GREATER_V4_8 := $(shell expr $(COMPILER_VERSION) \>= 40800)
-    GCC_GREATER_V4_9 := $(shell expr $(COMPILER_VERSION) \>= 40900)
-    GCC_GREATER_V6 := $(shell expr $(COMPILER_VERSION) \>= 60000)
-    GCC_GREATER_V9 := $(shell expr $(COMPILER_VERSION) \>= 90000)
-    ifeq ($(GCC_GREATER_V6),1)
-        CCFLAGS += -Wtautological-compare
-    else ifeq ($(GCC_GREATER_V9),1)
-        CCFLAGS += -Wpessimizzing-move
-    endif
-endif
-
-# Flags for hardening the binary
-CCFLAGS += -Wformat -Wformat-security -Werror=format-security -D_FORTIFY_SOURCE=2 -fPIE -fexceptions
-ifeq ($(COMPILER_NAME),$(filter $(COMPILER_NAME),g++ gcc))
-    ifeq ($(GCC_GREATER_V4_9),1)
-        CCFLAGS += -fstack-protector-strong
-    endif
+    CCFLAGS += -Wjump-misses-init -Wlogical-op
+    $(eval $(call add_gcc_version_flags,CCFLAGS))
 endif
 
 ###############################################################################
-# Compilation flags for compiling shared libraries.
+# Shared library compilation flags
 ###############################################################################
 
-LDFLAGS += -pie
+# Position Independent Code flags for shared libraries
 ifeq ($(OS),Darwin)
     DLL_CXXFLAGS := -fPIC
     DLL_LDFLAGS := -dynamiclib
@@ -214,105 +325,275 @@ else ifeq ($(OS),Linux)
     DLL_LDFLAGS := -shared
     DEFINES += -DAPI_LINKAGE=
 else ifeq ($(OS),Windows)
-    CXXFLAGS := -fPIC
+    DLL_CXXFLAGS := -fPIC
     DLL_LDFLAGS := -shared
-	ifdef DLL_LINKAGE_EXPORT
+    ifdef DLL_LINKAGE_EXPORT
         DEFINES += -DAPI_LINKAGE="__declspec(dllexport)"
-	else
+    else
         DEFINES += -DAPI_LINKAGE="__declspec(dllimport)"
-	endif
+    endif
     ifeq ($(WIN_ENV),MINGW)
         LDFLAGS += -lmingw32
     else
-        $(error Unknown shared library file extension for this architecture)
+        $(error Unknown Windows environment for shared library compilation)
     endif
+else ifeq ($(OS),Emscripten)
+    DLL_CXXFLAGS :=
+    DLL_LDFLAGS :=
+    DEFINES += -DAPI_LINKAGE=
+else
+    $(error Unsupported OS for shared library compilation: $(OS))
 endif
 
+# Apply shared library flags
 CXXFLAGS += $(DLL_CXXFLAGS)
 CCFLAGS += $(DLL_CXXFLAGS)
+
+# Linker flags for position independent executables
+LDFLAGS += -pie
 
 # Creating shared libraries from static ones.
 # Note: since 2024 -noall_load are removed on MacOS.
 ifneq ($(OS),Darwin)
-    LINKER_ALL_LOAD=-Wl,--whole-archive
-    LINKER_NO_ALL_LOAD=-Wl,--no-whole-archive
+    LINKER_ALL_LOAD := -Wl,--whole-archive
+    LINKER_NO_ALL_LOAD := -Wl,--no-whole-archive
 endif
 
 ###############################################################################
-# Profile code.
+# Optimization and debug flags based on compilation mode
 ###############################################################################
 
+# Helper function to set optimization flags
+define set_optimization_flags
+    ifeq ($(COMPILATION_MODE),debug)
+        OPTIM_FLAGS := -O0 -g3 -fasynchronous-unwind-tables
+        DEFINES += -UNDEBUG -D_GLIBCXX_ASSERTIONS
+        # Debug-specific optimizations
+        ifeq ($(COMPILER_NAME),$(filter $(COMPILER_NAME),g++ gcc))
+            ifeq ($(GCC_GREATER_V7),1)
+                OPTIM_FLAGS += -fvar-tracking-assignments
+            endif
+        endif
+        ifeq ($(OS),Linux)
+            USE_BACKWARD := 1
+            USE_DEBUG_MACRO := 1
+        endif
+    else ifeq ($(COMPILATION_MODE),release)
+        OPTIM_FLAGS := -O3 -DNDEBUG -fomit-frame-pointer
+        # Advanced release optimizations
+        ifeq ($(COMPILER_NAME),$(filter $(COMPILER_NAME),g++ gcc))
+            OPTIM_FLAGS += -flto -fuse-linker-plugin -ffat-lto-objects
+            ifeq ($(GCC_GREATER_V8),1)
+                OPTIM_FLAGS += -fdevirtualize-at-ltrans
+            endif
+            ifeq ($(GCC_GREATER_V10),1)
+                OPTIM_FLAGS += -fipa-pta -floop-nest-optimize
+            endif
+        else ifeq ($(COMPILER_NAME),clang)
+            OPTIM_FLAGS += -flto=thin
+            ifeq ($(CLANG_GREATER_V12),1)
+                OPTIM_FLAGS += -fwhole-program-vtables
+            endif
+        endif
+        # Additional release flags
+        OPTIM_FLAGS += -ffunction-sections -fdata-sections
+        LDFLAGS += -Wl,--gc-sections
+    else ifeq ($(COMPILATION_MODE),release-with-debug)
+        OPTIM_FLAGS := -O2 -g -DNDEBUG
+        # Optimized but with debug info
+        ifeq ($(COMPILER_NAME),$(filter $(COMPILER_NAME),g++ gcc))
+            OPTIM_FLAGS += -flto=auto
+        endif
+    else ifeq ($(COMPILATION_MODE),normal)
+        OPTIM_FLAGS := -O2 -g
+        DEFINES += -UNDEBUG -D_GLIBCXX_ASSERTIONS
+    else ifeq ($(COMPILATION_MODE),size)
+        OPTIM_FLAGS := -Os -DNDEBUG -fomit-frame-pointer
+        # Size optimization
+        OPTIM_FLAGS += -ffunction-sections -fdata-sections -fmerge-all-constants
+        LDFLAGS += -Wl,--gc-sections
+        ifeq ($(COMPILER_NAME),$(filter $(COMPILER_NAME),g++ gcc))
+            OPTIM_FLAGS += -flto
+        endif
+    else ifeq ($(COMPILATION_MODE),fast)
+        OPTIM_FLAGS := -Ofast -DNDEBUG -fomit-frame-pointer
+        # Maximum performance (may break standards compliance)
+        OPTIM_FLAGS += -ffast-math -funsafe-math-optimizations
+        ifeq ($(COMPILER_NAME),$(filter $(COMPILER_NAME),g++ gcc))
+            OPTIM_FLAGS += -flto -march=native -mtune=native
+        endif
+    else
+        $$(error COMPILATION_MODE must be debug, release, release-with-debug, normal, size, or fast, but got $(COMPILATION_MODE))
+    endif
+endef
+
+$(eval $(call set_optimization_flags))
+
+# Additional performance optimizations (optional)
+ifdef USE_PROFILE_GUIDED_OPTIMIZATION
+    ifeq ($(COMPILATION_MODE),release)
+        ifdef PGO_GENERATE
+            OPTIM_FLAGS += -fprofile-generate
+            LDFLAGS += -fprofile-generate
+        endif
+        ifdef PGO_USE
+            OPTIM_FLAGS += -fprofile-use -fprofile-correction
+            LDFLAGS += -fprofile-use
+        endif
+    endif
+endif
+
+# Link-time optimization settings
+ifdef USE_LTO_JOBS
+    ifeq ($(COMPILER_NAME),$(filter $(COMPILER_NAME),g++ gcc))
+        OPTIM_FLAGS += -flto=$(USE_LTO_JOBS)
+    endif
+endif
+
+###############################################################################
+# Sanitizers and profiling tools
+###############################################################################
+
+# Helper function to add sanitizer flags
+define add_sanitizer_flags
+    ifdef USE_ASAN
+        USE_BACKWARD :=
+        CXXFLAGS += -fsanitize=address -fno-omit-frame-pointer
+        CCFLAGS += -fsanitize=address -fno-omit-frame-pointer
+        LDFLAGS += -fsanitize=address
+        SANITIZER := ASAN_OPTIONS=symbolize=1:detect_leaks=1:check_initialization_order=1:strict_init_order=1 ASAN_SYMBOLIZER_PATH=$$(shell which llvm-symbolizer)
+        ifdef STRIP
+            $$(warning Address sanitizer requires symbols, disabling strip)
+            STRIP :=
+        endif
+    endif
+
+    ifdef USE_TSAN
+        USE_BACKWARD :=
+        CXXFLAGS += -fsanitize=thread
+        CCFLAGS += -fsanitize=thread
+        LDFLAGS += -fsanitize=thread
+        SANITIZER := TSAN_OPTIONS=symbolize=1:second_deadlock_stack=1
+        ifdef STRIP
+            $$(warning Thread sanitizer requires symbols, disabling strip)
+            STRIP :=
+        endif
+    endif
+
+    ifdef USE_UBSAN
+        CXXFLAGS += -fsanitize=undefined -fno-sanitize-recover=undefined
+        CCFLAGS += -fsanitize=undefined -fno-sanitize-recover=undefined
+        LDFLAGS += -fsanitize=undefined
+        SANITIZER := UBSAN_OPTIONS=symbolize=1:print_stacktrace=1:halt_on_error=1
+    endif
+
+    ifdef USE_MSAN
+        USE_BACKWARD :=
+        CXXFLAGS += -fsanitize=memory -fno-omit-frame-pointer -fsanitize-memory-track-origins=2
+        CCFLAGS += -fsanitize=memory -fno-omit-frame-pointer -fsanitize-memory-track-origins=2
+        LDFLAGS += -fsanitize=memory
+        SANITIZER := MSAN_OPTIONS=symbolize=1:print_stats=1
+        ifdef STRIP
+            $$(warning Memory sanitizer requires symbols, disabling strip)
+            STRIP :=
+        endif
+    endif
+
+    # Leak Sanitizer (can be used standalone or with ASAN)
+    ifdef USE_LSAN
+        CXXFLAGS += -fsanitize=leak
+        CCFLAGS += -fsanitize=leak
+        LDFLAGS += -fsanitize=leak
+        SANITIZER := LSAN_OPTIONS=symbolize=1:print_suppressions=0
+    endif
+
+    # Control Flow Integrity (Clang only)
+    ifdef USE_CFI
+        ifeq ($(COMPILER_NAME),clang)
+            CXXFLAGS += -fsanitize=cfi -flto -fvisibility=hidden
+            CCFLAGS += -fsanitize=cfi -flto -fvisibility=hidden
+            LDFLAGS += -fsanitize=cfi -flto
+        else
+            $$(warning CFI sanitizer is only available with Clang)
+        endif
+    endif
+
+    # Safe Stack (Clang only)
+    ifdef USE_SAFE_STACK
+        ifeq ($(COMPILER_NAME),clang)
+            CXXFLAGS += -fsanitize=safe-stack
+            CCFLAGS += -fsanitize=safe-stack
+            LDFLAGS += -fsanitize=safe-stack
+        else
+            $$(warning Safe Stack is only available with Clang)
+        endif
+    endif
+
+    # Hardware-assisted AddressSanitizer (ARM64 only)
+    ifdef USE_HWASAN
+        ifeq ($(ARCH),aarch64)
+            ifeq ($(COMPILER_NAME),clang)
+                CXXFLAGS += -fsanitize=hwaddress -fno-omit-frame-pointer
+                CCFLAGS += -fsanitize=hwaddress -fno-omit-frame-pointer
+                LDFLAGS += -fsanitize=hwaddress
+            else
+                $$(warning HWAddressSanitizer requires Clang on ARM64)
+            endif
+        else
+            $$(warning HWAddressSanitizer is only available on ARM64)
+        endif
+    endif
+endef
+
+$(eval $(call add_sanitizer_flags))
+
+# Static analysis tools integration
+ifdef USE_STATIC_ANALYSIS
+    ifeq ($(COMPILER_NAME),clang)
+        CXXFLAGS += --analyze -Xanalyzer -analyzer-output=text
+        CCFLAGS += --analyze -Xanalyzer -analyzer-output=text
+    endif
+endif
+
+# Valgrind-friendly compilation
+ifdef USE_VALGRIND_FRIENDLY
+    CXXFLAGS += -DVALGRIND_FRIENDLY -fno-inline-functions-called-once
+    CCFLAGS += -DVALGRIND_FRIENDLY -fno-inline-functions-called-once
+    OPTIM_FLAGS := $(filter-out -fomit-frame-pointer,$(OPTIM_FLAGS))
+endif
+
+# Profiling with gprof
 ifdef USE_GPROF
     USE_BACKWARD :=
     CXXFLAGS += -pg
+    CCFLAGS += -pg
     LDFLAGS += -pg
     ifdef STRIP
-        $(warning Release mode with stripped symbols was desired but gprof need them strip command disabled!)
+        $(warning Release mode with stripped symbols was desired but gprof needs them, strip command disabled!)
         STRIP :=
     endif
 endif
 
-###############################################################################
-# Use AddressSanitizer.
-###############################################################################
-
-ifdef USE_ASAN
-    USE_BACKWARD :=
-    CXXFLAGS += -fsanitize=address -fno-omit-frame-pointer
-    LDFLAGS += -fsanitize=address -static-libasan
-    SANITIZER := ASAN_OPTIONS=symbolize=1 ASAN_SYMBOLIZER_PATH=$(shell which llvm-symbolizer)
-endif
-
-###############################################################################
-# TODO: -O1 is needed for hardening
-# TODO: -O0 seems better for debuging with g++
-# GCC and clang Optimization flags
-###############################################################################
-
-ifeq ($(COMPILATION_MODE),debug)
-    ifeq ($(OS),Linux)
-        USE_BACKWARD := 1
-        USE_DEBUG_MACRO := 1
-    else
-        USE_BACKWARD :=
-        USE_DEBUG_MACRO :=
-    endif
-    OPTIM_FLAGS := -O0 -g3 -fasynchronous-unwind-tables
-    DEFINES += -UNDEBUG -D_GLIBCXX_ASSERTIONS
-else ifeq ($(COMPILATION_MODE),release)
-    USE_BACKWARD :=
-    USE_DEBUG_MACRO :=
-    OPTIM_FLAGS := -O2
-    DEFINES += -DNDEBUG
-else ifeq ($(COMPILATION_MODE),normal)
-    USE_BACKWARD :=
-    USE_DEBUG_MACRO :=
-    OPTIM_FLAGS := -O2 -g
-    DEFINES += -UNDEBUG -D_GLIBCXX_ASSERTIONS
-else
-    $(error COMPILATION_MODE shall be debug or release but get $(COMPILATION_MODE))
-endif
-
-###############################################################################
-# Use code coverage. Beware this will replace optimization flags !
-###############################################################################
-
+# Code coverage
 ifdef USE_COVERAGE
     OPTIM_FLAGS := -O1
     ifeq ($(COMPILATION_MODE),debug)
         OPTIM_FLAGS += -g
     endif
     CXXFLAGS += --coverage
+    CCFLAGS += --coverage
     LDFLAGS += --coverage
 endif
 
 ###############################################################################
-# Activate backward-cpp library if desired.
+# Debug libraries (backward-cpp and dbg-macro)
 ###############################################################################
 
+# Activate backward-cpp library if desired
 ifdef USE_BACKWARD
+    # Check compatibility
     ifeq ($(COMPILATION_MODE),release)
-        $(warning Release mode was desired as well using backward-cpp will force debug mode)
+        $(warning Release mode was desired but backward-cpp will force debug mode)
         USE_BACKWARD :=
     endif
     ifeq ($(OS),Windows)
@@ -325,8 +606,8 @@ ifdef USE_BACKWARD
         $(warning Cannot use backward-cpp lib for Emscripten. USE_BACKWARD will be disabled)
         USE_BACKWARD :=
     else ifdef USE_GPROF
+        $(warning Cannot use backward-cpp with gprof. USE_BACKWARD will be disabled)
         USE_BACKWARD :=
-    else
     endif
 endif
 
@@ -341,10 +622,7 @@ ifdef USE_BACKWARD
     LINKER_FLAGS += -ldw
 endif
 
-###############################################################################
-# Activate debug if dbg-macro library is desired
-###############################################################################
-
+# Activate dbg-macro library if desired
 ifdef USE_DEBUG_MACRO
     ifeq ($(COMPILATION_MODE),release)
         $(warning Release mode desired but USE_DEBUG_MACRO will force debug mode)
@@ -353,8 +631,8 @@ ifdef USE_DEBUG_MACRO
 endif
 
 ifdef USE_DEBUG_MACRO
-    INCLUDES += -I$(OBJS_ROOT_DIR)/dbg-macro
-    DEFINES += -DBG_MACRO_NO_WARNING
+    INCLUDES += -I$(DOWNLOAD_DIR)/dbg-macro
+    DEFINES += -DDBG_MACRO_NO_WARNING
 endif
 
 ###############################################################################
