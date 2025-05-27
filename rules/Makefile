@@ -1430,9 +1430,49 @@ about:
 #? Display the version of the project.
 ###############################################################################
 
-.PHONY: get-version
-get-version:
+.PHONY: project-version
+project-version:
 	@$(ECHO) $(PROJECT_VERSION)
+
+###############################################################################
+#? Display the name of the project.
+###############################################################################
+
+.PHONY: project-name
+project-name:
+	@$(ECHO) $(PROJECT_NAME)
+
+###############################################################################
+#? Display the name of the target.
+###############################################################################
+
+.PHONY: target-name
+target-name:
+	@$(ECHO) $(TARGET_NAME)
+
+###############################################################################
+#? Display the description of the target.
+###############################################################################
+
+.PHONY: target-description
+target-description:
+	@$(ECHO) $(TARGET_DESCRIPTION)
+
+###############################################################################
+#? Display the compilation mode of the project.
+###############################################################################
+
+.PHONY: compilation-mode
+compilation-mode:
+	@$(ECHO) $(COMPILATION_MODE)
+
+###############################################################################
+#? Display the C++ standard used.
+###############################################################################
+
+.PHONY: cxx-standard
+cxx-standard:
+	@$(ECHO) $(subst --std=,,$(CXX_STANDARD))
 
 ###############################################################################
 #? Check if your project is harden
