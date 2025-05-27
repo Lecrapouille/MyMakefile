@@ -1,127 +1,144 @@
 # MyMakefile
 
-[MyMakefile](https://github.com/Lecrapouille/MyMakefile) is a central build
-system based on GNU Makefile for compiling my GitHub C++ projects for Linux, Mac
-OS X, [Emscripten](https://emscripten.org/) and
-[ExaequOS](https://www.exaequos.com/) (and certainly for Windows)
-architectures. To be used for upset people against CMake like me. The aim of
-`MyMakefile` is to reduce the number of lines to type for my Makefiles by
-avoiding duplicating the same boring code over all my projects and therefore to
-make all my Makefiles consistent.
+[MyMakefile](https://github.com/Lecrapouille/MyMakefile) is a build system based on GNU Make for C++ projects. It serves as an alternative to CMake for medium-sized projects, eliminating the need to write complex Makefile rules from scratch.
 
-Write in few lines of Makefile by including in your project two files containing
-all the complex cookery rules for compiling files, generating shared/static lib,
-generating pkg config, creating MacOX bundle application, generating
-documentation, runing code coverage, compilation flags, installing on your
-system ... is already made for you. You can still extend rules!
+## 🤔 Why MyMakefile?
 
-Here, the list of my personal projects using the branch version-2 as git
-submodule:
-- https://github.com/Lecrapouille/TimedPetriNetEditor
-- https://github.com/Lecrapouille/OpenGlassBox
-- https://github.com/Lecrapouille/zipper
+While CMake is a popular choice, MyMakefile offers several advantages for smaller projects:
 
-Here, the list of my personal projects using the branch version-1 as git
-submodule:
-- https://github.com/Lecrapouille/Highway
-- https://github.com/Lecrapouille/OpenGLCppWrapper
-- https://github.com/Lecrapouille/SimTaDyn
-- https://github.com/Lecrapouille/SimForth
-- https://github.com/Lecrapouille/ChessNeuNeu
-- https://github.com/Lecrapouille/LinkAgainstMyLibs
+- **Simplicity**: No complex syntax or obscure function names
+- **Transparency**: Direct control over the build process
+- **Efficiency**: Smaller, more readable Makefiles
+- **Modern Features**: All the tools you need without the complexity
 
-## Why do I care using this project?
+## 🌟 MyMakefile Goals
 
-Or maybe: "why not simply using CMake instead of this project?" CMake is, after
-all, a Makefile generator and architecture agnostic! The answer would be "maybe
-yes for big projects", but I personally never liked CMake for its syntax,
-obscure function names and specially for generating Makefiles containing more
-lines than an hand-made equivalent, especially for small projects such as mines.
+- Encapsulate all complex Makefile rules in two files that you can include in your project, handling:
+  - File compilation
+  - Application bundling (including macOS bundles)
+  - Shared/static library management
+  - System installation
+  - Documentation generation
+  - Compilation flag management
+  - pkg-config integration
+- Define your project structure in just a few lines of Makefile syntax
+- Let MyMakefile handle all the complex build rules for you
 
-In the case, for your personal projects, you are not bored by CMake syntax or
-not interested with deadling with Makefile rules, you may be interested in this
-project. Two choices:
-- simply copy/paste this repo inside your project.
-- or better, use it as a git submodule to track my evolutions.
+## 🌐 Cross-Platform Support
 
-## MyMakefile API
+- 🐧 Linux
+- 🍎 macOS
+- ~~🪟 Windows~~ (not yet supported)
+- 🌐 [Emscripten](https://emscripten.org)
+- 🧸 [ExaequOS](https://www.exaequos.com)
 
-WIP: See [this document](doc/API.md).
+## 🚀 Quick Start
 
-## MyMakefile Features
+1. **Include MyMakefile in your project**:
 
-MyMakefile allows you to:
-- Each Makefile allows you to define a binary target and/or a static/shared
-  library target for Linux, OS X, Windows.
-- In the case of your target is a library, a
-  [pkg-config](https://en.wikipedia.org/wiki/Pkg-config) file is automatically
-  created.
-- Define macros for installing your program, its resources, docs, libraries,
-  include files, pkg-config inside your OS in the case you want a `make install`
-  rule. By default a minimal installation rules is offered installing
-  applications, libraries, pkg files, header files, doc and data.
-- Define by default plenty of compilation flags for GCC and clang compilers to
-  have plenty of warnings. Some are made for hardening your binary or striping
-  your release binaries.
-- Enable/disable the good optimization flags (-Ox) as well as enabling/disabling
-  asserts (NDEBUG) depending on if your project is in debug or release mode. If
-  you do not like my default compilation/link flags, you can replace them by
-  yours. If you do not like the default compiler, you can tell your own.
-- In debug mode, add automatically a stack trace for helping you fixing segfaults.
-- In debug mode, offer debug printf macros.
-- Offer rules such as gcov (code coverage report), Coverity Scan (static
-  analyzer of code), doxgen (documentation generator), asan (AddressSanitizer),
-  check for a hardened target.
-- Generate a C++ header file with your project information (version, SHA1 ...)
-  that can be used in a logger.
-- Generate a Doxygen file with project parameters (such as project name,
-  version ...). The generated HTML follows the theme used by the library SFML
-  which is more proper than the default Doxygen theme.
-- Have a rule for compressing your project (without .git or generated
-  documentation) in a tar.gz tarball with the date and the version. Names
-  collision of tarballs is managed.
-- Auto-generate the Makefile help by parsing your comments placed before rules.
-- Work with parallel builds (-jX option, where X is the number of your CPU cores).
-- Hide by default all these awful lines made of GCC compilation flags. Colorful
-information messages are displayed instead with the percentage of compiled files
-(in the way of the CMake progress bar).
-- Create a build directory where compiled files are placed, instead of being
-  created within source files.
-- Generate .d files inside a build directory holding dependencies files (when
-  one header file is modified, dependent source files are also compiled).
-- For MacOS, you have option for obtaining bundle applications.
+```bash
+# Option 1: Copy-paste
+cp -r MyMakefile your-project/.makefile
 
-**Current constraint:**
+# Option 2: Git submodule (recommended)
+git submodule add https://github.com/Lecrapouille/MyMakefile.git .makefile
+```
 
-- Currently, you have to define a single target by Makefile file (for example a
-  library and its demo application). This can be easily bypassed as shown in
-  examples given in this document by adding a makefile in a separate folder
-  (source, lib, demo, tests, ...). A WIP solution which both fix and reduce the
-  code is in gestation in the git branch dev-multitargets.
+The dot prefix allows you to hide MyMakefile in your project, but it's not mandatory.
 
-**Prerequisites:**
+2. **Create your Makefile**:
 
-You have to install:
-- a bash interpretor since some Makefile code cannot be directly called.
-- the basic calculator `bc` tool: `apt-get install bc` needed for the progress
-  bar (if not present the compilation does not fail but the percent of progress
-  is crapped).
-- if needed, install tools that can be called by MyMakefile: gcov, doxygen,
-  hardening-check: `apt-get install gcovr doxygen devscripts`.
+```makefile
+# Relative location of your project root folder P and MyMakefiles folder M
+P := .
+M := $(P)/.makefile
 
-## How to compile for ExaequOS ?
+# Your minimal project definition
+PROJECT_NAME := my-project
+PROJECT_VERSION := 1.0.0
+TARGET_NAME := my-app
+TARGET_DESCRIPTION := brief explanation of the target
 
-ExaequOS is a new project: a fork of Emscripten for managing posix features such
-as forks, signals, tty, Wayland and more ...
+# Optional definitions
+COMPILATION_MODE := release
+CXX_STANDARD := --std=c++14
 
-- Install the ExaequOS Docker image. Follow instructions
-  https://github.com/Lecrapouille/docker-exa
-- Go to your project using MyMakefile.
-- Run the ExaequOS Docker image against the folder holding your project.
-- Simply call `make`! Your project will compile like if you were compiling a
-  Linux application. Do not worry about Emscripten compiler. All is hidden for
-  you!
-- Once compiled, call `make install`.
-- Open you favorite browser to the URL https://www.exaequos.com/
-- Run Havoc, the ExaequOS console and type `/media/localhost/<my-application>`
-  where `<my-application>` has to be changed for your application name.
+# Include MyMakefiles project file after your project definition
+include $(M)/project/Makefile
+
+# Define what and how to compile your target
+INCLUDES := $(P)/include $(P)/src
+VPATH := $(P)/src
+DEFINES :=
+SRC_FILES += src/main.cpp
+
+# Include MyMakefiles rules file after your project configuration
+include $(M)/rules/Makefile
+
+# Optionally: add your custom Makefile rules here
+```
+
+3. **Build your project**:
+
+```bash
+make help         # Show all available options
+make              # Start compilation
+make install      # Install your project on your system
+```
+
+## 📚 Projects Using MyMakefile
+
+Here are some of my projects that use MyMakefile instead of CMake:
+
+- 🎨 [TimedPetriNetEditor](https://github.com/Lecrapouille/TimedPetriNetEditor)
+- 🎮 [OpenGlassBox](https://github.com/Lecrapouille/OpenGlassBox)
+- 📦 [Zipper](https://github.com/Lecrapouille/zipper)
+- 🛣️ [Highway](https://github.com/Lecrapouille/Highway)
+- 🎮 [OpenGLCppWrapper](https://github.com/Lecrapouille/OpenGLCppWrapper)
+- 🔬 [SimTaDyn](https://github.com/Lecrapouille/SimTaDyn)
+- 🧮 [SimForth](https://github.com/Lecrapouille/SimForth)
+- ♟️ [ChessNeuNeu](https://github.com/Lecrapouille/ChessNeuNeu)
+- 🔗 [LinkAgainstMyLibs](https://github.com/Lecrapouille/LinkAgainstMyLibs)
+
+## 📋 Prerequisites
+
+- 🐚 Bash interpreter
+- 🔢 `bc` calculator (for progress bar)
+- 🛠️ Optional tools, called by MyMakefile:
+  - `g++` or `clang++` (for compilation)
+  - `gcovr` (for code coverage)
+  - `doxygen` (for documentation)
+  - `bash` (MyMakefile requires some bash assistance)
+
+## 🔧 Compiling for ExaequOS
+
+[ExaequOS](https://www.exaequos.com) is a fork of [Emscripten](https://emscripten.org).
+MyMakefile supports compilation for both platforms.
+
+1. Install the ExaequOS Docker image:
+
+```bash
+# Follow instructions at https://github.com/Lecrapouille/docker-exa
+```
+
+2. Run the ExaequOS Docker image against your project folder.
+
+3. Simply run `make` - your project will compile like a native Linux application.
+
+4. After compilation, run `make install`
+
+5. Open https://www.exaequos.com/ in your browser.
+
+6. In Havoc (ExaequOS console), run:
+
+```bash
+/media/localhost/<your-application>
+```
+
+## 📖 Documentation
+
+- For detailed API documentation, see [API.md](doc/API.md).
+
+## 📝 License
+
+MIT License - See [LICENSE](LICENSE) file for details.
