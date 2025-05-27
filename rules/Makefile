@@ -23,6 +23,34 @@
 ##=============================================================================
 
 ###############################################################################
+# Performance and parallelization improvements
+###############################################################################
+
+# Auto-detect number of CPU cores for parallel compilation
+ifeq ($(OS),Linux)
+    NPROCS := $(shell nproc)
+else ifeq ($(OS),Darwin)
+    NPROCS := $(shell sysctl -n hw.ncpu)
+else ifeq ($(OS),Windows)
+    NPROCS := $(shell echo %NUMBER_OF_PROCESSORS%)
+else
+    NPROCS := 1
+endif
+
+# Set default parallel jobs if not specified and not in recursive make
+# This avoids the "forced in makefile: resetting jobserver mode" warning
+ifeq ($(MAKELEVEL),0)
+    ifeq ($(findstring -j,$(MAKEFLAGS)),)
+        MAKEFLAGS += -j$(NPROCS)
+    endif
+endif
+
+# Optimize make for better performance
+.NOTPARALLEL: clean veryclean install
+.DELETE_ON_ERROR:
+.SUFFIXES:
+
+###############################################################################
 # C/C++ compilers
 ###############################################################################
 
@@ -712,8 +740,12 @@ INCLUDES := $(addprefix -I,$(abspath $(INCLUDES) $(GENERATION_DIR) $(DOWNLOAD_DI
 # compile others which depend on it.
 ###############################################################################
 
+# Improved dependency tracking with better error handling
 DEPFLAGS = -MT $(abspath $@) -MMD -MP -MF $(abspath $(OBJS_ROOT_DIR)/$*.Td)
-POSTCOMPILE = mv -f $(abspath $(OBJS_ROOT_DIR)/$*.Td) $(abspath $(OBJS_ROOT_DIR)/$*.d)
+POSTCOMPILE = $(MV) $(abspath $(OBJS_ROOT_DIR)/$*.Td) $(abspath $(OBJS_ROOT_DIR)/$*.d) && touch $(abspath $@)
+
+# Create dependency directories if they don't exist
+$(shell $(MKDIR) $(sort $(dir $(patsubst %,%.d,$(basename $(OBJS) $(LIB_OBJS))))))
 
 ###############################################################################
 # Libraries installed on the operating system and known from pkg-config.
@@ -731,26 +763,45 @@ ifdef PKG_LIBS
         SEARCH_CMD := PKG_CONFIG_PATH="$(PKG_CONFIG_SEARCH_PATH)"
     endif
 
-    PKGCFG_LIBS := `$(SEARCH_CMD) pkg-config --libs $(PKG_LIBS)`
-    PKGCFG_CFLAGS := `$(SEARCH_CMD) pkg-config --cflags $(PKG_LIBS)`
+    # Cache pkg-config results to avoid repeated calls
+    ifndef PKGCFG_LIBS_CACHED
+        PKGCFG_LIBS := $(shell $(SEARCH_CMD) pkg-config --libs $(PKG_LIBS) 2>/dev/null)
+        PKGCFG_CFLAGS := $(shell $(SEARCH_CMD) pkg-config --cflags $(PKG_LIBS) 2>/dev/null)
+        PKGCFG_LIBS_CACHED := 1
+    endif
     SEARCH_CMD :=
 endif
 
 ###############################################################################
-# Progress bar
+# Enhanced progress bar with time estimation
 ###############################################################################
 
-PROGRESSBAR_PERCENT := 0
-PROGRESSBAR_DISPLAY := 0
-PROGRESSBAR_COUNT_ELEMENTS := $(words $(OBJS) $(LIB_OBJS))
-$(eval PROGRESSBAR_INCREMENT=$(shell echo "100 / $(PROGRESSBAR_COUNT_ELEMENTS)" | bc -l))
-define progressbar-update-percent
-    $(eval PROGRESSBAR_PERCENT=$(shell echo "$(PROGRESSBAR_PERCENT) + $(PROGRESSBAR_INCREMENT)" | bc -l))
-    $(eval PROGRESSBAR_DISPLAY=$(shell echo "($(PROGRESSBAR_PERCENT) + 0.5) / 1" | bc))
-endef
-
-progress-in = $(call progressbar-update-percent) $(ECHO_COLOR) "$(PURPLE)[$(PROGRESSBAR_DISPLAY)%] $1 $(CYAN)$2$(COLOR_DEFAULT)$(COLOR_DEFAULT) <= $(YELLOW)$3$(COLOR_DEFAULT)"
-progress-out = $(call progressbar-update-percent) $(ECHO_COLOR) "$(PURPLE)[$(PROGRESSBAR_DISPLAY)%] $1 $(CYAN)$2$(COLOR_DEFAULT)$(COLOR_DEFAULT) => $(YELLOW)$3$(COLOR_DEFAULT)"
+# Only calculate progress if we have objects to compile
+ifneq ($(words $(OBJS) $(LIB_OBJS)),0)
+    PROGRESSBAR_PERCENT := 0
+    PROGRESSBAR_DISPLAY := 0
+    PROGRESSBAR_COUNT_ELEMENTS := $(words $(OBJS) $(LIB_OBJS))
+    PROGRESSBAR_INCREMENT := $(shell echo "scale=2; 100 / $(PROGRESSBAR_COUNT_ELEMENTS)" | bc -l 2>/dev/null || echo "1")
+    
+    # Track compilation start time
+    COMPILE_START_TIME := $(shell date +%s)
+    
+    define progressbar-update-percent
+        $(eval PROGRESSBAR_PERCENT=$(shell echo "$(PROGRESSBAR_PERCENT) + $(PROGRESSBAR_INCREMENT)" | bc -l 2>/dev/null || echo "0"))
+        $(eval PROGRESSBAR_DISPLAY=$(shell echo "($(PROGRESSBAR_PERCENT) + 0.5) / 1" | bc 2>/dev/null || echo "0"))
+        $(eval CURRENT_TIME=$(shell date +%s))
+        $(eval ELAPSED_TIME=$(shell echo "$(CURRENT_TIME) - $(COMPILE_START_TIME)" | bc 2>/dev/null || echo "0"))
+        $(eval ESTIMATED_TOTAL=$(shell echo "scale=0; $(ELAPSED_TIME) * 100 / $(PROGRESSBAR_PERCENT)" | bc -l 2>/dev/null || echo "0"))
+        $(eval REMAINING_TIME=$(shell echo "$(ESTIMATED_TOTAL) - $(ELAPSED_TIME)" | bc 2>/dev/null || echo "0"))
+    endef
+    
+    progress-in = $(call progressbar-update-percent) $(ECHO_COLOR) "$(PURPLE)[$(PROGRESSBAR_DISPLAY)%] $1 $(CYAN)$2$(COLOR_DEFAULT) <= $(YELLOW)$3$(COLOR_DEFAULT) $(if $(filter-out 0,$(REMAINING_TIME)),(ETA: $(REMAINING_TIME)s))"
+    progress-out = $(call progressbar-update-percent) $(ECHO_COLOR) "$(PURPLE)[$(PROGRESSBAR_DISPLAY)%] $1 $(CYAN)$2$(COLOR_DEFAULT) => $(YELLOW)$3$(COLOR_DEFAULT)"
+else
+    # Fallback for when no compilation is needed
+    progress-in = $(ECHO_COLOR) "$(PURPLE)*** $1 $(CYAN)$2$(COLOR_DEFAULT) <= $(YELLOW)$3$(COLOR_DEFAULT)"
+    progress-out = $(ECHO_COLOR) "$(PURPLE)*** $1 $(CYAN)$2$(COLOR_DEFAULT) => $(YELLOW)$3$(COLOR_DEFAULT)"
+endif
 
 ###############################################################################
 # Installing a list of files $1 to destination $2.
@@ -1047,12 +1098,15 @@ endif
 ifdef LIB_OBJS
 $(TARGET_STATIC_LIB_NAME): $(LIB_OBJS) $(INTERNAL_LIBS) $(LIST_MYMAKEFILES) $(DIRS_WITH_MAKEFILE)
 	@$(call print-to,"Creating static library","$(TARGET_NAME)","$@")
+	@$(MKDIR) $(dir $@)
 ifdef THIRDPART_LIBS
 	@$(call extract-objs-from-static-libs)
 endif
+	$(Q)$(RM) $@ 2>/dev/null || true
 	$(Q)$(CD) $(abspath $(OBJS_ROOT_DIR)) && \
     $(AR) $(ARFLAGS) $@ $(patsubst $(abspath $(BUILD_DIR)/objs)/%,%,$(abspath $(LIB_OBJS) $(EXTRACTED_OBJS))) && \
-    ranlib $@
+    ranlib $@ || ($(RM) $@; exit 1)
+	@$(call print-to,"Static library created","$(TARGET_NAME)","$@")
 endif
 
 ###############################################################################
@@ -1063,7 +1117,9 @@ ifdef LIB_OBJS
 $(TARGET_SHARED_LIB_NAME): | $(TARGET_STATIC_LIB_NAME)
 $(TARGET_SHARED_LIB_NAME): $(LIB_OBJS) $(INTERNAL_LIBS) $(LIST_MYMAKEFILES) $(DIRS_WITH_MAKEFILE)
 	@$(call print-to,"Creating shared library","$(TARGET_NAME)","$@")
-	$(Q)$(COMPILER) $(LDFLAGS) $(DLL_LDFLAGS) -o $@ $(abspath $(LIB_OBJS)) $(LINKER_ALL_LOAD) $(THIRDPART_LIBS) $(INTERNAL_LIBS) $(NOT_PKG_LIBS) $(PKGCFG_LIBS) $(LINKER_NO_ALL_LOAD) $(LINKER_FLAGS) $(USER_LDFLAGS)
+	@$(MKDIR) $(dir $@)
+	$(Q)$(COMPILER) $(LDFLAGS) $(DLL_LDFLAGS) -o $@ $(abspath $(LIB_OBJS)) $(LINKER_ALL_LOAD) $(THIRDPART_LIBS) $(INTERNAL_LIBS) $(NOT_PKG_LIBS) $(PKGCFG_LIBS) $(LINKER_NO_ALL_LOAD) $(LINKER_FLAGS) $(USER_LDFLAGS) || ($(RM) $@; exit 1)
+	@$(call print-to,"Shared library created","$(TARGET_NAME)","$@")
 endif
 
 ###############################################################################
@@ -1083,52 +1139,56 @@ endif
 ifdef OBJS
 $(TARGET_BINARY_NAME): $(OBJS) $(INTERNAL_LIBS) $(LIST_MYMAKEFILES) $(DIRS_WITH_MAKEFILE)
 	@$(call print-to,Linking,$(TARGET_NAME),$@)
-	$(Q)$(COMPILER) $(LDFLAGS) $(OBJS) $(THIRDPART_OBJS) -o $(TARGET_BINARY_NAME) $(THIRDPART_LIBS) $(INTERNAL_LIBS) $(NOT_PKG_LIBS) $(PKGCFG_LIBS) $(LINKER_FLAGS)
+	@$(MKDIR) $(dir $@)
+	$(Q)$(COMPILER) $(LDFLAGS) $(OBJS) $(THIRDPART_OBJS) -o $(TARGET_BINARY_NAME) $(THIRDPART_LIBS) $(INTERNAL_LIBS) $(NOT_PKG_LIBS) $(PKGCFG_LIBS) $(LINKER_FLAGS) $(USER_LDFLAGS) || ($(RM) $(TARGET_BINARY_NAME); exit 1)
 ifdef STRIP
 	@$(call print-to,Stripping,$(TARGET_NAME),$@)
-	$(Q)$(CD) $(OBJS_ROOT_DIR) && $(STRIP) $(TARGET_BINARY_NAME)
+	$(Q)$(STRIP) $(TARGET_BINARY_NAME) || $(ECHO_COLOR) "$(YELLOW)Warning: Failed to strip symbols$(COLOR_DEFAULT)"
 endif
 ifdef BUILD_MACOS_APP_BUNDLE
 	$(Q)$(call CREATE_MACOS_APP_BUNDLE,$(TARGET_BINARY_NAME)$(EXT))
 endif
+	@$(call print-to,Build completed,$(TARGET_NAME),$@)
 endif
 
 ###############################################################################
 # Compile C++ sources. Note: abspath is needed for gcov.
 ###############################################################################
 
-$(OBJS_ROOT_DIR)/%.o: %.cpp $(OBJS_ROOT_DIR)/%.d $(LIST_MYMAKEFILES) $(INTERNAL_LIBS)
+# Create object directory structure before compilation
+$(OBJS_ROOT_DIR)/%.o: %.cpp $(OBJS_ROOT_DIR)/%.d $(LIST_MYMAKEFILES) $(INTERNAL_LIBS) | $(OBJS_ROOT_DIR)
 	@$(call progress-in,Compiling C++,$(TARGET_NAME),$<)
-	$(Q)$(CXX) $(CXX_STANDARD) $(DEPFLAGS) $(CXXFLAGS) $(PKGCFG_CFLAGS) $(OPTIM_FLAGS) $(DEFINES) $(INCLUDES) $(USER_CXXFLAGS) -c $(abspath $<) -o $(abspath $@)
+	@$(MKDIR) $(dir $@)
+	$(Q)$(CXX) $(CXX_STANDARD) $(DEPFLAGS) $(CXXFLAGS) $(PKGCFG_CFLAGS) $(OPTIM_FLAGS) $(DEFINES) $(INCLUDES) $(USER_CXXFLAGS) -c $(abspath $<) -o $(abspath $@) || ($(RM) $(abspath $@); exit 1)
 	@$(POSTCOMPILE)
 
 ###############################################################################
 # Compile C sources. Note: abspath is needed for gcov.
 ###############################################################################
 
-$(OBJS_ROOT_DIR)/%.o: %.c $(OBJS_ROOT_DIR)/%.d $(LIST_MYMAKEFILES) $(INTERNAL_LIBS)
+# Create object directory structure before compilation
+$(OBJS_ROOT_DIR)/%.o: %.c $(OBJS_ROOT_DIR)/%.d $(LIST_MYMAKEFILES) $(INTERNAL_LIBS) | $(OBJS_ROOT_DIR)
 	@$(call progress-in,Compiling C,$(TARGET_NAME),$<)
-	$(Q)$(CC) $(DEPFLAGS) $(CCFLAGS) $(PKGCFG_CFLAGS) $(OPTIM_FLAGS) $(DEFINES) $(INCLUDES) $(USER_CCFLAGS) -c $(abspath $<) -o $(abspath $@)
+	@$(MKDIR) $(dir $@)
+	$(Q)$(CC) $(DEPFLAGS) $(CCFLAGS) $(PKGCFG_CFLAGS) $(OPTIM_FLAGS) $(DEFINES) $(INCLUDES) $(USER_CCFLAGS) -c $(abspath $<) -o $(abspath $@) || ($(RM) $(abspath $@); exit 1)
 	@$(POSTCOMPILE)
 
 ###############################################################################
-# Git clone thirdy-part libraries helping for the debug.
+# Assembly sources support (optional)
 ###############################################################################
 
-ifdef USE_BACKWARD
-$(TARGET_BINARY_NAME): $(DOWNLOAD_DIR)/backward-cpp/backward.cpp
-$(TARGET_STATIC_LIB_NAME): $(DOWNLOAD_DIR)/backward-cpp/backward.cpp
-$(TARGET_SHARED_LIB_NAME): $(DOWNLOAD_DIR)/backward-cpp/backward.cpp
-$(DOWNLOAD_DIR)/backward-cpp/backward.cpp:
-	@$(call GIT_CLONE_NO_RECURSE,$(DOWNLOAD_DIR),bombela,backward-cpp)
-endif
+ifdef ENABLE_ASM_SUPPORT
+$(OBJS_ROOT_DIR)/%.o: %.s $(OBJS_ROOT_DIR)/%.d $(LIST_MYMAKEFILES) | $(OBJS_ROOT_DIR)
+	@$(call progress-in,Assembling,$(TARGET_NAME),$<)
+	@$(MKDIR) $(dir $@)
+	$(Q)$(CC) $(DEPFLAGS) $(CCFLAGS) $(DEFINES) $(INCLUDES) -c $(abspath $<) -o $(abspath $@) || ($(RM) $(abspath $@); exit 1)
+	@$(POSTCOMPILE)
 
-ifdef USE_DEBUG_MACRO
-$(TARGET_BINARY_NAME): $(DOWNLOAD_DIR)/dbg-macro/dbg.h
-$(TARGET_STATIC_LIB_NAME): $(DOWNLOAD_DIR)/dbg-macro/dbg.h
-$(TARGET_SHARED_LIB_NAME): $(DOWNLOAD_DIR)/dbg-macro/dbg.h
-$(DOWNLOAD_DIR)/dbg-macro/dbg.h:
-	@$(call GIT_CLONE_NO_RECURSE,$(DOWNLOAD_DIR),sharkdp,dbg-macro)
+$(OBJS_ROOT_DIR)/%.o: %.S $(OBJS_ROOT_DIR)/%.d $(LIST_MYMAKEFILES) | $(OBJS_ROOT_DIR)
+	@$(call progress-in,Assembling,$(TARGET_NAME),$<)
+	@$(MKDIR) $(dir $@)
+	$(Q)$(CC) $(DEPFLAGS) $(CCFLAGS) $(DEFINES) $(INCLUDES) -c $(abspath $<) -o $(abspath $@) || ($(RM) $(abspath $@); exit 1)
+	@$(POSTCOMPILE)
 endif
 
 ###############################################################################
@@ -1219,12 +1279,41 @@ ifeq ($(abspath .), $(abspath $(P)))
 else
 	@$(call print-simple,Cleaning target,$(TARGET_NAME))
 endif
-	$(Q)$(RM) $(OBJS_ROOT_DIR) 2> /dev/null
+	$(Q)$(RM) $(OBJS_ROOT_DIR) 2> /dev/null || true
 ifdef DIRS_WITH_MAKEFILE
 	$(Q)for d in $(DIRS_WITH_MAKEFILE); do \
 	$(MAKE) --no-print-directory $(addprefix --directory=,$$d) clean; \
 	done
 endif
+
+###############################################################################
+#? Clean only object files (faster than full clean)
+###############################################################################
+
+.PHONY: clean-objs
+clean-objs:
+	@$(call print-simple,Cleaning objects,$(TARGET_NAME))
+	$(Q)$(RM) $(OBJS) $(LIB_OBJS) 2>/dev/null || true
+	$(Q)$(RM) $(patsubst %.o,%.d,$(OBJS) $(LIB_OBJS)) 2>/dev/null || true
+
+###############################################################################
+#? Clean only generated files
+###############################################################################
+
+.PHONY: clean-generated
+clean-generated:
+	@$(call print-simple,Cleaning generated files,$(TARGET_NAME))
+	$(Q)$(RM) $(GENERATION_DIR) 2>/dev/null || true
+	$(Q)$(RM) $(TARGET_BINARY_NAME) $(TARGET_STATIC_LIB_NAME) $(TARGET_SHARED_LIB_NAME) $(TARGET_PKG_FILE_NAME) 2>/dev/null || true
+
+###############################################################################
+#? Clean third-party downloads
+###############################################################################
+
+.PHONY: clean-downloads
+clean-downloads:
+	@$(call print-simple,Cleaning downloads,$(TARGET_NAME))
+	$(Q)$(RM) $(DOWNLOAD_DIR) 2>/dev/null || true
 
 ###############################################################################
 #? Clean the build folder and generated documentation.
@@ -1233,7 +1322,21 @@ endif
 .PHONY: veryclean
 veryclean::
 	@$(call print-simple,Cleaning project,$(PROJECT_NAME))
-	$(Q)$(RM) $(BUILD_DIR) $(GENERATED_DOXYGEN_DIR) $(dir $(GPROF_ANALYSIS) $(COVERAGE_RAPPORT)) 2> /dev/null
+	$(Q)$(RM) $(BUILD_DIR) $(GENERATED_DOXYGEN_DIR) $(dir $(GPROF_ANALYSIS) $(COVERAGE_RAPPORT)) 2> /dev/null || true
+	$(Q)$(RM) $(P)/Doxyfile 2>/dev/null || true
+	$(Q)$(RM) $(P)/.clang-format 2>/dev/null || true
+
+###############################################################################
+#? Clean everything including third-party libraries
+###############################################################################
+
+.PHONY: distclean
+distclean: veryclean clean-downloads
+	@$(call print-simple,Deep cleaning project,$(PROJECT_NAME))
+	$(Q)$(RM) $(THIRDPART_DIR) 2>/dev/null || true
+	$(Q)find $(P) -name "*.orig" -delete 2>/dev/null || true
+	$(Q)find $(P) -name "*.rej" -delete 2>/dev/null || true
+	$(Q)find $(P) -name "*~" -delete 2>/dev/null || true
 
 ###############################################################################
 #? Install the project artifacts on the operating system
@@ -1439,6 +1542,207 @@ coverity-scan: clean
 .PHONY: obs
 obs:
 	$(Q)$(SCRIPT_OBS)
+
+###############################################################################
+# Git clone third-party libraries helping for the debug.
+###############################################################################
+
+ifdef USE_BACKWARD
+$(TARGET_BINARY_NAME): $(DOWNLOAD_DIR)/backward-cpp/backward.cpp
+$(TARGET_STATIC_LIB_NAME): $(DOWNLOAD_DIR)/backward-cpp/backward.cpp
+$(TARGET_SHARED_LIB_NAME): $(DOWNLOAD_DIR)/backward-cpp/backward.cpp
+$(DOWNLOAD_DIR)/backward-cpp/backward.cpp:
+	@$(call GIT_CLONE_NO_RECURSE,$(DOWNLOAD_DIR),bombela,backward-cpp)
+endif
+
+ifdef USE_DEBUG_MACRO
+$(TARGET_BINARY_NAME): $(DOWNLOAD_DIR)/dbg-macro/dbg.h
+$(TARGET_STATIC_LIB_NAME): $(DOWNLOAD_DIR)/dbg-macro/dbg.h
+$(TARGET_SHARED_LIB_NAME): $(DOWNLOAD_DIR)/dbg-macro/dbg.h
+$(DOWNLOAD_DIR)/dbg-macro/dbg.h:
+	@$(call GIT_CLONE_NO_RECURSE,$(DOWNLOAD_DIR),sharkdp,dbg-macro)
+endif
+
+###############################################################################
+#? Rebuild the project.
+###############################################################################
+
+.PHONY: rebuild
+rebuild: clean all
+
+###############################################################################
+#? Fast rebuild.
+###############################################################################
+
+.PHONY: fast-rebuild
+fast-rebuild: 
+	@$(call print-simple,Fast rebuild,$(TARGET_NAME))
+	$(Q)$(RM) $(OBJS) $(LIB_OBJS) $(TARGET_BINARY_NAME) $(TARGET_STATIC_LIB_NAME) $(TARGET_SHARED_LIB_NAME) 2>/dev/null || true
+	@$(MAKE) --no-print-directory all
+
+###############################################################################
+#? List all available targets.
+###############################################################################
+
+.PHONY: list-targets
+list-targets:
+	@$(ECHO_COLOR) "$(CYAN)Available targets:$(COLOR_DEFAULT)"
+	@$(MAKE) --print-data-base --no-builtin-variables --no-builtin-rules --question 2>/dev/null | \
+	awk '/^[^.%][-A-Za-z0-9_]*:/ { print substr($$1, 1, length($$1)-1) }' | \
+	sort | uniq | grep -v '^Makefile$$' | \
+	sed 's/^/  - /'
+
+###############################################################################
+#? List all key project variables.
+###############################################################################
+
+.PHONY: list-variables
+list-variables:
+	@$(ECHO_COLOR) "$(CYAN)Key project variables:$(COLOR_DEFAULT)"
+	@$(ECHO_COLOR) "  $(PURPLE)PROJECT_NAME$(COLOR_DEFAULT) = $(PROJECT_NAME)"
+	@$(ECHO_COLOR) "  $(PURPLE)TARGET_NAME$(COLOR_DEFAULT) = $(TARGET_NAME)"
+	@$(ECHO_COLOR) "  $(PURPLE)PROJECT_VERSION$(COLOR_DEFAULT) = $(PROJECT_VERSION)"
+	@$(ECHO_COLOR) "  $(PURPLE)COMPILATION_MODE$(COLOR_DEFAULT) = $(COMPILATION_MODE)"
+	@$(ECHO_COLOR) "  $(PURPLE)COMPILER$(COLOR_DEFAULT) = $(COMPILER)"
+	@$(ECHO_COLOR) "  $(PURPLE)OS$(COLOR_DEFAULT) = $(OS)"
+	@$(ECHO_COLOR) "  $(PURPLE)ARCH$(COLOR_DEFAULT) = $(ARCH)"
+	@$(ECHO_COLOR) "  $(PURPLE)BUILD_DIR$(COLOR_DEFAULT) = $(BUILD_DIR)"
+	@$(ECHO_COLOR) "  $(PURPLE)NPROCS$(COLOR_DEFAULT) = $(NPROCS)"
+
+###############################################################################
+#? Show compilation flags.
+###############################################################################
+
+.PHONY: show-flags
+show-flags:
+	@$(ECHO_COLOR) "$(CYAN)Compilation flags:$(COLOR_DEFAULT)"
+	@$(ECHO_COLOR) "  $(PURPLE)CXXFLAGS$(COLOR_DEFAULT) = $(CXXFLAGS)"
+	@$(ECHO_COLOR) "  $(PURPLE)CCFLAGS$(COLOR_DEFAULT) = $(CCFLAGS)"
+	@$(ECHO_COLOR) "  $(PURPLE)LDFLAGS$(COLOR_DEFAULT) = $(LDFLAGS)"
+	@$(ECHO_COLOR) "  $(PURPLE)OPTIM_FLAGS$(COLOR_DEFAULT) = $(OPTIM_FLAGS)"
+	@$(ECHO_COLOR) "  $(PURPLE)DEFINES$(COLOR_DEFAULT) = $(DEFINES)"
+
+###############################################################################
+#? Show project paths.
+###############################################################################
+
+.PHONY: show-paths
+show-paths:
+	@$(ECHO_COLOR) "$(CYAN)Project paths:$(COLOR_DEFAULT)"
+	@$(ECHO_COLOR) "  $(PURPLE)Project root$(COLOR_DEFAULT) = $(P)"
+	@$(ECHO_COLOR) "  $(PURPLE)MyMakefile root$(COLOR_DEFAULT) = $(M)"
+	@$(ECHO_COLOR) "  $(PURPLE)Build directory$(COLOR_DEFAULT) = $(BUILD_DIR)"
+	@$(ECHO_COLOR) "  $(PURPLE)Objects directory$(COLOR_DEFAULT) = $(OBJS_ROOT_DIR)"
+	@$(ECHO_COLOR) "  $(PURPLE)Third-party directory$(COLOR_DEFAULT) = $(THIRDPART_DIR)"
+	@$(ECHO_COLOR) "  $(PURPLE)Download directory$(COLOR_DEFAULT) = $(DOWNLOAD_DIR)"
+
+###############################################################################
+#? Check dependencies.
+###############################################################################
+
+.PHONY: check-deps
+check-deps:
+	@$(ECHO_COLOR) "$(CYAN)Checking dependencies:$(COLOR_DEFAULT)"
+	@$(ECHO_COLOR) "  $(PURPLE)Compiler$(COLOR_DEFAULT): $(COMPILER)"
+	@$(COMPILER) --version | head -1 || $(ECHO_COLOR) "$(RED)  Compiler not found!$(COLOR_DEFAULT)"
+	@$(ECHO_COLOR) "  $(PURPLE)Make$(COLOR_DEFAULT): $(MAKE)"
+	@$(MAKE) --version | head -1 || $(ECHO_COLOR) "$(RED)  Make not found!$(COLOR_DEFAULT)"
+ifdef PKG_LIBS
+	@$(ECHO_COLOR) "  $(PURPLE)pkg-config$(COLOR_DEFAULT):"
+	@for lib in $(PKG_LIBS); do \
+		if pkg-config --exists $$lib; then \
+			$(ECHO_COLOR) "    $(GREEN)✓$(COLOR_DEFAULT) $$lib"; \
+		else \
+			$(ECHO_COLOR) "    $(RED)✗$(COLOR_DEFAULT) $$lib"; \
+		fi; \
+	done
+endif
+
+###############################################################################
+#? Show size analysis.
+###############################################################################
+
+.PHONY: size-analysis
+size-analysis: all
+ifdef TARGET_BINARY_NAME
+	@$(ECHO_COLOR) "$(CYAN)Binary size analysis:$(COLOR_DEFAULT)"
+	@ls -lh $(TARGET_BINARY_NAME) | awk '{print "  Total size: " $$5}'
+	@if command -v size >/dev/null 2>&1; then \
+		$(ECHO_COLOR) "  $(PURPLE)Sections:$(COLOR_DEFAULT)"; \
+		size $(TARGET_BINARY_NAME) | tail -n +2 | awk '{print "    text: " $$1 ", data: " $$2 ", bss: " $$3}'; \
+	fi
+endif
+ifdef TARGET_STATIC_LIB_NAME
+	@$(ECHO_COLOR) "$(CYAN)Static library size:$(COLOR_DEFAULT)"
+	@ls -lh $(TARGET_STATIC_LIB_NAME) | awk '{print "  Size: " $$5}'
+endif
+ifdef TARGET_SHARED_LIB_NAME
+	@$(ECHO_COLOR) "$(CYAN)Shared library size:$(COLOR_DEFAULT)"
+	@ls -lh $(TARGET_SHARED_LIB_NAME) | awk '{print "  Size: " $$5}'
+endif
+
+###############################################################################
+#? Show build statistics.
+###############################################################################
+
+.PHONY: build-stats
+build-stats:
+	@$(ECHO_COLOR) "$(CYAN)Build statistics:$(COLOR_DEFAULT)"
+	@$(ECHO_COLOR) "  $(PURPLE)Source files$(COLOR_DEFAULT): $(words $(SRC_FILES))"
+	@$(ECHO_COLOR) "  $(PURPLE)Library files$(COLOR_DEFAULT): $(words $(LIB_FILES))"
+	@$(ECHO_COLOR) "  $(PURPLE)Object files$(COLOR_DEFAULT): $(words $(OBJS) $(LIB_OBJS))"
+	@$(ECHO_COLOR) "  $(PURPLE)Include directories$(COLOR_DEFAULT): $(words $(INCLUDES))"
+ifdef PKG_LIBS
+	@$(ECHO_COLOR) "  $(PURPLE)External libraries$(COLOR_DEFAULT): $(words $(PKG_LIBS))"
+endif
+
+###############################################################################
+#? Format source code.
+###############################################################################
+
+.PHONY: format
+format:
+	@$(ECHO_COLOR) "$(CYAN)Formatting source code...$(COLOR_DEFAULT)"
+	@if command -v clang-format >/dev/null 2>&1; then \
+		find $(P) -name "*.cpp" -o -name "*.hpp" -o -name "*.c" -o -name "*.h" | \
+		grep -v $(BUILD_DIR) | grep -v $(THIRDPART_DIR) | \
+		xargs clang-format -i; \
+		$(ECHO_COLOR) "$(GREEN)Code formatted successfully$(COLOR_DEFAULT)"; \
+	else \
+		$(ECHO_COLOR) "$(RED)clang-format not found$(COLOR_DEFAULT)"; \
+	fi
+
+###############################################################################
+#? Run static analysis.
+###############################################################################
+
+.PHONY: lint
+lint:
+	@$(ECHO_COLOR) "$(CYAN)Running static analysis...$(COLOR_DEFAULT)"
+	@if command -v cppcheck >/dev/null 2>&1; then \
+		cppcheck --enable=all --inconclusive --std=c++14 \
+		--suppress=missingIncludeSystem \
+		--suppress=unusedFunction \
+		$(P)/src $(P)/include 2>&1 | \
+		grep -v "Checking " || true; \
+	else \
+		$(ECHO_COLOR) "$(RED)cppcheck not found$(COLOR_DEFAULT)"; \
+	fi
+
+###############################################################################
+#? Run benchmark.
+###############################################################################
+
+.PHONY: benchmark
+benchmark: all
+ifdef TARGET_BINARY_NAME
+	@$(ECHO_COLOR) "$(CYAN)Running benchmark...$(COLOR_DEFAULT)"
+	@if command -v time >/dev/null 2>&1; then \
+		time $(TARGET_BINARY_NAME) || true; \
+	else \
+		$(TARGET_BINARY_NAME) || true; \
+	fi
+endif
 
 ###############################################################################
 #? Show this help.
