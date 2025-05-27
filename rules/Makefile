@@ -435,7 +435,7 @@ INCLUDES := $(addprefix -I,$(abspath $(INCLUDES) $(GENERATION_DIR) $(DOWNLOAD_DI
 ###############################################################################
 
 DEPFLAGS = -MT $(abspath $@) -MMD -MP -MF $(abspath $(OBJS_ROOT_DIR)/$*.Td)
-POSTCOMPILE = mv -f $(abspath $(OBJS_ROOT_DIR)/$*.Td $(OBJS_ROOT_DIR)/$*.d)
+POSTCOMPILE = mv -f $(abspath $(OBJS_ROOT_DIR)/$*.Td) $(abspath $(OBJS_ROOT_DIR)/$*.d)
 
 ###############################################################################
 # Libraries installed on the operating system and known from pkg-config.
