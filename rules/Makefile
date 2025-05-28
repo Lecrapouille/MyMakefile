@@ -169,13 +169,34 @@ COMMON_WARNING_FLAGS := -Wall -Wextra -Wuninitialized -Wundef -Wunused \
     -Wcast-align -Wcast-qual -Wconversion -Wfloat-equal \
     -Wpointer-arith -Wswitch-enum -Wpedantic -Wpacked \
     -Wdeprecated -Wvariadic-macros -Wvla -Wsign-conversion -Wshadow \
-    -Wduplicated-cond -Wduplicated-branches -Wlogical-op \
     -Wnull-dereference -Wdouble-promotion -Wformat=2
+
+# Add GCC-specific warnings only for GCC
+ifeq ($(COMPILER_NAME),$(filter $(COMPILER_NAME),g++ gcc))
+    COMMON_WARNING_FLAGS += -Wduplicated-cond -Wduplicated-branches -Wlogical-op
+endif
 
 # Advanced security and hardening flags
 HARDENING_FLAGS := -Wformat -Wformat-security -Werror=format-security \
-    -D_FORTIFY_SOURCE=2 -fPIE -fexceptions \
-    -fstack-clash-protection -fcf-protection=full
+    -D_FORTIFY_SOURCE=2 -fPIE -fexceptions
+
+# Add platform-specific hardening flags
+ifneq ($(OS),Darwin)
+    HARDENING_FLAGS += -fstack-clash-protection
+    # Control Flow Integrity protection (not available on macOS)
+    ifeq ($(COMPILER_NAME),$(filter $(COMPILER_NAME),g++ gcc))
+        ifeq ($(GCC_GREATER_V8),1)
+            HARDENING_FLAGS += -fcf-protection=full
+        endif
+    else ifeq ($(COMPILER_NAME),clang)
+        # Only add CF protection on x86_64 Linux
+        ifeq ($(OS),Linux)
+            ifeq ($(ARCH),x86_64)
+                HARDENING_FLAGS += -fcf-protection=full
+            endif
+        endif
+    endif
+endif
 
 # Modern Clang-specific warning flags
 CLANG_WARNING_FLAGS := -Wconditional-uninitialized \
@@ -282,7 +303,12 @@ CXXFLAGS += -Wold-style-cast
 
 # Modern C++ specific warnings
 CXX_SPECIFIC_FLAGS := -Woverloaded-virtual -Wnon-virtual-dtor -Wctor-dtor-privacy \
-    -Wdelete-non-virtual-dtor -Wuseless-cast
+    -Wdelete-non-virtual-dtor
+
+# Add GCC-specific C++ warnings
+ifeq ($(COMPILER_NAME),$(filter $(COMPILER_NAME),g++ gcc))
+    CXX_SPECIFIC_FLAGS += -Wuseless-cast
+endif
 
 # C++11/14/17/20 specific warnings based on standard
 ifeq ($(findstring c++11,$(CXX_STANDARD)),c++11)
@@ -377,8 +403,10 @@ endif
 CXXFLAGS += $(DLL_CXXFLAGS)
 CCFLAGS += $(DLL_CXXFLAGS)
 
-# Linker flags for position independent executables
-LDFLAGS += -pie
+# Linker flags for position independent executables (not all platforms support -pie)
+ifeq ($(OS),Linux)
+    LDFLAGS += -pie
+endif
 
 # Creating shared libraries from static ones.
 # Note: since 2024 -noall_load are removed on MacOS.
@@ -425,7 +453,10 @@ define set_optimization_flags
         endif
         # Additional release flags
         OPTIM_FLAGS += -ffunction-sections -fdata-sections
-        LDFLAGS += -Wl,--gc-sections
+        # Use garbage collection only on platforms that support it (GNU ld)
+        ifeq ($(OS),Linux)
+            LDFLAGS += -Wl,--gc-sections
+        endif
     else ifeq ($(COMPILATION_MODE),release-with-debug)
         OPTIM_FLAGS := -O2 -g -DNDEBUG
         # Optimized but with debug info
@@ -439,7 +470,10 @@ define set_optimization_flags
         OPTIM_FLAGS := -Os -DNDEBUG -fomit-frame-pointer
         # Size optimization
         OPTIM_FLAGS += -ffunction-sections -fdata-sections -fmerge-all-constants
-        LDFLAGS += -Wl,--gc-sections
+        # Use garbage collection only on platforms that support it (GNU ld)
+        ifeq ($(OS),Linux)
+            LDFLAGS += -Wl,--gc-sections
+        endif
         ifeq ($(COMPILER_NAME),$(filter $(COMPILER_NAME),g++ gcc))
             OPTIM_FLAGS += -flto
         endif
