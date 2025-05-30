@@ -3,6 +3,6 @@
 
 int bar()
 {
-  std::cout << "bar" << std::endl;
-  return 42;
+    std::cout << "bar" << std::endl;
+    return 42;
 }

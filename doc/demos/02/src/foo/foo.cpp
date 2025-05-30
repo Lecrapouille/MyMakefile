@@ -3,5 +3,5 @@
 
 void foo(int const i)
 {
-  std::cout << "foo " << i << std::endl;
+    std::cout << "foo " << i << std::endl;
 }
