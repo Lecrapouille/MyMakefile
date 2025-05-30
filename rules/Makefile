@@ -1547,7 +1547,7 @@ endif
 .PHONY: check tests
 check:
 tests:
-	@$(call print-simple,"Compiling unit tests")
+	@$(call print-simple,"Compiling unit tests",$(PROJECT_NAME))
 ifneq ($(wildcard $(PROJECT_TESTS)/.),)
 	@$(MAKE) -C $(PROJECT_TESTS) coverage
 else
