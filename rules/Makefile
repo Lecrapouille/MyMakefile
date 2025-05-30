@@ -1642,17 +1642,7 @@ endif
 ###############################################################################
 
 .PHONY: rebuild
-rebuild: clean all
-
-###############################################################################
-#? Fast rebuild.
-###############################################################################
-
-.PHONY: fast-rebuild
-fast-rebuild: 
-	@$(call print-simple,Fast rebuild,$(TARGET_NAME))
-	$(Q)$(RM) $(OBJS) $(LIB_OBJS) $(TARGET_BINARY_NAME) $(TARGET_STATIC_LIB_NAME) $(TARGET_SHARED_LIB_NAME) 2>/dev/null || true
-	@$(MAKE) --no-print-directory all
+rebuild: veryclean all
 
 ###############################################################################
 #? List all available targets.
