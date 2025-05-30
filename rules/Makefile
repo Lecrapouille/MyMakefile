@@ -274,11 +274,11 @@ endif
 ifdef USE_STRICT_FLAGS
     STRICT_FLAGS := -Werror -Wconversion -Wsign-conversion -Wcast-qual \
         -Wwrite-strings -Wredundant-decls -Winline -Wdisabled-optimization
-    
+
     ifeq ($(COMPILER_NAME),$(filter $(COMPILER_NAME),g++ gcc))
         STRICT_FLAGS += -Weffc++ -Wstrict-null-sentinel
     endif
-    
+
     ifeq ($(COMPILER_NAME),clang)
         STRICT_FLAGS += -Weverything -Wno-c++98-compat -Wno-c++98-compat-pedantic \
             -Wno-padded -Wno-weak-vtables -Wno-exit-time-destructors \
@@ -818,20 +818,11 @@ ifneq ($(words $(OBJS) $(LIB_OBJS)),0)
     PROGRESSBAR_DISPLAY := 0
     PROGRESSBAR_COUNT_ELEMENTS := $(words $(OBJS) $(LIB_OBJS))
     PROGRESSBAR_INCREMENT := $(shell expr 10000 / $(PROGRESSBAR_COUNT_ELEMENTS))
-    
-    # Track compilation start time
-    COMPILE_START_TIME := $(shell date +%s)
-    
     define progressbar-update-percent
         $(eval PROGRESSBAR_PERCENT=$(shell expr $(PROGRESSBAR_PERCENT) + $(PROGRESSBAR_INCREMENT)))
         $(eval PROGRESSBAR_DISPLAY=$(shell expr $(PROGRESSBAR_PERCENT) / 100))
-        $(eval CURRENT_TIME=$(shell date +%s))
-        $(eval ELAPSED_TIME=$(shell expr $(CURRENT_TIME) - $(COMPILE_START_TIME)))
-        $(eval ESTIMATED_TOTAL=$(shell expr $(ELAPSED_TIME) \* 100 / $(PROGRESSBAR_PERCENT)))
-        $(eval REMAINING_TIME=$(shell expr $(ESTIMATED_TOTAL) - $(ELAPSED_TIME)))
     endef
-    
-    progress-in = $(call progressbar-update-percent) $(ECHO_COLOR) "$(PURPLE)[$(PROGRESSBAR_DISPLAY)%] $1 $(CYAN)$2$(COLOR_DEFAULT) <= $(YELLOW)$3$(COLOR_DEFAULT) $(if $(filter-out 0,$(REMAINING_TIME)),(ETA: $(REMAINING_TIME)s))"
+    progress-in = $(call progressbar-update-percent) $(ECHO_COLOR) "$(PURPLE)[$(PROGRESSBAR_DISPLAY)%] $1 $(CYAN)$2$(COLOR_DEFAULT) <= $(YELLOW)$3$(COLOR_DEFAULT)"
     progress-out = $(call progressbar-update-percent) $(ECHO_COLOR) "$(PURPLE)[$(PROGRESSBAR_DISPLAY)%] $1 $(CYAN)$2$(COLOR_DEFAULT) => $(YELLOW)$3$(COLOR_DEFAULT)"
 else
     # Fallback for when no compilation is needed
@@ -1533,7 +1524,7 @@ endif
 
 .PHONY: run
 run: all
-	$(Q)$(RUN) $(TARGET_BINARY_NAME) $(RUN_ARGS) && $(ECHO_COLOR) "$(GREEN)  Error code: $$?$(COLOR_DEFAULT)" || $(ECHO_COLOR) "$(RED)  Error code: $$?$(COLOR_DEFAULT)" 
+	$(Q)$(RUN) $(TARGET_BINARY_NAME) $(RUN_ARGS) && $(ECHO_COLOR) "$(GREEN)  Error code: $$?$(COLOR_DEFAULT)" || $(ECHO_COLOR) "$(RED)  Error code: $$?$(COLOR_DEFAULT)"
 
 # Do not interprete arguments as makefile rule
 ifdef RUN_ARGS
