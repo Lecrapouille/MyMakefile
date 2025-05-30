@@ -372,6 +372,9 @@ PROJECT_INFO_FILES := AUTHORS LICENSE README.md ChangeLog VERSION
 # File extensions matching for C++ header files.
 REGEXP_CXX_HEADER_FILES ?= *.hpp *.ipp *.tpp *.hh *.h *.hxx *.incl
 
+# Define dependencies for debug libraries that need downloading
+DEPS_DEBUG_LIBS :=
+
 ###############################################################################
 # Rebuild the whole project if a Makefile has been modified
 ###############################################################################

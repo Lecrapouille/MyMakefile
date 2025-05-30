@@ -674,8 +674,9 @@ ifdef USE_BACKWARD
 endif
 
 ifdef USE_BACKWARD
+    DEPS_DEBUG_LIBS += $(DOWNLOAD_DIR)/backward-cpp/backward.cpp
     PRIVATE_SRC_FILES += $(DOWNLOAD_DIR)/backward-cpp/backward.cpp
-    PRIVATE_SLIB_FILES += $(DOWNLOAD_DIR)/backward-cpp/backward.cpp
+    PRIVATE_LIB_FILES += $(DOWNLOAD_DIR)/backward-cpp/backward.cpp
     INCLUDES += -I$(DOWNLOAD_DIR)/backward-cpp
     VPATH += $(DOWNLOAD_DIR)/backward-cpp
     DEFINES += -DBACKWARD_HAS_DW=1 -DBACKWARD_HAS_BFD=0 -DBACKWARD_HAS_DWARF=0
@@ -693,6 +694,7 @@ ifdef USE_DEBUG_MACRO
 endif
 
 ifdef USE_DEBUG_MACRO
+    DEPS_DEBUG_LIBS += $(DOWNLOAD_DIR)/dbg-macro/dbg.h
     INCLUDES += -I$(DOWNLOAD_DIR)/dbg-macro
     DEFINES += -DDBG_MACRO_NO_WARNING
 endif
@@ -1190,7 +1192,7 @@ endif
 ###############################################################################
 
 # Create object directory structure before compilation
-$(OBJS_ROOT_DIR)/%.o: %.cpp $(OBJS_ROOT_DIR)/%.d $(LIST_MYMAKEFILES) $(INTERNAL_LIBS) | $(OBJS_ROOT_DIR)
+$(OBJS_ROOT_DIR)/%.o: %.cpp $(OBJS_ROOT_DIR)/%.d $(LIST_MYMAKEFILES) $(INTERNAL_LIBS) $(DEPS_DEBUG_LIBS) | $(OBJS_ROOT_DIR)
 	@$(call progress-in,Compiling C++,$(TARGET_NAME),$<)
 	@$(MKDIR) $(dir $@)
 	$(Q)$(CXX) $(CXX_STANDARD) $(DEPFLAGS) $(CXXFLAGS) $(PKGCFG_CFLAGS) $(OPTIM_FLAGS) $(DEFINES) $(INCLUDES) $(USER_CXXFLAGS) -c $(abspath $<) -o $(abspath $@) || ($(RM) $(abspath $@); exit 1)
@@ -1201,7 +1203,7 @@ $(OBJS_ROOT_DIR)/%.o: %.cpp $(OBJS_ROOT_DIR)/%.d $(LIST_MYMAKEFILES) $(INTERNAL_
 ###############################################################################
 
 # Create object directory structure before compilation
-$(OBJS_ROOT_DIR)/%.o: %.c $(OBJS_ROOT_DIR)/%.d $(LIST_MYMAKEFILES) $(INTERNAL_LIBS) | $(OBJS_ROOT_DIR)
+$(OBJS_ROOT_DIR)/%.o: %.c $(OBJS_ROOT_DIR)/%.d $(LIST_MYMAKEFILES) $(INTERNAL_LIBS) $(DEPS_DEBUG_LIBS) | $(OBJS_ROOT_DIR)
 	@$(call progress-in,Compiling C,$(TARGET_NAME),$<)
 	@$(MKDIR) $(dir $@)
 	$(Q)$(CC) $(DEPFLAGS) $(CCFLAGS) $(PKGCFG_CFLAGS) $(OPTIM_FLAGS) $(DEFINES) $(INCLUDES) $(USER_CCFLAGS) -c $(abspath $<) -o $(abspath $@) || ($(RM) $(abspath $@); exit 1)
@@ -1622,18 +1624,12 @@ obs:
 ###############################################################################
 
 ifdef USE_BACKWARD
-$(TARGET_BINARY_NAME): $(DOWNLOAD_DIR)/backward-cpp/backward.cpp
-$(TARGET_STATIC_LIB_NAME): $(DOWNLOAD_DIR)/backward-cpp/backward.cpp
-$(TARGET_SHARED_LIB_NAME): $(DOWNLOAD_DIR)/backward-cpp/backward.cpp
-$(DOWNLOAD_DIR)/backward-cpp/backward.cpp:
+$(DOWNLOAD_DIR)/backward-cpp/backward.cpp: creating-build-folder
 	@$(call GIT_CLONE_NO_RECURSE,$(DOWNLOAD_DIR),bombela,backward-cpp)
 endif
 
 ifdef USE_DEBUG_MACRO
-$(TARGET_BINARY_NAME): $(DOWNLOAD_DIR)/dbg-macro/dbg.h
-$(TARGET_STATIC_LIB_NAME): $(DOWNLOAD_DIR)/dbg-macro/dbg.h
-$(TARGET_SHARED_LIB_NAME): $(DOWNLOAD_DIR)/dbg-macro/dbg.h
-$(DOWNLOAD_DIR)/dbg-macro/dbg.h:
+$(DOWNLOAD_DIR)/dbg-macro/dbg.h: creating-build-folder
 	@$(call GIT_CLONE_NO_RECURSE,$(DOWNLOAD_DIR),sharkdp,dbg-macro)
 endif
 
