@@ -120,10 +120,41 @@ Optional configuration variables for project structure (define before including 
 - `BUILD`: Build artifacts directory (default: `build`)
 - `THIRD_PARTIES`: Third-party libraries directory (default: `external`)
 - `PROJECT_DATA`: Project data directory (default: `data`)
-- `PROJECT_DOC`: Documentation directory (default: `doc`)
+- `DOC_FOLDER_NAME`: Documentation directory (default: `doc`)
 - `PROJECT_GENERATED_DOC`: Generated documentation directory (default: `doc`)
 - `PROJECT_TESTS`: Unit tests directory (default: `tests`)
 - `PROJECT_TEMP_DIR`: Temporary files directory (default: `$(TMPDIR)/$(PROJECT_NAME)/$(PROJECT_VERSION)`)
+
+### Repository Cloning Syntax
+
+The manifest file (default: `external/manifest`) supports the following syntax for cloning repositories:
+
+```
+user/repo[:recurse][@ref]
+```
+
+Where:
+- `user/repo`: GitHub repository path
+- `:recurse`: Optional flag to clone submodules recursively
+- `@ref`: Optional reference (branch, tag, or commit hash)
+
+Examples:
+```
+# Clone specific commit
+lecrapouille/Dimension3D@a6579ecf5f58e9c0ae95edaac790526e024c59f6
+
+# Clone specific branch
+ocornut/imgui@docking
+
+# Clone specific tag
+SFML/imgui-sfml@2.6.x
+
+# Clone with submodules
+SFML/imgui-sfml:recurse@2.6.x
+
+# Clone default branch
+SFML/SFML
+```
 
 ### Example (Makefile)
 
@@ -140,7 +171,7 @@ COMPILATION_MODE := release
 BUILD := out
 THIRD_PARTIES := thirdparties
 PROJECT_DATA := demo/data
-PROJECT_DOC := docs
+PROJECT_DOC_DIR := docs
 PROJECT_GENERATED_DOC := docs/gen
 PROJECT_TESTS := check
 

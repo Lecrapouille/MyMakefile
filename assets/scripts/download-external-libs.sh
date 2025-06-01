@@ -8,15 +8,28 @@
 ### Input of this script:
 ### $1: target (your application name)
 ### $2: manifest file containing list of repositories to clone
-###     Format: one repository per line: user/repo[@ref]
+###     Format: one repository per line: user/repo[:recurse][@ref]
 ###     Example:
 ###     angeluriot/Dimension3D@84b20021f08aa89755fae83c39fc59a815f54033
-###     angeluriot/ImGui-built@ad91c26d28d5a73f4fc1adf9b9930db2b296b2a1
+###     SFML/imgui-sfml:recurse@2.6.x
 ###############################################################################
 
-readonly GITHUB_URL="https://github.com"
+GITHUB_URL="https://github.com"
 PROJECT_NAME=$1
 MANIFEST_FILE=$2
+
+# Force git to be completely silent
+export GIT_TERMINAL_PROMPT=0
+export GIT_QUIET=1
+export GIT_SSH_COMMAND="ssh -o LogLevel=ERROR"
+export GIT_TRACE=0
+export GIT_TRACE_SETUP=0
+export GIT_TRACE_PERFORMANCE=0
+export GIT_TRACE_PACKET=0
+export GIT_TRACE_PACKFILE=0
+export GIT_TRACE_PACK_ACCESS=0
+export GIT_TRACE_PERFORMANCE=0
+export GIT_TRACE_SETUP=0
 
 function fatal()
 {
@@ -29,6 +42,13 @@ function clone_repo()
     local repo=$1
     shift
     local clone_args=("$@")
+
+    # Check if repository should be cloned recursively
+    local recursive=false
+    if [[ "$repo" == *":recurse"* ]]; then
+        recursive=true
+        repo=${repo/:recurse/}
+    fi
 
     # Parse repository and reference
     local repo_name=${repo%@*}
@@ -43,6 +63,10 @@ function clone_repo()
     if [ -n "$ref" ]; then
         echo -e "\033[35m*** Using reference: \033[36m$ref\033[00m"
     fi
+    if [ "$recursive" = true ]; then
+        echo -e "\033[35m*** Cloning recursively\033[00m"
+        clone_args+=("--recursive")
+    fi
 
     # Extract repo name for directory
     local dir_name=${repo_name##*/}
@@ -53,19 +77,19 @@ function clone_repo()
         # Check if ref is a SHA1 (40 characters hex)
         if [[ "$ref" =~ ^[0-9a-f]{40}$ ]]; then
             # For SHA1, use partial clone and create a branch
-            git clone --filter=blob:none "$GITHUB_URL/$repo_name" "${clone_args[@]}" > /dev/null
+            git clone --quiet --filter=blob:none "$GITHUB_URL/$repo_name" "${clone_args[@]}" 2> /dev/null && \
             (cd "$dir_name" && \
-             git fetch origin "$ref" > /dev/null && \
-             git checkout -b "sha1-$ref" "$ref" > /dev/null)
+             git fetch --quiet origin "$ref" && \
+             git checkout --quiet -b "sha1-$ref" "$ref" 2> /dev/null)
         else
             # For branches and tags, clone with specific reference
-            git clone "$GITHUB_URL/$repo_name" --branch "$ref" "${clone_args[@]}" > /dev/null || \
-            git clone "$GITHUB_URL/$repo_name" "${clone_args[@]}" > /dev/null && \
-            (cd "$dir_name" && git checkout "$ref" > /dev/null)
+            git clone --quiet "$GITHUB_URL/$repo_name" --branch "$ref" "${clone_args[@]}" || \
+            git clone --quiet "$GITHUB_URL/$repo_name" "${clone_args[@]}" && \
+            (cd "$dir_name" && git checkout --quiet "$ref")
         fi
     else
         # For default branch, use shallow clone
-        git clone "$GITHUB_URL/$repo_name" --depth=1 "${clone_args[@]}" > /dev/null
+        git clone --quiet "$GITHUB_URL/$repo_name" --depth=1 "${clone_args[@]}"
     fi
 }
 
@@ -96,3 +120,6 @@ while IFS= read -r repo || [ -n "$repo" ]; do
         clone_repo "$repo"
     fi
 done < "$MANIFEST_FILE"
+
+# Wait for all background processes to complete
+wait

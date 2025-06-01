@@ -115,7 +115,7 @@ endif
 #  - folder local to the executable (maybe read-only access).
 ###############################################################################
 
-SEARCH_DATA_PATHS := $(INSTALL_LOCAL_PROJECT_DATA_DIR):$(INSTALL_PROJECT_DIR)/$(PROJECT_DATA):$(PROJECT_DATA):.
+SEARCH_DATA_PATHS := $(INSTALL_LOCAL_PROJECT_DATA_DIR):$(INSTALL_PROJECT_DIR)/$(PROJECT_DATA_DIR):$(PROJECT_DATA_DIR):.
 ifeq ($(COMPILATION_MODE),debug)
     SEARCH_DATA_PATHS := $(PROJECT_DATA_DIR):$(SEARCH_DATA_PATHS)
 endif
@@ -889,7 +889,7 @@ endef
 ###############################################################################
 
 define INSTALL_PROJECT_DOC
-	@$(call HELPER_INSTALL_OPTIONAL_FOLDERS,$(PROJECT_DOC) $(PROJECT_GENERATED_DOC),$(INSTALL_PROJECT_DIR))
+	@$(call HELPER_INSTALL_OPTIONAL_FOLDERS,$(PROJECT_DOC_DIR) $(PROJECT_GENERATED_DOC),$(INSTALL_PROJECT_DIR))
 endef
 
 ###############################################################################
@@ -897,7 +897,7 @@ endef
 ###############################################################################
 
 define INSTALL_PROJECT_DATA
-	@$(call HELPER_INSTALL_OPTIONAL_FOLDERS,$(PROJECT_DATA),$(INSTALL_PROJECT_DIR))
+	@$(call HELPER_INSTALL_OPTIONAL_FOLDERS,$(PROJECT_DATA_DIR),$(INSTALL_PROJECT_DIR))
 endef
 
 ###############################################################################
@@ -1073,31 +1073,11 @@ define RULE_CREATE_DOXYFILES
 endef
 
 ###############################################################################
-# git clone non-recursively a project with depth history set to 1.
+# git clone a project to a given destination. Repo syntax "user/repo@sha1:recurse".
 ###############################################################################
 
-define GIT_CLONE_NO_RECURSE
-	$(MKDIR) "$1";
-	if [ ! -d "$1/$3" ]; then \
-		source $(SCRIPT_DOWNLOAD_THIRD_PARTIES) $(PROJECT_NAME) && \
-		cd $1 && cloning_non_recurse $2/$3; \
-	else \
-		echo "Already cloned"; \
-    fi
-endef
-
-###############################################################################
-# git clone a project recursively a project with depth history set to 1.
-###############################################################################
-
-define GIT_CLONE_RECURSE
-	$(MKDIR) "$1";
-	if [ ! -d "$1/$3" ]; then \
-		source $(SCRIPT_DOWNLOAD_THIRD_PARTIES) $(PROJECT_NAME) && \
-		cd $1 && cloning $2/$3; \
-	else \
-		echo "Already cloned"; \
-    fi
+define GIT_CLONE
+	$(SCRIPT_GIT_CLONE) $(PROJECT_NAME) $2 $1
 endef
 
 ###############################################################################
@@ -1616,12 +1596,12 @@ obs:
 
 ifdef USE_BACKWARD
 $(DOWNLOAD_DIR)/backward-cpp/backward.cpp: creating-build-folder
-	@$(call GIT_CLONE_NO_RECURSE,$(DOWNLOAD_DIR),bombela,backward-cpp)
+	@$(call GIT_CLONE,$(DOWNLOAD_DIR),"bombela/backward-cpp")
 endif
 
 ifdef USE_DEBUG_MACRO
 $(DOWNLOAD_DIR)/dbg-macro/dbg.h: creating-build-folder
-	@$(call GIT_CLONE_NO_RECURSE,$(DOWNLOAD_DIR),sharkdp,dbg-macro)
+	@$(call GIT_CLONE,$(DOWNLOAD_DIR),"sharkdp/dbg-macro")
 endif
 
 ###############################################################################
