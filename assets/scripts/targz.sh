@@ -36,7 +36,7 @@
 
 HERE=${1##*/}
 NAME="$2"
-THIRDPART="$3"
+THIRD_PARTIES="$3"
 DATE=`date +%Y-%m-%d`
 VERSION="$4"
 NTH=0
@@ -62,8 +62,8 @@ echo -e "\033[35m*** Tarball:\033[00m \033[36m""${TARGET_TGZ}""\033[00m <= \033[
 ### Compress ../$NAME in /tmp, append the version number to the name and move the
 ### created tarball from /tmp into the NAME root directory.
 EXTERNAL_FOLDERS=
-if [ -d ${THIRDPART} ]; then
-for i in `ls -d ${THIRDPART}/*/`
+if [ -d ${THIRD_PARTIES} ]; then
+for i in `ls -d ${THIRD_PARTIES}/*/`
   do
     EXTERNAL_FOLDERS="--exclude=\"${i}\" ${EXTERNAL_FOLDERS}"
   done

@@ -118,7 +118,7 @@ include $(M)/project/Makefile
 Optional configuration variables for project structure (define before including `project/Makefile`):
 
 - `BUILD`: Build artifacts directory (default: `build`)
-- `THIRDPART`: Third-party libraries directory (default: `external`)
+- `THIRD_PARTIES`: Third-party libraries directory (default: `external`)
 - `PROJECT_DATA`: Project data directory (default: `data`)
 - `PROJECT_DOC`: Documentation directory (default: `doc`)
 - `PROJECT_GENERATED_DOC`: Generated documentation directory (default: `doc`)
@@ -138,7 +138,7 @@ TARGET_DESCRIPTION := This is a real super project
 COMPILATION_MODE := release
 
 BUILD := out
-THIRDPART := thirdparties
+THIRD_PARTIES := thirdparties
 PROJECT_DATA := demo/data
 PROJECT_DOC := docs
 PROJECT_GENERATED_DOC := docs/gen

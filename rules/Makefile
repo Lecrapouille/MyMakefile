@@ -58,11 +58,11 @@ endif
 CXX_STANDARD ?= --std=c++14
 
 ifeq ($(OS),Emscripten)
-    #? Define your C compilator.
+    #? Define your C compiler.
     EMCC ?= emcc
     CC := $(EMCC)
 
-    #? Define your C++ compilator.
+    #? Define your C++ compiler.
     EMCXX ?= em++
     CXX := $(EMCXX)
 
@@ -81,10 +81,10 @@ ifeq ($(OS),Emscripten)
     # Do not strip symbols
     STRIP :=
 else
-    #? Define your C compilator.
+    #? Define your C compiler.
     CC ?=
 
-    #? Define your C++ compilator.
+    #? Define your C++ compiler.
     CXX ?=
 
     #? Define your static library tool and its default flags.
@@ -111,7 +111,7 @@ endif
 #  - data folder inside the project (when compiled in debug mode).
 #  - data folder inside the user operating system (read-write access).
 #  - data folder installed on the operating system (read-only access).
-#  - folder data on the same folder than the exectuable (maybe read-only access).
+#  - folder data on the same folder than the executable (maybe read-only access).
 #  - folder local to the executable (maybe read-only access).
 ###############################################################################
 
@@ -708,11 +708,11 @@ endif
 # static lib.
 # BEWARE: do not include $(INTERNAL_LIBS) since we do not want internal libs
 # include each others: let them independent and let the generated pkg_config
-# include them. Let only include static thirdpart libs inside internal libs
+# include them. Let only include static third party libs inside internal libs
 # since we do not want to force installing them on the user system.
 define extract-objs-from-static-libs
-    @$(SCRIPT_EXTRACT_STATIC_LIB) $(OBJS_ROOT_DIR) $(THIRDPART_LIBS)
-    $(eval EXTRACTED_OBJS=$(addsuffix /*.o,$(addprefix $(OBJS_ROOT_DIR)/,$(basename $(notdir $(filter-out \,$(THIRDPART_LIBS) $(INTERNAL_LIBS)))))))
+    @$(SCRIPT_EXTRACT_STATIC_LIB) $(OBJS_ROOT_DIR) $(THIRD_PARTIES_LIBS)
+    $(eval EXTRACTED_OBJS=$(addsuffix /*.o,$(addprefix $(OBJS_ROOT_DIR)/,$(basename $(notdir $(filter-out \,$(THIRD_PARTIES_LIBS) $(INTERNAL_LIBS)))))))
 endef
 
 # Else, the user have supposed given some C/C++ file to compile. Check if at least one is present.
@@ -1079,7 +1079,7 @@ endef
 define GIT_CLONE_NO_RECURSE
 	$(MKDIR) "$1";
 	if [ ! -d "$1/$3" ]; then \
-		source $(SCRIPT_DOWNLOAD_THIRDPARTS) $(PROJECT_NAME) && \
+		source $(SCRIPT_DOWNLOAD_THIRD_PARTIES) $(PROJECT_NAME) && \
 		cd $1 && cloning_non_recurse $2/$3; \
 	else \
 		echo "Already cloned"; \
@@ -1093,7 +1093,7 @@ endef
 define GIT_CLONE_RECURSE
 	$(MKDIR) "$1";
 	if [ ! -d "$1/$3" ]; then \
-		source $(SCRIPT_DOWNLOAD_THIRDPARTS) $(PROJECT_NAME) && \
+		source $(SCRIPT_DOWNLOAD_THIRD_PARTIES) $(PROJECT_NAME) && \
 		cd $1 && cloning $2/$3; \
 	else \
 		echo "Already cloned"; \
@@ -1126,7 +1126,7 @@ ifdef LIB_OBJS
 $(TARGET_STATIC_LIB_NAME): $(LIB_OBJS) $(INTERNAL_LIBS) $(LIST_MYMAKEFILES) $(DIRS_WITH_MAKEFILE)
 	@$(call print-to,"Creating static library","$(TARGET_NAME)","$@")
 	@$(MKDIR) $(dir $@)
-ifdef THIRDPART_LIBS
+ifdef THIRD_PARTIES_LIBS
 	@$(call extract-objs-from-static-libs)
 endif
 	$(Q)$(RM) $@ 2>/dev/null || true
@@ -1145,7 +1145,7 @@ $(TARGET_SHARED_LIB_NAME): | $(TARGET_STATIC_LIB_NAME)
 $(TARGET_SHARED_LIB_NAME): $(LIB_OBJS) $(INTERNAL_LIBS) $(LIST_MYMAKEFILES) $(DIRS_WITH_MAKEFILE)
 	@$(call print-to,"Creating shared library","$(TARGET_NAME)","$@")
 	@$(MKDIR) $(dir $@)
-	$(Q)$(COMPILER) $(LDFLAGS) $(DLL_LDFLAGS) -o $@ $(abspath $(LIB_OBJS)) $(LINKER_ALL_LOAD) $(THIRDPART_LIBS) $(INTERNAL_LIBS) $(NOT_PKG_LIBS) $(PKGCFG_LIBS) $(LINKER_NO_ALL_LOAD) $(LINKER_FLAGS) $(USER_LDFLAGS) || ($(RM) $@; exit 1)
+	$(Q)$(COMPILER) $(LDFLAGS) $(DLL_LDFLAGS) -o $@ $(abspath $(LIB_OBJS)) $(LINKER_ALL_LOAD) $(THIRD_PARTIES_LIBS) $(INTERNAL_LIBS) $(NOT_PKG_LIBS) $(PKGCFG_LIBS) $(LINKER_NO_ALL_LOAD) $(LINKER_FLAGS) $(USER_LDFLAGS) || ($(RM) $@; exit 1)
 	@$(call print-to,"Shared library created","$(TARGET_NAME)","$@")
 endif
 
@@ -1167,7 +1167,7 @@ ifdef OBJS
 $(TARGET_BINARY_NAME): $(OBJS) $(INTERNAL_LIBS) $(LIST_MYMAKEFILES) $(DIRS_WITH_MAKEFILE)
 	@$(call print-to,Linking,$(TARGET_NAME),$@)
 	@$(MKDIR) $(dir $@)
-	$(Q)$(COMPILER) $(LDFLAGS) $(OBJS) $(THIRDPART_OBJS) -o $(TARGET_BINARY_NAME) $(THIRDPART_LIBS) $(INTERNAL_LIBS) $(NOT_PKG_LIBS) $(PKGCFG_LIBS) $(LINKER_FLAGS) $(USER_LDFLAGS) || ($(RM) $(TARGET_BINARY_NAME); exit 1)
+	$(Q)$(COMPILER) $(LDFLAGS) $(OBJS) $(THIRD_PARTIES_OBJS) -o $(TARGET_BINARY_NAME) $(THIRD_PARTIES_LIBS) $(INTERNAL_LIBS) $(NOT_PKG_LIBS) $(PKGCFG_LIBS) $(LINKER_FLAGS) $(USER_LDFLAGS) || ($(RM) $(TARGET_BINARY_NAME); exit 1)
 ifdef STRIP
 	@$(call print-to,Stripping,$(TARGET_NAME),$@)
 	$(Q)$(STRIP) $(TARGET_BINARY_NAME) || $(ECHO_COLOR) "$(YELLOW)Warning: Failed to strip symbols$(COLOR_DEFAULT)"
@@ -1268,16 +1268,16 @@ $(OBJS_ROOT_DIR)/%.d: ;
 # FIXME: find something smarter for installing Exaequos packages
 .PHONY: download-external-libs
 download-external-libs:
-	@$(call print-to,Downloading ExaequOS packages,$(TARGET_NAME),$(THIRDPART_DIR))
+	@$(call print-to,Downloading ExaequOS packages,$(TARGET_NAME),$(THIRD_PARTIES_DIR))
 ifdef EXAEQUOS
 	$(Q)$(RM) exapkgs 2> /dev/null
 	$(Q)epm.py install exa-wayland glfw raylib
 endif
-	@$(call print-to,Downloading third-party libs,$(TARGET_NAME),$(THIRDPART_DIR))
-ifneq ("$(wildcard $(USER_SCRIPT_DOWNLOAD_THIRDPARTS))","")
-	$(Q)cd $(THIRDPART_DIR) && $(SCRIPT_DOWNLOAD_THIRDPARTS) $(PROJECT_NAME) $(USER_SCRIPT_DOWNLOAD_THIRDPARTS)
+	@$(call print-to,Downloading third-party libs,$(TARGET_NAME),$(THIRD_PARTIES_DIR))
+ifneq ("$(wildcard $(PROJECT_MANIFEST_THIRD_PARTIES))","")
+	$(Q)cd $(THIRD_PARTIES_DIR) && $(SCRIPT_DOWNLOAD_THIRD_PARTIES) $(PROJECT_NAME) $(PROJECT_MANIFEST_THIRD_PARTIES)
 else
-	$(Q)$(ECHO_COLOR) "  $(YELLOW):( $(CYAN)Missing file $(USER_SCRIPT_DOWNLOAD_THIRDPARTS) $(YELLOW):("
+	$(Q)$(ECHO_COLOR) "  $(YELLOW):( $(CYAN)Missing file $(PROJECT_MANIFEST_THIRD_PARTIES) $(YELLOW):("
 	$(Q)$(ECHO_COLOR) "  $(YELLOW):) $(CYAN)Or no third-party libs to download ! $(YELLOW):)$(COLOR_DEFAULT)"
 endif
 
@@ -1287,11 +1287,11 @@ endif
 
 .PHONY: compile-external-libs
 compile-external-libs:
-	@$(call print-to,Compiling third-party libs,$(TARGET_NAME),$(THIRDPART_DIR))
-ifneq ("$(wildcard $(USER_SCRIPT_COMPILE_THIRDPARTS))","")
-	$(Q)$(CD) $(THIRDPART_DIR) && $(SCRIPT_COMPILE_THIRDPARTS) $(PROJECT_NAME) $(USER_SCRIPT_COMPILE_THIRDPARTS) $(OS) $(CC) $(CXX)
+	@$(call print-to,Compiling third-party libs,$(TARGET_NAME),$(THIRD_PARTIES_DIR))
+ifneq ("$(wildcard $(PROJECT_SCRIPT_COMPILE_THIRD_PARTIES))","")
+	$(Q)$(CD) $(THIRD_PARTIES_DIR) && $(SCRIPT_COMPILE_THIRD_PARTIES) $(PROJECT_NAME) $(PROJECT_SCRIPT_COMPILE_THIRD_PARTIES) $(OS) $(CC) $(CXX)
 else
-	$(Q)$(ECHO_COLOR) "  $(YELLOW):( $(CYAN)Missing file $(USER_SCRIPT_COMPILE_THIRDPARTS) $(YELLOW):("
+	$(Q)$(ECHO_COLOR) "  $(YELLOW):( $(CYAN)Missing file $(PROJECT_SCRIPT_COMPILE_THIRD_PARTIES) $(YELLOW):("
 	$(Q)$(ECHO_COLOR) "  $(YELLOW):) $(CYAN)Or no third-party libs to compile ! $(YELLOW):)$(COLOR_DEFAULT)"
 endif
 
@@ -1360,7 +1360,7 @@ veryclean::
 .PHONY: distclean
 distclean: veryclean clean-downloads
 	@$(call print-simple,Deep cleaning project,$(PROJECT_NAME))
-	$(Q)$(RM) $(THIRDPART_DIR) 2>/dev/null || true
+	$(Q)$(RM) $(THIRD_PARTIES_DIR) 2>/dev/null || true
 	$(Q)find $(P) -name "*.orig" -delete 2>/dev/null || true
 	$(Q)find $(P) -name "*.rej" -delete 2>/dev/null || true
 	$(Q)find $(P) -name "*~" -delete 2>/dev/null || true
@@ -1425,7 +1425,7 @@ doc:
 
 .PHONY: tarball
 tarball:
-	$(Q)$(SCRIPT_TAR_PROJECT) $(abspath $(P)) $(TARGET_NAME) $(THIRDPART_DIR) $(PROJECT_VERSION)
+	$(Q)$(SCRIPT_TAR_PROJECT) $(abspath $(P)) $(TARGET_NAME) $(THIRD_PARTIES_DIR) $(PROJECT_VERSION)
 
 ###############################################################################
 #? Display the compiler version and information.
@@ -1553,7 +1553,7 @@ endif
 
 .PHONY: asan
 asan: $(TARGET_BINARY_NAME)
-	$(Q)$(SANITIZER) ./$(TARGET_BINARY_NAME) 2>&1 | ./$(THIRDPART_DIR)/asan_symbolize.py
+	$(Q)$(SANITIZER) ./$(TARGET_BINARY_NAME) 2>&1 | ./$(THIRD_PARTIES_DIR)/asan_symbolize.py
 
 ###############################################################################
 #? Launch the executable with gprof.
@@ -1586,7 +1586,7 @@ coverage: all
 	$(Q)$(TARGET_BINARY_NAME)
 	@$(call print-to,Coverage report,$(abspath $(TARGET_BINARY_NAME)),$(COVERAGE_RAPPORT))
 	$(Q)$(MKDIR) $(dir $(COVERAGE_RAPPORT))
-	$(Q)gcovr --root $(P) --object-directory $(OBJS_ROOT_DIR) --html-details $(COVERAGE_RAPPORT) -e '/usr/*' --exclude-directories $(THIRDPART_DIR)
+	$(Q)gcovr --root $(P) --object-directory $(OBJS_ROOT_DIR) --html-details $(COVERAGE_RAPPORT) -e '/usr/*' --exclude-directories $(THIRD_PARTIES_DIR)
 	$(Q)xdg-open $(COVERAGE_RAPPORT) >/dev/null
 
 ###############################################################################
@@ -1684,7 +1684,7 @@ show-paths:
 	@$(ECHO_COLOR) "  $(PURPLE)MyMakefile root$(COLOR_DEFAULT) = $(M)"
 	@$(ECHO_COLOR) "  $(PURPLE)Build directory$(COLOR_DEFAULT) = $(BUILD_DIR)"
 	@$(ECHO_COLOR) "  $(PURPLE)Objects directory$(COLOR_DEFAULT) = $(OBJS_ROOT_DIR)"
-	@$(ECHO_COLOR) "  $(PURPLE)Third-party directory$(COLOR_DEFAULT) = $(THIRDPART_DIR)"
+	@$(ECHO_COLOR) "  $(PURPLE)Third-party directory$(COLOR_DEFAULT) = $(THIRD_PARTIES_DIR)"
 	@$(ECHO_COLOR) "  $(PURPLE)Download directory$(COLOR_DEFAULT) = $(DOWNLOAD_DIR)"
 
 ###############################################################################
@@ -1756,7 +1756,7 @@ format:
 	@$(ECHO_COLOR) "$(CYAN)Formatting source code...$(COLOR_DEFAULT)"
 	@if command -v clang-format >/dev/null 2>&1; then \
 		find $(P) -name "*.cpp" -o -name "*.hpp" -o -name "*.c" -o -name "*.h" | \
-		grep -v $(BUILD_DIR) | grep -v $(THIRDPART_DIR) | \
+		grep -v $(BUILD_DIR) | grep -v $(THIRD_PARTIES_DIR) | \
 		xargs clang-format -i; \
 		$(ECHO_COLOR) "$(GREEN)Code formatted successfully$(COLOR_DEFAULT)"; \
 	else \

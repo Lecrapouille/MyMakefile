@@ -321,9 +321,9 @@ COMPILER_INFO_DONE := $(GENERATION_DIR)/.compiler-info
 # Directory holding downloaded stuffs.
 DOWNLOAD_DIR := $(BUILD_DIR)/downloaded
 
-#? Name of the directory holding third-party (external) libraries.
-THIRDPART ?= external
-THIRDPART_DIR := $(abspath $(P)/$(THIRDPART))
+#? Name of the directory holding third parties libraries (external libraries).
+THIRD_PARTIES ?= external
+THIRD_PARTIES_DIR := $(abspath $(P)/$(THIRD_PARTIES))
 
 #? Name of the directory holding documentation.
 PROJECT_DOC ?= doc
@@ -393,8 +393,8 @@ PATH_MYMAKEFILE_SCRIPTS := $(abspath $(M)/assets/scripts)
 SCRIPT_CONFIG := $(PATH_MYMAKEFILE_SCRIPTS)/config.sh
 SCRIPT_EXTRACT_STATIC_LIB := $(PATH_MYMAKEFILE_SCRIPTS)/alib.sh
 SCRIPT_TAR_PROJECT := $(PATH_MYMAKEFILE_SCRIPTS)/targz.sh
-SCRIPT_DOWNLOAD_THIRDPARTS := $(PATH_MYMAKEFILE_SCRIPTS)/download-external-libs.sh
-SCRIPT_COMPILE_THIRDPARTS := $(PATH_MYMAKEFILE_SCRIPTS)/compile-external-libs.sh
-USER_SCRIPT_DOWNLOAD_THIRDPARTS := $(THIRDPART_DIR)/download-external-libs.sh
-USER_SCRIPT_COMPILE_THIRDPARTS := $(THIRDPART_DIR)/compile-external-libs.sh
+SCRIPT_DOWNLOAD_THIRD_PARTIES := $(PATH_MYMAKEFILE_SCRIPTS)/download-external-libs.sh
+SCRIPT_COMPILE_THIRD_PARTIES := $(PATH_MYMAKEFILE_SCRIPTS)/compile-external-libs.sh
+PROJECT_MANIFEST_THIRD_PARTIES := $(THIRD_PARTIES_DIR)/manifest
+PROJECT_SCRIPT_COMPILE_THIRD_PARTIES := $(THIRD_PARTIES_DIR)/compile-external-libs.sh
 SCRIPT_OBS := $(PATH_MYMAKEFILE_SCRIPTS)/obs.sh

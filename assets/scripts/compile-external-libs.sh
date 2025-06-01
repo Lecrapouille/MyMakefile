@@ -6,14 +6,14 @@
 ### To avoid pollution, these libraries are not installed in your operating
 ### system (no sudo make install is called). As consequence, you have to tell
 ### your project ../Makefile where to find their files. Here generic example:
-###     INCLUDES += -I$(THIRDPART)/thirdpart1/path1
+###     INCLUDES += -I$(THIRD_PARTIES)/thirdpart1/path1
 ###        for searching heeder files.
-###     VPATH += $(THIRDPART)/thirdpart1/path1
+###     VPATH += $(THIRD_PARTIES)/thirdpart1/path1
 ###        for searching c/c++ files.
-###     THIRDPART_LIBS += $(abspath $(THIRDPART)/libXXX.a))
+###     THIRD_PARTIES_LIBS += $(abspath $(THIRD_PARTIES)/libXXX.a))
 ###        for linking your project against the lib.
-###     THIRDPART_OBJS += foo.o
-###        for inking your project against this file iff THIRDPART_LIBS is not
+###     THIRD_PARTIES_OBJS += foo.o
+###        for inking your project against this file iff THIRD_PARTIES_LIBS is not
 ###        used (the path is not important thanks to VPATH).
 ###
 ### The last important point to avoid polution, better to compile thirdparts as
@@ -60,8 +60,8 @@ fi
 
 function print-compile
 {
-    THIRDPART_NAME=$1
-    echo -e "\033[35m*** Compiling:\033[00m \033[36m$PROJECT_NAME\033[00m <= \033[33m$THIRDPART_NAME\033[00m"
+    THIRD_PARTIES_NAME=$1
+    echo -e "\033[35m*** Compiling:\033[00m \033[36m$PROJECT_NAME\033[00m <= \033[33m$THIRD_PARTIES_NAME\033[00m"
     if [ ! -e $1 ];
     then
         echo "Failed compiling external/$PROJECT_NAME: directory does not exist"
