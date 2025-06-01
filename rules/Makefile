@@ -1267,7 +1267,7 @@ $(OBJS_ROOT_DIR)/%.d: ;
 ###############################################################################
 # FIXME: find something smarter for installing Exaequos packages
 .PHONY: download-external-libs
-download-external-libs:
+download-external-libs::
 ifdef EXAEQUOS
 	@$(call print-to,Downloading ExaequOS packages,$(TARGET_NAME),$(THIRD_PARTIES_DIR))
 	$(Q)$(RM) exapkgs 2> /dev/null

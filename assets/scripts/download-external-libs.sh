@@ -15,6 +15,8 @@
 ###############################################################################
 
 readonly GITHUB_URL="https://github.com"
+PROJECT_NAME=$1
+MANIFEST_FILE=$2
 
 function fatal()
 {
@@ -66,10 +68,6 @@ function clone_repo()
         git clone "$GITHUB_URL/$repo_name" --depth=1 "${clone_args[@]}" > /dev/null
     fi
 }
-
-# Main script
-PROJECT_NAME=$1
-MANIFEST_FILE=$2
 
 if [ -z "$PROJECT_NAME" ]; then
     fatal "Project name is required"
