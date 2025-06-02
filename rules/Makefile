@@ -1329,7 +1329,6 @@ veryclean::
 	@$(call print-simple,Cleaning project,$(PROJECT_NAME))
 	$(Q)$(RM) $(BUILD_DIR) $(GENERATED_DOXYGEN_DIR) $(dir $(GPROF_ANALYSIS) $(COVERAGE_RAPPORT)) 2> /dev/null || true
 	$(Q)$(RM) $(P)/Doxyfile 2>/dev/null || true
-	$(Q)$(RM) $(P)/.clang-format 2>/dev/null || true
 
 ###############################################################################
 #? Clean everything including third-party libraries
@@ -1729,9 +1728,9 @@ endif
 #? Format source code.
 ###############################################################################
 
-.PHONY: format
-format:
-	@$(ECHO_COLOR) "$(CYAN)Formatting source code...$(COLOR_DEFAULT)"
+.PHONY: format-source-code
+format-source-code: ensure-clang-format
+	@$(call print-simple,"Formatting source code",$(PROJECT_NAME))
 	@if command -v clang-format >/dev/null 2>&1; then \
 		find $(P) -name "*.cpp" -o -name "*.hpp" -o -name "*.c" -o -name "*.h" | \
 		grep -v $(BUILD_DIR) | grep -v $(THIRD_PARTIES_DIR) | \
