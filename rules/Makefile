@@ -1085,7 +1085,24 @@ endef
 ###############################################################################
 
 .PHONY: all
-all:: ensure-clang-format about compiler-info creating-build-folder $(DIRS_WITH_MAKEFILE) $(TARGET_SHARED_LIB_NAME) $(TARGET_STATIC_LIB_NAME) $(TARGET_PKG_FILE_NAME) $(TARGET_BINARY_NAME)
+all:: compiler-info target creating-build-folder pre-build $(DIRS_WITH_MAKEFILE) $(TARGET_SHARED_LIB_NAME) $(TARGET_STATIC_LIB_NAME) $(TARGET_PKG_FILE_NAME) $(TARGET_BINARY_NAME) post-build
+
+# Ensure post-build is always executed after all other build targets
+post-build: $(TARGET_SHARED_LIB_NAME) $(TARGET_STATIC_LIB_NAME) $(TARGET_PKG_FILE_NAME) $(TARGET_BINARY_NAME)
+
+###############################################################################
+#? Pre-build actions: rules to extend before the build process.
+###############################################################################
+
+.PHONY: pre-build
+pre-build::
+
+###############################################################################
+#? Post-build actions: rules to extend after the build process.
+###############################################################################
+
+.PHONY: post-build
+post-build:
 
 ###############################################################################
 #? Ensure .clang-format file exists at the project root.
@@ -1426,9 +1443,9 @@ endif
 #? Display the description of the project.
 ###############################################################################
 
-.PHONY: about
-about:
-	@$(ECHO) $(TARGET_DESCRIPTION)
+.PHONY: target
+target: compiler-info
+	@$(call print-to,"[TARGET]",$(TARGET_DESCRIPTION),$(PROJECT_NAME))
 
 ###############################################################################
 #? Display the version of the project.
