@@ -1113,7 +1113,6 @@ endif
 	$(Q)$(CD) $(abspath $(OBJS_ROOT_DIR)) && \
     $(AR) $(ARFLAGS) $@ $(patsubst $(abspath $(BUILD_DIR)/objs)/%,%,$(abspath $(LIB_OBJS) $(EXTRACTED_OBJS))) && \
     ranlib $@ || ($(RM) $@; exit 1)
-	@$(call print-to,"Static library created","$(TARGET_NAME)","$@")
 endif
 
 ###############################################################################
@@ -1126,7 +1125,6 @@ $(TARGET_SHARED_LIB_NAME): $(LIB_OBJS) $(INTERNAL_LIBS) $(LIST_MYMAKEFILES) $(DI
 	@$(call print-to,"Creating shared library","$(TARGET_NAME)","$@")
 	@$(MKDIR) $(dir $@)
 	$(Q)$(COMPILER) $(LDFLAGS) $(DLL_LDFLAGS) -o $@ $(abspath $(LIB_OBJS)) $(LINKER_ALL_LOAD) $(THIRD_PARTIES_LIBS) $(INTERNAL_LIBS) $(NOT_PKG_LIBS) $(PKGCFG_LIBS) $(LINKER_NO_ALL_LOAD) $(LINKER_FLAGS) $(USER_LDFLAGS) || ($(RM) $@; exit 1)
-	@$(call print-to,"Shared library created","$(TARGET_NAME)","$@")
 endif
 
 ###############################################################################
@@ -1749,7 +1747,7 @@ format:
 
 .PHONY: lint
 lint:
-	@$(ECHO_COLOR) "$(CYAN)Running static analysis...$(COLOR_DEFAULT)"
+	@$(call print-simple,"Running static analysis",$(PROJECT_NAME))
 	@if command -v cppcheck >/dev/null 2>&1; then \
 		cppcheck --enable=all --inconclusive --std=c++14 \
 		--suppress=missingIncludeSystem \
@@ -1767,7 +1765,7 @@ lint:
 .PHONY: benchmark
 benchmark: all
 ifdef TARGET_BINARY_NAME
-	@$(ECHO_COLOR) "$(CYAN)Running benchmark...$(COLOR_DEFAULT)"
+	@$(call print-simple,"Running benchmark",$(PROJECT_NAME))
 	@if command -v time >/dev/null 2>&1; then \
 		time $(TARGET_BINARY_NAME) || true; \
 	else \
