@@ -257,10 +257,12 @@ ifdef USE_FAST_MATH
     PERFORMANCE_FLAGS += -ffast-math
 endif
 
+# Optional native architecture flags (can be enabled by user)
 ifdef USE_NATIVE_ARCH
     PERFORMANCE_FLAGS += -march=native -mtune=native
 endif
 
+# Optional vectorization flags (can be enabled by user)
 ifdef USE_VECTORIZATION
     PERFORMANCE_FLAGS += -ftree-vectorize -fopt-info-vec
     ifeq ($(COMPILER_NAME),$(filter $(COMPILER_NAME),g++ gcc))
@@ -369,6 +371,12 @@ endif
 # Shared library compilation flags
 ###############################################################################
 
+# If we do not compile shared library, we do not need to set rpath and nodelete flags
+ifdef DO_NOT_COMPILE_SHARED_LIB
+    CUSTOM_RPATH :=
+    PREVENT_SHARED_LIB_UNLOAD :=
+endif
+
 # Position Independent Code flags for shared libraries
 ifeq ($(OS),Darwin)
     DLL_CXXFLAGS := -fPIC
@@ -397,6 +405,28 @@ else ifeq ($(OS),Emscripten)
     DEFINES += -DAPI_LINKAGE=
 else
     $(error Unsupported OS for shared library compilation: $(OS))
+endif
+
+# Optional nodelete flag for shared libraries only
+ifdef PREVENT_SHARED_LIB_UNLOAD
+    DLL_LDFLAGS += -Wl,-z,nodelete
+endif
+
+# Custom runtime library search paths (rpath)
+ifdef CUSTOM_RPATH
+    ifeq ($(OS),Windows)
+        $(warning CUSTOM_RPATH is not supported on Windows)
+    else ifeq ($(OS),Emscripten)
+        $(warning CUSTOM_RPATH is not supported on Emscripten)
+    else
+        # Convert colon-separated paths to individual -Wl,-rpath flags
+        RPATH_FLAGS := $(foreach path,$(subst :, ,$(CUSTOM_RPATH)),-Wl,-rpath,$(path))
+        LDFLAGS += $(RPATH_FLAGS)
+        # For shared libraries, also add to DLL_LDFLAGS
+        ifndef DO_NOT_COMPILE_SHARED_LIB
+            DLL_LDFLAGS += $(RPATH_FLAGS)
+        endif
+    endif
 endif
 
 # Apply shared library flags
@@ -759,6 +789,25 @@ ifdef LIB_OBJS
     else
         SHARED_LIB_NAME :=
     endif
+
+    # Check if we are not trying to disable both static and shared library compilation
+    ifdef DO_NOT_COMPILE_STATIC_LIB
+        ifdef DO_NOT_COMPILE_SHARED_LIB
+            $(error Cannot disable both static and shared library compilation when LIB_OBJS is defined. At least one must be compiled.)
+        endif
+    endif
+
+    # User do not want to compile static library
+    ifdef DO_NOT_COMPILE_STATIC_LIB
+        TARGET_STATIC_LIB_NAME :=
+        STATIC_LIB_NAME :=
+    endif
+
+    # User do not want to compile shared library
+    ifdef DO_NOT_COMPILE_SHARED_LIB
+        TARGET_SHARED_LIB_NAME :=
+        SHARED_LIB_NAME :=
+    endif
 endif
 ifdef OBJS
     TARGET_BINARY_BASE_NAME := $(BUILD_DIR)/$(TARGET_NAME)
@@ -1119,7 +1168,7 @@ endif
 # Link sources as static library.
 ###############################################################################
 
-ifdef LIB_OBJS
+ifdef TARGET_STATIC_LIB_NAME
 $(TARGET_STATIC_LIB_NAME): $(LIB_OBJS) $(INTERNAL_LIBS) $(LIST_MYMAKEFILES) $(DIRS_WITH_MAKEFILE)
 	@$(call print-to,"Creating static library","$(TARGET_NAME)","$@")
 	@$(MKDIR) $(dir $@)
@@ -1136,7 +1185,7 @@ endif
 # Link sources as shared library.
 ###############################################################################
 
-ifdef LIB_OBJS
+ifdef TARGET_SHARED_LIB_NAME
 $(TARGET_SHARED_LIB_NAME): | $(TARGET_STATIC_LIB_NAME)
 $(TARGET_SHARED_LIB_NAME): $(LIB_OBJS) $(INTERNAL_LIBS) $(LIST_MYMAKEFILES) $(DIRS_WITH_MAKEFILE)
 	@$(call print-to,"Creating shared library","$(TARGET_NAME)","$@")
@@ -1237,7 +1286,7 @@ creating-build-folder:
 ###############################################################################
 
 $(LIB_OBJS) $(OBJS): | $(GENERATED_HEADER_PROJECT_INFO)
-$(GENERATED_HEADER_PROJECT_INFO): $(LIST_MYMAKEFILES)
+$(GENERATED_HEADER_PROJECT_INFO): $(LIST_MYMAKEFILES) | creating-build-folder
 	@$(call print-out,Generating projet info,$(TARGET_NAME),$(GENERATED_HEADER_PROJECT_INFO))
 	@$(MKDIR) $(GENERATION_DIR)
 	@$(ECHO) "VERSION=$(PROJECT_VERSION)" > $(GENERATION_DIR)/$(PROJECT_INFO).txt

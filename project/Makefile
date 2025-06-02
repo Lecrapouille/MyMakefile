@@ -363,7 +363,7 @@ endif
 PATH_PROJECT_LOGO ?= $(abspath $(M)/assets/icons/logo.png)
 DOXYGEN_INPUTS ?= $(abspath $(P)/README.md $(P)/src $(P)/include)
 
-# ? Path where to store temporary project files.
+#? Path where to store temporary project files.
 PROJECT_TEMP_DIR ?= $(TMPDIR)/$(PROJECT_NAME)/$(PROJECT_VERSION)
 
 # Files that may not exist but giving information about the project.
@@ -374,6 +374,18 @@ REGEXP_CXX_HEADER_FILES ?= *.hpp *.ipp *.tpp *.hh *.h *.hxx *.incl
 
 # Define dependencies for debug libraries that need downloading
 DEPS_DEBUG_LIBS :=
+
+#? Use nodelete flag for shared libraries
+PREVENT_SHARED_LIB_UNLOAD ?=
+
+#? Custom runtime library search paths (rpath) - colon separated
+CUSTOM_RPATH ?=
+
+#? Do not compile static library
+DO_NOT_COMPILE_STATIC_LIB ?=
+
+#? Do not compile shared library
+DO_NOT_COMPILE_SHARED_LIB ?=
 
 ###############################################################################
 # Rebuild the whole project if a Makefile has been modified
