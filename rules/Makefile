@@ -1109,16 +1109,16 @@ endef
 ###############################################################################
 
 define RULE_CREATE_DOXYFILES
-    $(MKDIR) = $(dir $(GENERATED_DOXYGEN_DIR))
-	$(CP) $(PATH_MYMAKEFILE_DOXYFILE)/. $(GENERATED_DOXYGEN_DIR)
-	find $(GENERATED_DOXYGEN_DIR) -type f -exec sed -i 's#%VERSION#$(PROJECT_VERSION)#g' {} \;
-	find $(GENERATED_DOXYGEN_DIR) -type f -exec sed -i 's#%TARGET#$(TARGET_NAME)#g' {} \;
-	find $(GENERATED_DOXYGEN_DIR) -type f -exec sed -i 's#%PROJECT#$(PROJECT_NAME)#g' {} \;
-	find $(GENERATED_DOXYGEN_DIR) -type f -exec sed -i 's#%DESCRIPTION#$(subst /,\/,$(TARGET_DESCRIPTION))#g' {} \;
-	find $(GENERATED_DOXYGEN_DIR) -type f -exec sed -i 's#%GENDOC#$(subst /,\/,$(GENERATED_DOXYGEN_DIR))#g' {} \;
-	find $(GENERATED_DOXYGEN_DIR) -type f -exec sed -i 's#%LOGO#$(subst /,\/,$(PATH_PROJECT_LOGO))#g' {} \;
-	find $(GENERATED_DOXYGEN_DIR) -type f -exec sed -i 's#%INPUT#$(subst /,\/,$(DOXYGEN_INPUTS))#g' {} \;
-	$(MV) $(GENERATED_DOXYGEN_DIR)/Doxyfile $(abspath $(P)/Doxyfile)
+    @$(MKDIR) $(dir $(GENERATED_DOXYGEN_DIR))
+    @$(CP) $(PATH_MYMAKEFILE_DOXYFILE)/. $(GENERATED_DOXYGEN_DIR)
+    @find $(GENERATED_DOXYGEN_DIR) -type f -exec sed -i 's#%VERSION#$(PROJECT_VERSION)#g' {} \;
+    @find $(GENERATED_DOXYGEN_DIR) -type f -exec sed -i 's#%TARGET#$(TARGET_NAME)#g' {} \;
+    @find $(GENERATED_DOXYGEN_DIR) -type f -exec sed -i 's#%PROJECT#$(PROJECT_NAME)#g' {} \;
+    @find $(GENERATED_DOXYGEN_DIR) -type f -exec sed -i 's#%DESCRIPTION#$(subst /,\/,$(TARGET_DESCRIPTION))#g' {} \;
+    @find $(GENERATED_DOXYGEN_DIR) -type f -exec sed -i 's#%GENDOC#$(subst /,\/,$(GENERATED_DOXYGEN_DIR))#g' {} \;
+    @find $(GENERATED_DOXYGEN_DIR) -type f -exec sed -i 's#%LOGO#$(subst /,\/,$(PATH_PROJECT_LOGO))#g' {} \;
+    @find $(GENERATED_DOXYGEN_DIR) -type f -exec sed -i 's#%INPUT#$(subst /,\/,$(DOXYGEN_INPUTS))#g' {} \;
+    @$(MV) $(GENERATED_DOXYGEN_DIR)/Doxyfile $(abspath $(P)/Doxyfile)
 endef
 
 ###############################################################################
