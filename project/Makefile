@@ -290,15 +290,15 @@ INSTALL_PROJECT_DIR := $(INSTALL_DATADIR)/$(PROJECT_NAME)/$(PROJECT_VERSION)
 
 # Project installation paths on the user folder
 ifeq ($(OS),Linux)
-    INSTALL_LOCAL_PROJECT_DATA_DIR += $(HOME)/.local/share/$(PROJECT_NAME)/$(PROJECT_VERSION)/data
+    INSTALL_LOCAL_PROJECT_DATA_DIR += $(HOME)/.local/share/$(PROJECT_NAME)/$(PROJECT_VERSION)/$(DATA_FOLDER_NAME)
 else ifeq ($(OS),Windows)
-    INSTALL_LOCAL_PROJECT_DATA_DIR += C:\\Users\\$(USER)\$(PROJECT_NAME)\\$(PROJECT_VERSION)\\data
+    INSTALL_LOCAL_PROJECT_DATA_DIR += C:\\Users\\$(USER)\$(PROJECT_NAME)\\$(PROJECT_VERSION)\\$(DATA_FOLDER_NAME)
 else ifeq ($(OS),Darwin)
     ifdef BUILD_MACOS_APP_BUNDLE
         # Nothing to do it should be computed dynamically inside the bundle path
     endif
 else ifeq ($(OS),Emscripten)
-    INSTALL_LOCAL_PROJECT_DATA_DIR += data
+    INSTALL_LOCAL_PROJECT_DATA_DIR += $(DATA_FOLDER_NAME)
 else
     # Nothing to do
 endif
@@ -315,7 +315,7 @@ BUILD_DIR := $(abspath $(P)/$(BUILD))
 OBJS_ROOT_DIR := $(BUILD_DIR)/$(COMPILATION_MODE)/objs-$(OS)/$(TARGET_NAME)
 
 # Directory holding generated files.
-GENERATION_DIR := $(BUILD_DIR)/generated
+GENERATION_DIR := $(BUILD_DIR)/generated/$(PROJECT_NAME)
 COMPILER_INFO_DONE := $(GENERATION_DIR)/.compiler-info
 
 # Directory holding downloaded stuffs.
@@ -357,7 +357,7 @@ GENERATED_HEADER_PROJECT_INFO := $(GENERATION_DIR)/$(PROJECT_INFO).hpp
 
 #? Path to the default icon for MacOS bundle applications.
 ifeq ($(OS),Darwin)
-    MACOS_BUNDLE_ICON ?= $(M)/assets/data/macos.icns
+    MACOS_BUNDLE_ICON ?= $(M)/assets/$(DATA_FOLDER_NAME)/macos.icns
 endif
 
 PATH_PROJECT_LOGO ?= $(abspath $(M)/assets/icons/logo.png)

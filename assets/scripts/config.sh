@@ -24,7 +24,7 @@
 ##==================================================================================
 
 # From the file VERSION and the current git SHA1, this script generates
-# the build/version.h with these informations. This project uses them
+# the build/version.h with these information. This project uses them
 # in log files, in "about" windows ... This script is called by Makefile.
 
 # Arguments:
@@ -44,7 +44,7 @@ BRANCH=`git rev-parse --abbrev-ref HEAD || echo "" | 2> /dev/null`
 ### Header guard
 GUARD=`echo "${PROJECT}_${TARGET}_GENERATED_PROJECT_INFO_HPP" | tr '[:lower:]' '[:upper:]' | tr "\-." "__"`
 
-### Save these informations as C++ header file
+### Save these information as C++ header file
 cat <<EOF >$1.hpp
 #ifndef ${GUARD}
 #  define ${GUARD}
@@ -56,35 +56,55 @@ namespace project
 {
     namespace info
     {
+        //! \brief Project name.
+        const std::string name{"${PROJECT}"};
+
+        namespace application
+        {
+            //! \brief Application name.
+            const std::string name{"${TARGET}"};
+            //! \brief Summary of the application.
+            const std::string summary{"${TARGET_DESCRIPTION}"};
+            //! \brief Log file name.
+            const std::string log{"${TARGET}.log"};
+        }
+
+        namespace version
+        {
+            //! \brief Version of project.
+            const std::string full{"${VERSION}"};
+            //! \brief Major version of project
+            const uint32_t major{${MAJOR_VERSION}u};
+            //! \brief Minor version of project
+            const uint32_t minor{${MINOR_VERSION}u};
+            //! \brief Patch version of project
+            const uint32_t patch{${PATCH_VERSION}u};
+        }
+
         namespace compilation
         {
             enum Mode { debug, release, normal };
-            //! \brief Compiled in debug or in release mode
+            //! \brief Compiled in debug or in release mode.
             const Mode mode{project::info::compilation::${COMPILATION_MODE}};
         }
-        //! \brief Project name.
-        const std::string project_name{"${PROJECT}"};
-        //! \brief Application name.
-        const std::string application_name{"${TARGET}"};
-        //! \brief Major version of project
-        const uint32_t major_version{${MAJOR_VERSION}u};
-        //! \brief Minor version of project
-        const uint32_t minor_version{${MINOR_VERSION}u};
-        //! \brief Patch version of project
-        const uint32_t patch_version{${PATCH_VERSION}u};
-        //! \brief Save the git branch
-        const std::string git_branch{"${BRANCH}"};
-        //! \brief Save the git SHA1
-        const std::string git_sha1{"${SHA1}"};
-        //! \brief Pathes where default project resources have been installed
-        //! (when called  by the shell command: sudo make install).
-        const std::string data_path{"${DATA_PATHS}"};
-        //! \brief Location for storing temporary files
-        const std::string tmp_path{"${PROJECT_TEMP_DIR}/"};
-        //! \brief Give a name to the default project log file.
-        const std::string log_name{"${TARGET}.log"};
-        //! \brief Define the full path for the project.
-        const std::string log_path{"${TEMPDIR}/${TARGET}.log"};
+
+        namespace git
+        {
+            //! \brief Git branch.
+            const std::string branch{"${BRANCH}"};
+            //! \brief Git SHA1.
+            const std::string sha1{"${SHA1}"};
+        }
+
+        namespace paths
+        {
+            //! \brief Paths where default project resources have been installed
+            const std::string data{"${DATA_PATHS}"};
+            //! \brief Location for storing temporary files
+            const std::string tmp{"${TEMPDIR}/"};
+            //! \brief Define the full path for the project.
+            const std::string log{"${TEMPDIR}/${TARGET}.log"};
+        }
     }
 }
 

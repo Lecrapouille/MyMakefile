@@ -115,7 +115,7 @@ endif
 #  - folder local to the executable (maybe read-only access).
 ###############################################################################
 
-SEARCH_DATA_PATHS := $(INSTALL_LOCAL_PROJECT_DATA_DIR):$(INSTALL_PROJECT_DIR)/$(PROJECT_DATA_DIR):$(PROJECT_DATA_DIR):.
+SEARCH_DATA_PATHS := $(INSTALL_LOCAL_PROJECT_DATA_DIR):$(INSTALL_PROJECT_DIR)/$(DATA_FOLDER_NAME):$(PROJECT_DATA_DIR):.
 ifeq ($(COMPILATION_MODE),debug)
     SEARCH_DATA_PATHS := $(PROJECT_DATA_DIR):$(SEARCH_DATA_PATHS)
 endif
@@ -1109,16 +1109,16 @@ endef
 ###############################################################################
 
 define RULE_CREATE_DOXYFILES
-    @$(MKDIR) $(dir $(GENERATED_DOXYGEN_DIR))
-    @$(CP) $(PATH_MYMAKEFILE_DOXYFILE)/. $(GENERATED_DOXYGEN_DIR)
-    @find $(GENERATED_DOXYGEN_DIR) -type f -exec sed -i 's#%VERSION#$(PROJECT_VERSION)#g' {} \;
-    @find $(GENERATED_DOXYGEN_DIR) -type f -exec sed -i 's#%TARGET#$(TARGET_NAME)#g' {} \;
-    @find $(GENERATED_DOXYGEN_DIR) -type f -exec sed -i 's#%PROJECT#$(PROJECT_NAME)#g' {} \;
-    @find $(GENERATED_DOXYGEN_DIR) -type f -exec sed -i 's#%DESCRIPTION#$(subst /,\/,$(TARGET_DESCRIPTION))#g' {} \;
-    @find $(GENERATED_DOXYGEN_DIR) -type f -exec sed -i 's#%GENDOC#$(subst /,\/,$(GENERATED_DOXYGEN_DIR))#g' {} \;
-    @find $(GENERATED_DOXYGEN_DIR) -type f -exec sed -i 's#%LOGO#$(subst /,\/,$(PATH_PROJECT_LOGO))#g' {} \;
-    @find $(GENERATED_DOXYGEN_DIR) -type f -exec sed -i 's#%INPUT#$(subst /,\/,$(DOXYGEN_INPUTS))#g' {} \;
-    @$(MV) $(GENERATED_DOXYGEN_DIR)/Doxyfile $(abspath $(P)/Doxyfile)
+    $(MKDIR) = $(dir $(GENERATED_DOXYGEN_DIR))
+	$(CP) $(PATH_MYMAKEFILE_DOXYFILE)/. $(GENERATED_DOXYGEN_DIR)
+	find $(GENERATED_DOXYGEN_DIR) -type f -exec sed -i 's#%VERSION#$(PROJECT_VERSION)#g' {} \;
+	find $(GENERATED_DOXYGEN_DIR) -type f -exec sed -i 's#%TARGET#$(TARGET_NAME)#g' {} \;
+	find $(GENERATED_DOXYGEN_DIR) -type f -exec sed -i 's#%PROJECT#$(PROJECT_NAME)#g' {} \;
+	find $(GENERATED_DOXYGEN_DIR) -type f -exec sed -i 's#%DESCRIPTION#$(subst /,\/,$(TARGET_DESCRIPTION))#g' {} \;
+	find $(GENERATED_DOXYGEN_DIR) -type f -exec sed -i 's#%GENDOC#$(subst /,\/,$(GENERATED_DOXYGEN_DIR))#g' {} \;
+	find $(GENERATED_DOXYGEN_DIR) -type f -exec sed -i 's#%LOGO#$(subst /,\/,$(PATH_PROJECT_LOGO))#g' {} \;
+	find $(GENERATED_DOXYGEN_DIR) -type f -exec sed -i 's#%INPUT#$(subst /,\/,$(DOXYGEN_INPUTS))#g' {} \;
+	$(MV) $(GENERATED_DOXYGEN_DIR)/Doxyfile $(abspath $(P)/Doxyfile)
 endef
 
 ###############################################################################
@@ -1292,6 +1292,7 @@ $(GENERATED_HEADER_PROJECT_INFO): $(LIST_MYMAKEFILES) | creating-build-folder
 	@$(ECHO) "VERSION=$(PROJECT_VERSION)" > $(GENERATION_DIR)/$(PROJECT_INFO).txt
 	@$(ECHO) "PROJECT=$(PROJECT_NAME)" >> $(GENERATION_DIR)/$(PROJECT_INFO).txt
 	@$(ECHO) "TARGET=$(TARGET_NAME)" >> $(GENERATION_DIR)/$(PROJECT_INFO).txt
+	@$(ECHO) "TARGET_DESCRIPTION=\"$(TARGET_DESCRIPTION)\"" >> $(GENERATION_DIR)/$(PROJECT_INFO).txt
 	@$(ECHO) "DATA_PATHS=$(SEARCH_DATA_PATHS)" >> $(GENERATION_DIR)/$(PROJECT_INFO).txt
 	@$(ECHO) "TEMPDIR=$(PROJECT_TEMP_DIR)" >> $(GENERATION_DIR)/$(PROJECT_INFO).txt
 	@$(ECHO) "COMPILATION_MODE=$(COMPILATION_MODE)" >> $(GENERATION_DIR)/$(PROJECT_INFO).txt
