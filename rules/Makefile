@@ -1055,7 +1055,7 @@ define CREATE_MACOS_APP_BUNDLE
 	$(Q)$(MKDIR) $(OBJS_ROOT_DIR)/$(TARGET_NAME)$(EXT)/Contents/{MacOS,Resources}
 	$(Q)$(CP) $(OBJS_ROOT_DIR)/$(TARGET_NAME) $(OBJS_ROOT_DIR)/$(TARGET_NAME)$(EXT)/Contents/MacOS
 	$(Q)$(CP) $(MACOS_BUNDLE_ICON) $(OBJS_ROOT_DIR)/$(TARGET_NAME)$(EXT)/Contents/Resources/$(TARGET_NAME).icns
-	$(Q)cp -r data/* $(OBJS_ROOT_DIR)/$(TARGET_NAME)$(EXT)/Contents/Resources
+	$(Q)cp -r $(PROJECT_DATA_DIR)/* $(OBJS_ROOT_DIR)/$(TARGET_NAME)$(EXT)/Contents/Resources
 	@$(call CREATE_MACOS_INFO_PLIST,$(TARGET_NAME)$(EXT)/Contents/Info.plist)
 endef
 
