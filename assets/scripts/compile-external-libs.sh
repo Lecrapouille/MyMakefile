@@ -5,16 +5,7 @@
 ###
 ### To avoid pollution, these libraries are not installed in your operating
 ### system (no sudo make install is called). As consequence, you have to tell
-### your project ../Makefile where to find their files. Here generic example:
-###     INCLUDES += -I$(THIRD_PARTIES)/thirdpart1/path1
-###        for searching heeder files.
-###     VPATH += $(THIRD_PARTIES)/thirdpart1/path1
-###        for searching c/c++ files.
-###     THIRD_PARTIES_LIBS += $(abspath $(THIRD_PARTIES)/libXXX.a))
-###        for linking your project against the lib.
-###     THIRD_PARTIES_OBJS += foo.o
-###        for inking your project against this file iff THIRD_PARTIES_LIBS is not
-###        used (the path is not important thanks to VPATH).
+### your project ../Makefile where to find their files.
 ###
 ### The last important point to avoid polution, better to compile thirdparts as
 ### static library rather than shared lib to avoid telling your system where to
