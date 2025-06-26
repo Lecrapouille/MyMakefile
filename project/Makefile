@@ -391,7 +391,10 @@ DO_NOT_COMPILE_SHARED_LIB ?=
 # Rebuild the whole project if a Makefile has been modified
 ###############################################################################
 
-LIST_MYMAKEFILES := $(M)/project/Makefile $(M)/rules/Makefile $(P)/Makefile
+LIST_MYMAKEFILES := $(M)/project/Makefile $(M)/rules/Makefile
+ifneq (,$(wildcard $(P)/Makefile))
+    LIST_MYMAKEFILES += $(P)/Makefile
+endif
 ifneq (,$(wildcard $(P)/Makefile.common))
     LIST_MYMAKEFILES += $(P)/Makefile.common
 endif
