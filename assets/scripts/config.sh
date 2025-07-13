@@ -23,12 +23,12 @@
 ## SOFTWARE.
 ##==================================================================================
 
-# From the file VERSION and the current git SHA1, this script generates
-# the build/version.h with these information. This project uses them
-# in log files, in "about" windows ... This script is called by Makefile.
-
-# Arguments:
-# $1: path to the project info file without file extension.
+### From the file VERSION and the current git SHA1, this script generates
+### the build/version.h with this information. This project uses this information
+### in log files, in "about" windows ... This script is called by Makefile.
+###
+### Arguments:
+### $1: path to the project info file without file extension.
 
 source $1.txt
 

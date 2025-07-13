@@ -2,7 +2,7 @@
 ##==================================================================================
 ## MIT License
 ##
-## Copyright (c) 2019 Quentin Quadrat <lecrapouille@gmail.com>
+## Copyright (c) 2019-2025 Quentin Quadrat <lecrapouille@gmail.com>
 ##
 ## Permission is hereby granted, free of charge, to any person obtaining a copy
 ## of this software and associated documentation files (the "Software"), to deal
@@ -23,16 +23,15 @@
 ## SOFTWARE.
 ##==================================================================================
 
-# This script, called by Makefile, makes a backup of the code source as
-# an unique tarball. Tarballs name are unique <date>-<name>-v<version>-<counter>.tar.gz
-# where $DATE is the date of today and $NTH a counter to make unique if
-# a tarball already exists. Some informations are not backuped like .git
-# generated doc, builds ...
+### This script, called by Makefile, makes a backup of the source code as
+### a unique tarball. Tarball names are unique with format <date>-<name>-v<version>-<counter>.tar.gz
+### where $DATE is today's date and $NTH is a counter to make it unique if
+### a tarball already exists. Some information is not backed up like .git,
+### generated doc, builds ...
 
-# $1 is the content of pwd where to exectis script.
-# $2 is the tarball name
-
-#set -x
+### Arguments:
+### $1: content of pwd where to execute this script.
+### $2: tarball name
 
 HERE=${1##*/}
 NAME="$2"

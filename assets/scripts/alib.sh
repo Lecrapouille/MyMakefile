@@ -2,7 +2,7 @@
 ##==================================================================================
 ## MIT License
 ##
-## Copyright (c) 2019-2022 Quentin Quadrat <lecrapouille@gmail.com>
+## Copyright (c) 2019-2025 Quentin Quadrat <lecrapouille@gmail.com>
 ##
 ## Permission is hereby granted, free of charge, to any person obtaining a copy
 ## of this software and associated documentation files (the "Software"), to deal
@@ -23,8 +23,12 @@
 ## SOFTWARE.
 ##==================================================================================
 
-# This script, called by Makefile, merge several static lib into a single one.
-# See https://stackoverflow.com/questions/73600907/create-one-static-library-from-several-others-static-libraries-in-makefile
+### This script, called by Makefile, merges several static libraries into a single one.
+### See https://stackoverflow.com/questions/73600907/create-one-static-library-from-several-other-static-libraries-in-makefile
+###
+### Arguments:
+### $1: build directory
+### $2-n: list of static libraries to merge
 
 BUILD=$1
 shift

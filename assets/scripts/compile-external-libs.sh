@@ -1,23 +1,45 @@
 #!/bin/bash -e
-###############################################################################
+##==================================================================================
+## MIT License
+##
+## Copyright (c) 2019-2025 Quentin Quadrat <lecrapouille@gmail.com>
+##
+## Permission is hereby granted, free of charge, to any person obtaining a copy
+## of this software and associated documentation files (the "Software"), to deal
+## in the Software without restriction, including without limitation the rights
+## to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+## copies of the Software, and to permit persons to whom the Software is
+## furnished to do so, subject to the following conditions:
+##
+## The above copyright notice and this permission notice shall be included in all
+## copies or substantial portions of the Software.
+##
+## THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+## IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+## FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+## AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+## LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+## OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+## SOFTWARE.
+##==================================================================================
+
 ### This script is called by (cd .. && make compile-external-libs). It will
-### compile thirdparts cloned previously with make download-external-libs.
+### compile third-party libraries cloned previously with make download-external-libs.
 ###
-### To avoid pollution, these libraries are not installed in your operating
-### system (no sudo make install is called). As consequence, you have to tell
-### your project ../Makefile where to find their files.
+### To avoid polluting the system, these libraries are not installed on your
+### operating system (no sudo make install is called). As a consequence, you have to tell
+### your project ../Makefile where to find their files.
 ###
-### The last important point to avoid polution, better to compile thirdparts as
-### static library rather than shared lib to avoid telling your system where to
-### find them when you'll start your application.
+### The last important point to avoid pollution: it is better to compile third-party
+### libraries as static libraries rather than shared libraries to avoid telling your
+### system where to find them when you'll start your application.
 ###
 ### Input of this script:
 ### $1: target (your application name)
-### $2: script to include owning what to compile.
+### $2: script to include defining what to compile.
 ### $3: architecture (i.e. Linux, Darwin, Windows, Emscripten)
 ### $4: CC (C compiler)
 ### $5: CXX (C++ compiler)
-###############################################################################
 
 function fatal
 {
