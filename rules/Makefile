@@ -1407,7 +1407,7 @@ else
 endif
 
 ###############################################################################
-#? Clean the project target build and other Makefiles cleaning.
+#? Clean the build folder.
 ###############################################################################
 
 .PHONY: clean
@@ -1417,7 +1417,7 @@ ifeq ($(abspath .), $(abspath $(P)))
 else
 	@$(call print-simple,Cleaning target,$(TARGET_NAME))
 endif
-	$(Q)$(RM) $(OBJS_ROOT_DIR) 2> /dev/null || true
+	$(Q)$(RM) $(BUILD_PATH) 2> /dev/null || true
 ifdef DIRS_WITH_MAKEFILE
 	$(Q)for d in $(DIRS_WITH_MAKEFILE); do \
 	$(MAKE) --no-print-directory $(addprefix --directory=,$$d) clean; \
@@ -1425,55 +1425,34 @@ ifdef DIRS_WITH_MAKEFILE
 endif
 
 ###############################################################################
-#? Clean only object files (faster than full clean)
-###############################################################################
-
-.PHONY: clean-objs
-clean-objs:
-	@$(call print-simple,Cleaning objects,$(TARGET_NAME))
-	$(Q)$(RM) $(OBJS) $(LIB_OBJS) 2>/dev/null || true
-	$(Q)$(RM) $(patsubst %.o,%.d,$(OBJS) $(LIB_OBJS)) 2>/dev/null || true
-
-###############################################################################
-#? Clean only generated files
-###############################################################################
-
-.PHONY: clean-generated
-clean-generated:
-	@$(call print-simple,Cleaning generated files,$(TARGET_NAME))
-	$(Q)$(RM) $(GENERATION_DIR) 2>/dev/null || true
-	$(Q)$(RM) $(TARGET_BINARY_NAME) $(TARGET_STATIC_LIB_NAME) $(TARGET_SHARED_LIB_NAME) $(TARGET_PKG_FILE_NAME) 2>/dev/null || true
-
-###############################################################################
-#? Clean third-party downloads
-###############################################################################
-
-.PHONY: clean-downloads
-clean-downloads:
-	@$(call print-simple,Cleaning downloads,$(TARGET_NAME))
-	$(Q)$(RM) $(DOWNLOAD_DIR) 2>/dev/null || true
-
-###############################################################################
-#? Clean the build folder and generated documentation.
+#? Clean everything: build, third-parties, documentation, and generated files.
 ###############################################################################
 
 .PHONY: veryclean
 veryclean::
-	@$(call print-simple,Cleaning project,$(PROJECT_NAME))
-	$(Q)$(RM) $(BUILD_PATH) $(GENERATED_DOXYGEN_DIR) $(dir $(GPROF_ANALYSIS) $(COVERAGE_RAPPORT)) 2> /dev/null || true
-	$(Q)$(RM) $(P)/Doxyfile 2>/dev/null || true
-
-###############################################################################
-#? Clean everything including third-party libraries
-###############################################################################
-
-.PHONY: distclean
-distclean: veryclean clean-downloads
 	@$(call print-simple,Deep cleaning project,$(PROJECT_NAME))
-	$(Q)$(RM) $(THIRD_PARTIES_DIR) 2>/dev/null || true
+	$(Q)$(RM) $(BUILD_PATH) $(GENERATED_DOXYGEN_DIR) 2> /dev/null || true
+	$(Q)$(RM) $(dir $(GPROF_ANALYSIS) $(COVERAGE_RAPPORT)) 2> /dev/null || true
+	$(Q)$(RM) $(P)/Doxyfile 2>/dev/null || true
+ifneq ("$(wildcard $(PROJECT_MANIFEST_THIRD_PARTIES))","")
+	$(Q)while IFS= read -r line; do \
+		if [ -n "$$line" ] && [ "$${line#\#}" = "$$line" ]; then \
+			lib_name=$$(echo "$$line" | cut -d'/' -f2); \
+			if [ -d "$(THIRD_PARTIES_DIR)/$$lib_name" ]; then \
+				$(RM) "$(THIRD_PARTIES_DIR)/$$lib_name" 2>/dev/null || true; \
+			fi; \
+		fi; \
+	done < $(PROJECT_MANIFEST_THIRD_PARTIES)
+endif
 	$(Q)find $(P) -name "*.orig" -delete 2>/dev/null || true
 	$(Q)find $(P) -name "*.rej" -delete 2>/dev/null || true
 	$(Q)find $(P) -name "*~" -delete 2>/dev/null || true
+	$(Q)find $(P) -name "gmon.out" -delete 2>/dev/null || true
+	$(Q)find $(P) -name "*.gcda" -delete 2>/dev/null || true
+	$(Q)find $(P) -name "*.gcno" -delete 2>/dev/null || true
+	$(Q)find $(P) -name "*.gcov" -delete 2>/dev/null || true
+	$(Q)find $(P) -name "perf.data*" -delete 2>/dev/null || true
+	$(Q)find $(P) -name "*.prof" -delete 2>/dev/null || true
 
 ###############################################################################
 #? Install the project artifacts on the operating system
