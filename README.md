@@ -21,6 +21,7 @@ While CMake is a popular choice, MyMakefile offers several advantages for smalle
   - Documentation generation
   - Compilation flag management
   - pkg-config integration
+  - RPM creation
 - Define your project structure in just a few lines of Makefile syntax
 - Let MyMakefile handle all the complex build rules for you
 
@@ -131,6 +132,12 @@ MyMakefile supports compilation for both platforms.
 
 ```bash
 /media/localhost/<your-application>
+```
+
+## 📦 Compiling to RPM
+
+```bash
+make rpm
 ```
 
 ## 📖 Documentation

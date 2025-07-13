@@ -26,6 +26,9 @@
 # Check if some variables have been defined before including this file.
 ###############################################################################
 
+#? Define the author of the project.
+AUTHOR ?= lecrapouille
+
 ifndef PROJECT_NAME
 $(error PROJECT_NAME is mandatory for giving a name to your project.)
 endif
@@ -162,7 +165,7 @@ else
 endif
 
 ###############################################################################
-# Colorfull echo
+# Colorful echo
 ###############################################################################
 
 #? Echo command for colors
@@ -206,7 +209,7 @@ list-folders=$(sort $(dir $(call rwildcard,$1,*)))
 # present on the build folder.
 ###############################################################################
 define internal-lib
-    $(addsuffix .a,$(addprefix $(BUILD_DIR)/lib,$1))
+    $(addsuffix .a,$(addprefix $(BUILD_PATH)/lib,$1))
 endef
 
 ###############################################################################
@@ -309,17 +312,22 @@ endif
 
 #? Name of the directory holding the compilation artifacts.
 BUILD ?= build
-BUILD_DIR := $(abspath $(P)/$(BUILD))
+BUILD_PATH := $(abspath $(P)/$(BUILD))
+
+#? Path to the RPM spec file.
+RPM_TOPDIR := $(BUILD)/rpm
+RPM_TOPDIR_PATH := $(abspath $(P)/$(RPM_TOPDIR))
+RPM_SPEC_FILE := $(RPM_TOPDIR)/SPECS/$(PROJECT_NAME).spec
 
 # Root directory holding compiled C/C++ files.
-OBJS_ROOT_DIR := $(BUILD_DIR)/$(COMPILATION_MODE)/objs-$(OS)/$(TARGET_NAME)
+OBJS_ROOT_DIR := $(BUILD_PATH)/$(COMPILATION_MODE)/objs-$(OS)/$(TARGET_NAME)
 
 # Directory holding generated files.
-GENERATION_DIR := $(BUILD_DIR)/generated/$(PROJECT_NAME)
+GENERATION_DIR := $(BUILD_PATH)/generated/$(PROJECT_NAME)
 COMPILER_INFO_DONE := $(GENERATION_DIR)/.compiler-info
 
 # Directory holding downloaded stuffs.
-DOWNLOAD_DIR := $(BUILD_DIR)/downloaded
+DOWNLOAD_DIR := $(BUILD_PATH)/downloaded
 
 #? Name of the directory holding third parties libraries (external libraries).
 THIRD_PARTIES_FOLDER_NAME ?= external
@@ -377,6 +385,9 @@ DEPS_DEBUG_LIBS :=
 
 #? Use nodelete flag for shared libraries
 PREVENT_SHARED_LIB_UNLOAD ?=
+
+#? Default license for RPM packages
+LICENSE ?= MIT
 
 #? Custom runtime library search paths (rpath) - colon separated
 CUSTOM_RPATH ?=

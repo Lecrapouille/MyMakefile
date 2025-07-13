@@ -781,11 +781,11 @@ ifdef LIB_OBJS
 
     # build/libfoo.a and build/libfoo.so
     # For Emscripten and ExaequOS shared lib are not managed
-    TARGET_STATIC_LIB_NAME := $(BUILD_DIR)/$(STATIC_LIB_NAME)
+    TARGET_STATIC_LIB_NAME := $(BUILD_PATH)/$(STATIC_LIB_NAME)
     ifneq ($(OS),Emscripten)
-        TARGET_SHARED_LIB_NAME := $(BUILD_DIR)/$(SHARED_LIB_NAME)
+        TARGET_SHARED_LIB_NAME := $(BUILD_PATH)/$(SHARED_LIB_NAME)
         PKG_FILE_NAME := $(TARGET_NAME).pc
-        TARGET_PKG_FILE_NAME := $(BUILD_DIR)/$(PKG_FILE_NAME)
+        TARGET_PKG_FILE_NAME := $(BUILD_PATH)/$(PKG_FILE_NAME)
     else
         SHARED_LIB_NAME :=
     endif
@@ -810,12 +810,12 @@ ifdef LIB_OBJS
     endif
 endif
 ifdef OBJS
-    TARGET_BINARY_BASE_NAME := $(BUILD_DIR)/$(TARGET_NAME)
+    TARGET_BINARY_BASE_NAME := $(BUILD_PATH)/$(TARGET_NAME)
     TARGET_BINARY_NAME := $(TARGET_BINARY_BASE_NAME)$(EXT_BINARY)
 endif
 
 # Convert <path>/libtoto.a into -ltoto
-SHORT_INTERNAL_LIBS := $(subst $(BUILD_DIR)/lib,-l,$(INTERNAL_LIBS))
+SHORT_INTERNAL_LIBS := $(subst $(BUILD_PATH)/lib,-l,$(INTERNAL_LIBS))
 SHORT_INTERNAL_LIBS := $(subst .a,,$(SHORT_INTERNAL_LIBS))
 
 INCLUDES := $(addprefix -I,$(abspath $(INCLUDES) $(GENERATION_DIR) $(DOWNLOAD_DIR)))
@@ -966,7 +966,7 @@ ifndef EXAEQUOS
 	@$(call print-install,$(TARGET_NAME),$(TARGET_NAME),$(INSTALL_BINDIR))
 	$(Q)install -d -m 755 $(INSTALL_BINDIR)
 	$(Q)install -m 644 $(TARGET_BINARY_NAME) $(INSTALL_BINDIR)/$(TARGET_NAME)-$(PROJECT_VERSION)
-	$(Q)ln -sf $(INSTALL_BINDIR)/$(TARGET_NAME)-$(PROJECT_VERSION) $(INSTALL_BINDIR)/$(TARGET_NAME)
+	$(Q)cd $(INSTALL_BINDIR) && ln -sf $(TARGET_NAME)-$(PROJECT_VERSION) $(TARGET_NAME)
   endef
 else
   define INSTALL_PROJECT_BINARY
@@ -986,7 +986,7 @@ define INSTALL_PROJECT_PKG_CONFIG
 	@$(call print-install,$(TARGET_NAME),$(PKG_FILE_NAME),$(INSTALL_PKGLIBDIR))
 	$(Q)install -d -m 755 $(INSTALL_PKGLIBDIR)
 	$(Q)install -m 644 $(TARGET_PKG_FILE_NAME) $(INSTALL_PKGLIBDIR)/$(TARGET_NAME)-$(PROJECT_VERSION).pc
-	$(Q)ln -snf $(INSTALL_PKGLIBDIR)/$(TARGET_NAME)-$(PROJECT_VERSION).pc $(INSTALL_PKGLIBDIR)/$(PKG_FILE_NAME)
+	$(Q)cd $(INSTALL_PKGLIBDIR) && ln -snf $(TARGET_NAME)-$(PROJECT_VERSION).pc $(PKG_FILE_NAME)
 endef
 
 ###############################################################################
@@ -997,8 +997,8 @@ define INSTALL_PROJECT_SHARED_LIBRARIES
 	@$(call print-install,$(TARGET_NAME),$(SHARED_LIB_NAME),$(INSTALL_LIBDIR))
 	$(Q)install -d -m 755 $(INSTALL_LIBDIR)
 	$(Q)install -m 644 $(TARGET_SHARED_LIB_NAME) $(INSTALL_LIBDIR)/$(SHARED_LIB_NAME).$(PROJECT_VERSION)
-	$(Q)ln -snf $(INSTALL_LIBDIR)/$(SHARED_LIB_NAME).$(PROJECT_VERSION) $(INSTALL_LIBDIR)/$(SHARED_LIB_NAME)
-	$(Q)ln -snf $(INSTALL_LIBDIR)/$(SHARED_LIB_NAME).$(PROJECT_VERSION) $(INSTALL_LIBDIR)/$(SHARED_LIB_NAME).$(PROJECT_VERSION_MAJOR)
+	$(Q)cd $(INSTALL_LIBDIR) && ln -snf $(SHARED_LIB_NAME).$(PROJECT_VERSION) $(SHARED_LIB_NAME)
+	$(Q)cd $(INSTALL_LIBDIR) && ln -snf $(SHARED_LIB_NAME).$(PROJECT_VERSION) $(SHARED_LIB_NAME).$(PROJECT_VERSION_MAJOR)
 endef
 
 ###############################################################################
@@ -1074,6 +1074,72 @@ define CREATE_PKG_CONFIG
 	@$(ECHO) "Version: $(PROJECT_VERSION)" >> $1
 	@$(ECHO) "Libs: -L$$""{libdir} $(strip -l$(TARGET_NAME) $(SHORT_INTERNAL_LIBS) $(NOT_PKG_LIBS) $(PKGCFG_LIBS))" >> $1
 	@$(ECHO) "Cflags: -I$$""{includedir}" >> $1
+endef
+
+###############################################################################
+# Create the RPM spec file
+###############################################################################
+
+define CREATE_RPM_SPEC
+	@$(call print-to,Generating RPM spec,$(TARGET_NAME),$(abspath $1))
+	@$(ECHO) "Name:           $(PROJECT_NAME)" > $1
+	@$(ECHO) "Version:        $(PROJECT_VERSION)" >> $1
+	@$(ECHO) "Release:        1%{?dist}" >> $1
+	@$(ECHO) "Summary:        $(TARGET_DESCRIPTION)" >> $1
+	@$(ECHO) "" >> $1
+	@$(ECHO) "License:        $(LICENSE)" >> $1
+	@$(ECHO) "URL:            https://github.com/$(shell echo "$(AUTHOR)/$(PROJECT_NAME)" | tr A-Z a-z)" >> $1
+	@$(ECHO) "BuildRequires:  gcc-c++ >= 4.8, make >= 3.81" >> $1
+	@$(ECHO) "Requires:       glibc" >> $1
+	@$(ECHO) "" >> $1
+	@$(ECHO) "%description" >> $1
+	@$(ECHO) "$(TARGET_DESCRIPTION)" >> $1
+	@$(ECHO) "" >> $1
+	@$(ECHO) "%prep" >> $1
+	@$(ECHO) "# Working directly in source directory" >> $1
+	@$(ECHO) "" >> $1
+	@$(ECHO) "%build" >> $1
+	@$(ECHO) "cd $(abspath $(P))" >> $1
+	@$(ECHO) "make BUILD=%{_builddir} download-external-libs" >> $1
+	@$(ECHO) "make BUILD=%{_builddir} compile-external-libs" >> $1
+	@$(ECHO) "make BUILD=%{_builddir} COMPILATION_MODE=release %{?_smp_mflags}" >> $1
+	@$(ECHO) "" >> $1
+	@$(ECHO) "%install" >> $1
+	@$(ECHO) "cd $(abspath $(P))" >> $1
+	@$(ECHO) "make BUILD=%{_builddir} DESTDIR=%{buildroot} PREFIX=/usr install" >> $1
+	@$(ECHO) "" >> $1
+	@$(ECHO) "%files" >> $1
+	@if [ -n "$(TARGET_BINARY_NAME)" ]; then \
+		$(ECHO) "/usr/bin/$(TARGET_NAME)" >> $1; \
+		$(ECHO) "/usr/bin/$(TARGET_NAME)-$(PROJECT_VERSION)" >> $1; \
+	fi
+	@if [ -n "$(TARGET_SHARED_LIB_NAME)" ]; then \
+		$(ECHO) "/usr/lib/lib$(TARGET_NAME).so" >> $1; \
+		$(ECHO) "/usr/lib/lib$(TARGET_NAME).so.*" >> $1; \
+	fi
+	@if [ -n "$(TARGET_STATIC_LIB_NAME)" ]; then \
+		$(ECHO) "/usr/lib/lib$(TARGET_NAME).a" >> $1; \
+	fi
+	@if [ -n "$(TARGET_PKG_FILE_NAME)" ]; then \
+		$(ECHO) "/usr/lib/pkgconfig/$(TARGET_NAME).pc" >> $1; \
+		$(ECHO) "/usr/lib/pkgconfig/$(TARGET_NAME)-$(PROJECT_VERSION).pc" >> $1; \
+	fi
+	@$(ECHO) "/usr/bin/*demo*" >> $1
+	@$(ECHO) "%dir /usr/include/$(PROJECT_NAME)" >> $1
+	@$(ECHO) "%dir /usr/include/$(PROJECT_NAME)/$(PROJECT_VERSION)" >> $1
+	@$(ECHO) "/usr/include/$(PROJECT_NAME)/$(PROJECT_VERSION)/*" >> $1
+	@$(ECHO) "%dir /usr/share/$(PROJECT_NAME)" >> $1
+	@$(ECHO) "%dir /usr/share/$(PROJECT_NAME)/$(PROJECT_VERSION)" >> $1
+	@$(ECHO) "/usr/share/$(PROJECT_NAME)/$(PROJECT_VERSION)/*" >> $1
+	@$(ECHO) "" >> $1
+	@$(ECHO) "%changelog" >> $1
+	@if [ -f "$(P)/ChangeLog" ]; then \
+		$(ECHO) "# Changelog from ChangeLog file:" >> $1; \
+		head -20 "$(P)/ChangeLog" | sed 's/^/# /' >> $1; \
+	else \
+		$(ECHO) "* $$(date '+%a %b %d %Y') $(USER) <$(USER)@localhost> - $(PROJECT_VERSION)-1" >> $1; \
+		$(ECHO) "- Release $(PROJECT_VERSION)" >> $1; \
+	fi
 endef
 
 ###############################################################################
@@ -1177,7 +1243,7 @@ ifdef THIRD_PARTIES_LIBS
 endif
 	$(Q)$(RM) $@ 2>/dev/null || true
 	$(Q)$(CD) $(abspath $(OBJS_ROOT_DIR)) && \
-    $(AR) $(ARFLAGS) $@ $(patsubst $(abspath $(BUILD_DIR)/objs)/%,%,$(abspath $(LIB_OBJS) $(EXTRACTED_OBJS))) && \
+    $(AR) $(ARFLAGS) $@ $(patsubst $(abspath $(BUILD_PATH)/objs)/%,%,$(abspath $(LIB_OBJS) $(EXTRACTED_OBJS))) && \
     ranlib $@ || ($(RM) $@; exit 1)
 endif
 
@@ -1394,7 +1460,7 @@ clean-downloads:
 .PHONY: veryclean
 veryclean::
 	@$(call print-simple,Cleaning project,$(PROJECT_NAME))
-	$(Q)$(RM) $(BUILD_DIR) $(GENERATED_DOXYGEN_DIR) $(dir $(GPROF_ANALYSIS) $(COVERAGE_RAPPORT)) 2> /dev/null || true
+	$(Q)$(RM) $(BUILD_PATH) $(GENERATED_DOXYGEN_DIR) $(dir $(GPROF_ANALYSIS) $(COVERAGE_RAPPORT)) 2> /dev/null || true
 	$(Q)$(RM) $(P)/Doxyfile 2>/dev/null || true
 
 ###############################################################################
@@ -1655,6 +1721,27 @@ obs:
 	$(Q)$(SCRIPT_OBS)
 
 ###############################################################################
+#? Build RPM package using auto-generated spec file.
+###############################################################################
+
+.PHONY: rpm
+rpm: $(LIST_MYMAKEFILES)
+	@$(call print-simple,RPM package,$(PROJECT_NAME))
+	$(Q)$(RM) $(RPM_TOPDIR_PATH)
+	$(Q)$(MKDIR) $(RPM_TOPDIR_PATH)/{BUILD,RPMS,SOURCES,SPECS,SRPMS,BUILDROOT}
+	$(Q)$(call CREATE_RPM_SPEC,$(RPM_SPEC_FILE))
+	$(Q)rpmbuild \
+		--dbpath $(RPM_TOPDIR_PATH)/fake-rpmdb \
+		--define "_topdir $(RPM_TOPDIR_PATH)" \
+		--define "_builddir $(RPM_TOPDIR_PATH)/BUILD" \
+		--define "_buildrootdir $(RPM_TOPDIR_PATH)/BUILDROOT" \
+		--define "_prefix /usr" \
+		-bb $(RPM_SPEC_FILE) \
+		--nodeps
+	@$(ECHO_COLOR) "$(GREEN)✔ RPM generated in $(RPM_TOPDIR_PATH)/RPMS/$(COLOR_DEFAULT)"
+	@find $(RPM_TOPDIR_PATH)/RPMS -name "*.rpm" -type f
+
+###############################################################################
 # Git clone third-party libraries helping for the debug.
 ###############################################################################
 
@@ -1701,7 +1788,7 @@ list-variables:
 	@$(ECHO_COLOR) "  $(PURPLE)COMPILER$(COLOR_DEFAULT) = $(COMPILER)"
 	@$(ECHO_COLOR) "  $(PURPLE)OS$(COLOR_DEFAULT) = $(OS)"
 	@$(ECHO_COLOR) "  $(PURPLE)ARCH$(COLOR_DEFAULT) = $(ARCH)"
-	@$(ECHO_COLOR) "  $(PURPLE)BUILD_DIR$(COLOR_DEFAULT) = $(BUILD_DIR)"
+	@$(ECHO_COLOR) "  $(PURPLE)BUILD_PATH$(COLOR_DEFAULT) = $(BUILD_PATH)"
 	@$(ECHO_COLOR) "  $(PURPLE)NPROCS$(COLOR_DEFAULT) = $(NPROCS)"
 
 ###############################################################################
@@ -1726,7 +1813,7 @@ show-paths:
 	@$(ECHO_COLOR) "$(CYAN)Project paths:$(COLOR_DEFAULT)"
 	@$(ECHO_COLOR) "  $(PURPLE)Project root$(COLOR_DEFAULT) = $(P)"
 	@$(ECHO_COLOR) "  $(PURPLE)MyMakefile root$(COLOR_DEFAULT) = $(M)"
-	@$(ECHO_COLOR) "  $(PURPLE)Build directory$(COLOR_DEFAULT) = $(BUILD_DIR)"
+	@$(ECHO_COLOR) "  $(PURPLE)Build directory$(COLOR_DEFAULT) = $(BUILD_PATH)"
 	@$(ECHO_COLOR) "  $(PURPLE)Objects directory$(COLOR_DEFAULT) = $(OBJS_ROOT_DIR)"
 	@$(ECHO_COLOR) "  $(PURPLE)Third-party directory$(COLOR_DEFAULT) = $(THIRD_PARTIES_DIR)"
 	@$(ECHO_COLOR) "  $(PURPLE)Download directory$(COLOR_DEFAULT) = $(DOWNLOAD_DIR)"
@@ -1800,7 +1887,7 @@ format-source-code: ensure-clang-format
 	@$(call print-simple,"Formatting source code",$(PROJECT_NAME))
 	@if command -v clang-format >/dev/null 2>&1; then \
 		find $(P) -name "*.cpp" -o -name "*.hpp" -o -name "*.c" -o -name "*.h" | \
-		grep -v $(BUILD_DIR) | grep -v $(THIRD_PARTIES_DIR) | \
+		grep -v $(BUILD_PATH) | grep -v $(THIRD_PARTIES_DIR) | \
 		xargs clang-format -i; \
 		$(ECHO_COLOR) "$(GREEN)Code formatted successfully$(COLOR_DEFAULT)"; \
 	else \
