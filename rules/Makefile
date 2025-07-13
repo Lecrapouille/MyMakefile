@@ -1175,7 +1175,7 @@ endef
 ###############################################################################
 
 define RULE_CREATE_DOXYFILES
-    $(MKDIR) = $(dir $(GENERATED_DOXYGEN_DIR))
+    $(Q)$(MKDIR) $(dir $(GENERATED_DOXYGEN_DIR))
 	$(CP) $(PATH_MYMAKEFILE_DOXYFILE)/. $(GENERATED_DOXYGEN_DIR)
 	find $(GENERATED_DOXYGEN_DIR) -type f -exec sed -i 's#%VERSION#$(PROJECT_VERSION)#g' {} \;
 	find $(GENERATED_DOXYGEN_DIR) -type f -exec sed -i 's#%TARGET#$(TARGET_NAME)#g' {} \;
