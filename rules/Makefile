@@ -909,8 +909,8 @@ endef
 
 define HELPER_INSTALL_LIST_OF_FOLDERS
 	@$(call print-install,$(TARGET_NAME),$1,$2)
-    $(Q)install -d -m 755 $(foreach d,$1,$2/$(d))
-    $(Q)$(foreach d,$1,cp -fr $(d)/. $2/$(d); )
+    $(Q)install -d -m 755 $(foreach d,$1,$2/$(notdir $(d)))
+    $(Q)$(foreach d,$1,cp -fr $(d)/. $2/$(notdir $(d)); )
 endef
 
 define HELPER_INSTALL_OPTIONAL_FOLDERS
