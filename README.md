@@ -134,7 +134,7 @@ MyMakefile supports compilation for both platforms.
 /media/localhost/<your-application>
 ```
 
-## 📦 Compiling to RPM
+## 📦 Compiling to RPM
 
 ```bash
 make rpm
