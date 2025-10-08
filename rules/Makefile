@@ -461,8 +461,15 @@ define set_optimization_flags
             endif
         endif
         ifeq ($(OS),Linux)
-            USE_BACKWARD := 1
-            USE_DEBUG_MACRO := 1
+            # Only enable backward-cpp for standalone applications, not for libraries
+            # Libraries should not include backward-cpp to avoid symbol conflicts
+            ifndef LIB_FILES
+                USE_BACKWARD := 1
+                USE_DEBUG_MACRO := 1
+            else ifdef SRC_FILES
+                USE_BACKWARD := 1
+                USE_DEBUG_MACRO := 1
+            endif
         endif
     else ifeq ($(COMPILATION_MODE),release)
         OPTIM_FLAGS := -O3 -DNDEBUG -fomit-frame-pointer
