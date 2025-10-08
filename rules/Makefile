@@ -753,8 +753,13 @@ define extract-objs-from-static-libs
 endef
 
 # Else, the user have supposed given some C/C++ file to compile. Check if at least one is present.
+# Exception: if ORCHESTRATOR_MODE or DIRS_WITH_MAKEFILE is defined, this is an orchestrator Makefile that only manages sub-projects
 ifeq ($(strip $(LIB_FILES) $(SRC_FILES)),)
-    $(error Found no C/C++ object files to compile. Please set correctly LIB_DIRS or/and SRC_DIRS)
+    ifndef ORCHESTRATOR_MODE
+      ifndef DIRS_WITH_MAKEFILE
+        $(error Found no C/C++ object files to compile. Please set correctly LIB_DIRS or/and SRC_DIRS, or define ORCHESTRATOR_MODE for orchestrator mode)
+      endif
+    endif
 endif
 
 # Convert C/C++ application files to object files
@@ -837,7 +842,11 @@ DEPFLAGS = -MT $(abspath $@) -MMD -MP -MF $(abspath $(OBJS_ROOT_DIR)/$*.Td)
 POSTCOMPILE = $(MV) $(abspath $(OBJS_ROOT_DIR)/$*.Td) $(abspath $(OBJS_ROOT_DIR)/$*.d) && touch $(abspath $@)
 
 # Create dependency directories if they don't exist
-$(shell $(MKDIR) $(sort $(dir $(patsubst %,%.d,$(basename $(OBJS) $(LIB_OBJS))))))
+ifndef ORCHESTRATOR_MODE
+  ifneq ($(strip $(OBJS) $(LIB_OBJS)),)
+    $(shell $(MKDIR) $(sort $(dir $(patsubst %,%.d,$(basename $(OBJS) $(LIB_OBJS))))))
+  endif
+endif
 
 ###############################################################################
 # Libraries installed on the operating system and known from pkg-config.
@@ -1351,8 +1360,15 @@ endif
 
 .PHONY: creating-build-folder
 creating-build-folder:
+ifndef ORCHESTRATOR_MODE
 	@$(call print-out,Create build folder,$(TARGET_NAME),$(GENERATED_HEADER_PROJECT_INFO))
-	@$(MKDIR) $(addprefix $(OBJS_ROOT_DIR)/,$(BUILD_FOLDERS)) $(DOWNLOAD_DIR)
+  ifneq ($(strip $(BUILD_FOLDERS)),)
+	@$(MKDIR) $(addprefix $(OBJS_ROOT_DIR)/,$(BUILD_FOLDERS))
+  endif
+  ifneq ($(strip $(DOWNLOAD_DIR)),)
+	@$(MKDIR) $(DOWNLOAD_DIR)
+  endif
+endif
 
 ###############################################################################
 # Generate a header file with the project information.
