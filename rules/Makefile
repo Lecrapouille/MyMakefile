@@ -1260,7 +1260,7 @@ endif
 	$(Q)$(RM) $@ 2>/dev/null || true
 	$(Q)$(CD) $(abspath $(OBJS_ROOT_DIR)) && \
     $(AR) $(ARFLAGS) $@ $(patsubst $(abspath $(BUILD_PATH)/objs)/%,%,$(abspath $(LIB_OBJS) $(EXTRACTED_OBJS))) && \
-    ranlib $@ || ($(RM) $@; exit 1)
+    ranlib $@
 endif
 
 ###############################################################################
@@ -1272,7 +1272,7 @@ $(TARGET_SHARED_LIB_NAME): | $(TARGET_STATIC_LIB_NAME)
 $(TARGET_SHARED_LIB_NAME): $(LIB_OBJS) $(INTERNAL_LIBS) $(LIST_MYMAKEFILES) $(DIRS_WITH_MAKEFILE)
 	@$(call print-to,"Creating shared library","$(TARGET_NAME)","$@")
 	@$(MKDIR) $(dir $@)
-	$(Q)$(COMPILER) $(LDFLAGS) $(DLL_LDFLAGS) -o $@ $(abspath $(LIB_OBJS)) $(LINKER_ALL_LOAD) $(THIRD_PARTIES_LIBS) $(INTERNAL_LIBS) $(NOT_PKG_LIBS) $(PKGCFG_LIBS) $(LINKER_NO_ALL_LOAD) $(LINKER_FLAGS) $(USER_LDFLAGS) || ($(RM) $@; exit 1)
+	$(Q)$(COMPILER) $(LDFLAGS) $(DLL_LDFLAGS) -o $@ $(abspath $(LIB_OBJS)) $(LINKER_ALL_LOAD) $(THIRD_PARTIES_LIBS) $(INTERNAL_LIBS) $(NOT_PKG_LIBS) $(PKGCFG_LIBS) $(LINKER_NO_ALL_LOAD) $(LINKER_FLAGS) $(USER_LDFLAGS)
 endif
 
 ###############################################################################
@@ -1293,7 +1293,7 @@ ifdef OBJS
 $(TARGET_BINARY_NAME): $(OBJS) $(INTERNAL_LIBS) $(LIST_MYMAKEFILES) $(DIRS_WITH_MAKEFILE)
 	@$(call print-to,Linking,$(TARGET_NAME),$@)
 	@$(MKDIR) $(dir $@)
-	$(Q)$(COMPILER) $(LDFLAGS) $(OBJS) $(THIRD_PARTIES_OBJS) -o $(TARGET_BINARY_NAME) $(THIRD_PARTIES_LIBS) $(INTERNAL_LIBS) $(NOT_PKG_LIBS) $(PKGCFG_LIBS) $(LINKER_FLAGS) $(USER_LDFLAGS) || ($(RM) $(TARGET_BINARY_NAME); exit 1)
+	$(Q)$(COMPILER) $(LDFLAGS) $(OBJS) $(THIRD_PARTIES_OBJS) -o $(TARGET_BINARY_NAME) $(THIRD_PARTIES_LIBS) $(INTERNAL_LIBS) $(NOT_PKG_LIBS) $(PKGCFG_LIBS) $(LINKER_FLAGS) $(USER_LDFLAGS)
 ifdef STRIP
 	@$(call print-to,Stripping,$(TARGET_NAME),$@)
 	$(Q)$(STRIP) $(TARGET_BINARY_NAME) || $(ECHO_COLOR) "$(YELLOW)Warning: Failed to strip symbols$(COLOR_DEFAULT)"
@@ -1312,7 +1312,7 @@ endif
 $(OBJS_ROOT_DIR)/%.o: %.cpp $(OBJS_ROOT_DIR)/%.d $(LIST_MYMAKEFILES) $(INTERNAL_LIBS) $(DEPS_DEBUG_LIBS) | $(OBJS_ROOT_DIR)
 	@$(call progress-in,Compiling C++,$(TARGET_NAME),$<)
 	@$(MKDIR) $(dir $@)
-	$(Q)$(CXX) $(CXX_STANDARD) $(DEPFLAGS) $(CXXFLAGS) $(PKGCFG_CFLAGS) $(OPTIM_FLAGS) $(DEFINES) $(INCLUDES) $(USER_CXXFLAGS) -c $(abspath $<) -o $(abspath $@) || ($(RM) $(abspath $@); exit 1)
+	$(Q)$(CXX) $(CXX_STANDARD) $(DEPFLAGS) $(CXXFLAGS) $(PKGCFG_CFLAGS) $(OPTIM_FLAGS) $(DEFINES) $(INCLUDES) $(USER_CXXFLAGS) -c $(abspath $<) -o $(abspath $@)
 	@$(POSTCOMPILE)
 
 ###############################################################################
@@ -1323,7 +1323,7 @@ $(OBJS_ROOT_DIR)/%.o: %.cpp $(OBJS_ROOT_DIR)/%.d $(LIST_MYMAKEFILES) $(INTERNAL_
 $(OBJS_ROOT_DIR)/%.o: %.c $(OBJS_ROOT_DIR)/%.d $(LIST_MYMAKEFILES) $(INTERNAL_LIBS) $(DEPS_DEBUG_LIBS) | $(OBJS_ROOT_DIR)
 	@$(call progress-in,Compiling C,$(TARGET_NAME),$<)
 	@$(MKDIR) $(dir $@)
-	$(Q)$(CC) $(DEPFLAGS) $(CCFLAGS) $(PKGCFG_CFLAGS) $(OPTIM_FLAGS) $(DEFINES) $(INCLUDES) $(USER_CCFLAGS) -c $(abspath $<) -o $(abspath $@) || ($(RM) $(abspath $@); exit 1)
+	$(Q)$(CC) $(DEPFLAGS) $(CCFLAGS) $(PKGCFG_CFLAGS) $(OPTIM_FLAGS) $(DEFINES) $(INCLUDES) $(USER_CCFLAGS) -c $(abspath $<) -o $(abspath $@)
 	@$(POSTCOMPILE)
 
 ###############################################################################
@@ -1334,13 +1334,13 @@ ifdef ENABLE_ASM_SUPPORT
 $(OBJS_ROOT_DIR)/%.o: %.s $(OBJS_ROOT_DIR)/%.d $(LIST_MYMAKEFILES) | $(OBJS_ROOT_DIR)
 	@$(call progress-in,Assembling,$(TARGET_NAME),$<)
 	@$(MKDIR) $(dir $@)
-	$(Q)$(CC) $(DEPFLAGS) $(CCFLAGS) $(DEFINES) $(INCLUDES) -c $(abspath $<) -o $(abspath $@) || ($(RM) $(abspath $@); exit 1)
+	$(Q)$(CC) $(DEPFLAGS) $(CCFLAGS) $(DEFINES) $(INCLUDES) -c $(abspath $<) -o $(abspath $@)
 	@$(POSTCOMPILE)
 
 $(OBJS_ROOT_DIR)/%.o: %.S $(OBJS_ROOT_DIR)/%.d $(LIST_MYMAKEFILES) | $(OBJS_ROOT_DIR)
 	@$(call progress-in,Assembling,$(TARGET_NAME),$<)
 	@$(MKDIR) $(dir $@)
-	$(Q)$(CC) $(DEPFLAGS) $(CCFLAGS) $(DEFINES) $(INCLUDES) -c $(abspath $<) -o $(abspath $@) || ($(RM) $(abspath $@); exit 1)
+	$(Q)$(CC) $(DEPFLAGS) $(CCFLAGS) $(DEFINES) $(INCLUDES) -c $(abspath $<) -o $(abspath $@)
 	@$(POSTCOMPILE)
 endif
 
@@ -1440,7 +1440,7 @@ ifeq ($(abspath .), $(abspath $(P)))
 else
 	@$(call print-simple,Cleaning target,$(TARGET_NAME))
 endif
-	$(Q)$(RM) $(BUILD_PATH) 2> /dev/null || true
+	$(Q)$(RM) $(BUILD_PATH) compile_commands.json 2> /dev/null || true
 ifdef DIRS_WITH_MAKEFILE
 	$(Q)for d in $(DIRS_WITH_MAKEFILE); do \
 	$(MAKE) --no-print-directory $(addprefix --directory=,$$d) clean; \
