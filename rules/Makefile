@@ -115,7 +115,7 @@ endif
 #  - folder local to the executable (maybe read-only access).
 ###############################################################################
 
-SEARCH_DATA_PATHS := $(INSTALL_LOCAL_PROJECT_DATA_DIR):$(INSTALL_PROJECT_DIR)/$(DATA_FOLDER_NAME):$(PROJECT_DATA_DIR):.
+SEARCH_DATA_PATHS := $(INSTALL_LOCAL_PROJECT_DATA_DIR):$(INSTALL_PROJECT_DIR)/$(DATA_FOLDER_NAME):.
 ifeq ($(COMPILATION_MODE),debug)
     SEARCH_DATA_PATHS := $(PROJECT_DATA_DIR):$(SEARCH_DATA_PATHS)
 endif
