@@ -350,7 +350,9 @@ GPROF_ANALYSIS ?= $(PROJECT_GENERATED_DOC_DIR)/profiling/analysis.txt
 GPROF_ANALYSIS_FOLDER := $(dir $(GPROF_ANALYSIS))
 
 #? Path of the generated code coverage report
-COVERAGE_RAPPORT ?= $(PROJECT_GENERATED_DOC_DIR)/code-coverage/coverage.html
+COVERAGE_DIR ?= $(PROJECT_GENERATED_DOC_DIR)/code-coverage
+COVERAGE_HTML_RAPPORT ?= $(COVERAGE_DIR)/coverage.html
+COVERAGE_LCOV_RAPPORT ?= $(COVERAGE_DIR)/lcov.info
 
 #? Define the directory holding project data.
 DATA_FOLDER_NAME ?= data

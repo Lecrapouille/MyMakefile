@@ -1455,7 +1455,7 @@ endif
 veryclean::
 	@$(call print-simple,Deep cleaning project,$(PROJECT_NAME))
 	$(Q)$(RM) $(BUILD_PATH) $(GENERATED_DOXYGEN_DIR) 2> /dev/null || true
-	$(Q)$(RM) $(dir $(GPROF_ANALYSIS) $(COVERAGE_RAPPORT)) 2> /dev/null || true
+	$(Q)$(RM) $(dir $(GPROF_ANALYSIS)) $(COVERAGE_DIR) 2> /dev/null || true
 	$(Q)$(RM) $(P)/Doxyfile 2>/dev/null || true
 ifneq ("$(wildcard $(PROJECT_MANIFEST_THIRD_PARTIES))","")
 	$(Q)while IFS= read -r line; do \
@@ -1696,10 +1696,12 @@ gprof: check-compiled-with-gprof run
 coverage: all
 	@$(call print-to,Running,$(PROJECT_NAME),$(abspath $(TARGET_BINARY_NAME)))
 	$(Q)$(TARGET_BINARY_NAME)
-	@$(call print-to,Coverage report,$(abspath $(TARGET_BINARY_NAME)),$(COVERAGE_RAPPORT))
-	$(Q)$(MKDIR) $(dir $(COVERAGE_RAPPORT))
-	$(Q)gcovr --root $(P) --object-directory $(OBJS_ROOT_DIR) --html-details $(COVERAGE_RAPPORT) -e '/usr/*' --exclude-directories $(THIRD_PARTIES_DIR)
-	$(Q)xdg-open $(COVERAGE_RAPPORT) >/dev/null
+	@$(call print-to,Coverage report,$(abspath $(TARGET_BINARY_NAME)),$(COVERAGE_HTML_RAPPORT))
+	$(Q)$(MKDIR) $(dir $(COVERAGE_HTML_RAPPORT))
+	$(Q)gcovr --root $(P) --object-directory $(OBJS_ROOT_DIR) --html-details $(COVERAGE_HTML_RAPPORT) -e '/usr/*' --exclude-directories $(THIRD_PARTIES_DIR)
+	$(Q)gcovr --root $(P) --object-directory $(OBJS_ROOT_DIR) --lcov $(COVERAGE_LCOV_RAPPORT) -e '/usr/*' --exclude-directories $(THIRD_PARTIES_DIR)
+	$(Q)sed -i 's|$(abspath $(P))/||g' $(COVERAGE_LCOV_RAPPORT)
+	$(Q)xdg-open $(COVERAGE_HTML_RAPPORT) >/dev/null
 
 ###############################################################################
 #? Create a tarball for Coverity Scan a static analysis of code.
