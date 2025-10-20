@@ -1440,7 +1440,7 @@ ifeq ($(abspath .), $(abspath $(P)))
 else
 	@$(call print-simple,Cleaning target,$(TARGET_NAME))
 endif
-	$(Q)$(RM) $(BUILD_PATH) compile_commands.json 2> /dev/null || true
+	$(Q)$(RM) $(BUILD_PATH) 2> /dev/null || true
 ifdef DIRS_WITH_MAKEFILE
 	$(Q)for d in $(DIRS_WITH_MAKEFILE); do \
 	$(MAKE) --no-print-directory $(addprefix --directory=,$$d) clean; \
@@ -1456,7 +1456,7 @@ veryclean::
 	@$(call print-simple,Deep cleaning project,$(PROJECT_NAME))
 	$(Q)$(RM) $(BUILD_PATH) $(GENERATED_DOXYGEN_DIR) 2> /dev/null || true
 	$(Q)$(RM) $(dir $(GPROF_ANALYSIS)) $(COVERAGE_DIR) 2> /dev/null || true
-	$(Q)$(RM) $(P)/Doxyfile 2>/dev/null || true
+	$(Q)$(RM) $(P)/Doxyfile compile_commands.json 2>/dev/null || true
 ifneq ("$(wildcard $(PROJECT_MANIFEST_THIRD_PARTIES))","")
 	$(Q)while IFS= read -r line; do \
 		if [ -n "$$line" ] && [ "$${line#\#}" = "$$line" ]; then \
