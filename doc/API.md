@@ -25,7 +25,7 @@ foobar:
     ...
 ```
 
-### Example (Console Output)
+### Example
 
 ```bash
 > make help
@@ -48,13 +48,13 @@ The following variables can be combined for enhanced debugging:
 - `VERBOSE` (or `V`): When set, displays Makefile rules content during execution
 - `DEBUG` (or `D`): When set, shows shell commands during execution
 
-Best practice is to modify these when calling make, and they can be combined with other makefile debug options:
+Best practice is to add them, combined with other makefile debug options:
 
 - `--warn-undefined-variables`
 - `--just-print`
 - `--print-data-base`
 
-### Example (Console)
+### Example
 
 ```bash
 > V=1 D=1 make all --warn-undefined-variables
@@ -70,7 +70,7 @@ You can override the default C/C++ compiler settings. It's recommended to set th
 
 **Note:** Additional variables can be overridden. Use `make help` to view all available options.
 
-### Example (Console)
+### Example
 
 ```bash
 > make CXX=clang++ all
@@ -80,22 +80,21 @@ You can override the default C/C++ compiler settings. It's recommended to set th
 
 The following mandatory variables must be defined before including `project/Makefile` and at the top of your Makefile:
 
-- `P`: Local path to project root (typically `P := .` for top-level Makefiles)
-- `M`: Local path to MyMakefile root (suggested: `M := $(P)/.makefile`)
-- `PROJECT_NAME`: Project identifier (used for installation paths)
-- `PROJECT_VERSION`: Version number in `major.minor.patch` format
-- `TARGET_NAME`: Executable or library target name
-- `TARGET_DESCRIPTION`: Brief project description
-- `COMPILATION_MODE`: Build mode selection
-  - `release`: No debug symbols, stripped binary
-  - `debug`: GDB symbols with stack trace on segfault
-  - `normal`: GDB symbols without stack trace
-  - `test`: Debug mode with code coverage (for unit testing)
+- `P`: Local path to project root. Typically `P := .` for the root Makefile but can be `P := ../..` for nested folder. The local path is converted to absolute path by MyMakefile.
+- `M`: Local path to MyMakefile root (suggested: `M := $(P)/.makefile`).
+- `PROJECT_NAME`: Project identifier (used when your project is installed on your system).
+- `PROJECT_VERSION`: Version number in `major.minor.patch` format.
+- `TARGET_NAME`: Executable or library target name (library or standalone application).
+- `TARGET_DESCRIPTION`: Brief project description (used for documentation, pkg-config, RPMs).
+- `COMPILATION_MODE`: Build mode selection.
+  - `release`: No debug symbols, stripped binary.
+  - `debug`: GDB symbols with stack trace on segfault.
+  - `normal`: GDB symbols without stack trace.
+  - `test`: Debug mode with code coverage (for unit testing).
 
 Optional variables:
 
-- `FORCE_LOWER_CASE`: When set, forces `PROJECT_NAME` and `TARGET_NAME` to lowercase. Useful when you used 'title case' convention but you want to install on operating system that need
-lower case (i.e. RedHat). 
+- `FORCE_LOWER_CASE`: When set, forces `PROJECT_NAME` and `TARGET_NAME` to lowercase. Useful when you used 'title case' convention but you want to install on operating system that need lower case (i.e. RedHat). 
 
 ### Example (Makefile)
 
@@ -117,13 +116,13 @@ include $(M)/project/Makefile
 
 Optional configuration variables for project structure (define before including `project/Makefile`):
 
-- `BUILD`: Build artifacts directory (default: `build`)
-- `THIRD_PARTIES`: Third-party libraries directory (default: `external`)
-- `PROJECT_DATA`: Project data directory (default: `data`)
-- `DOC_FOLDER_NAME`: Documentation directory (default: `doc`)
-- `PROJECT_GENERATED_DOC`: Generated documentation directory (default: `doc`)
-- `PROJECT_TESTS`: Unit tests directory (default: `tests`)
-- `PROJECT_TEMP_DIR`: Temporary files directory (default: `$(TMPDIR)/$(PROJECT_NAME)/$(PROJECT_VERSION)`)
+- `BUILD`: Build artifacts directory (default: `build`).
+- `THIRD_PARTIES`: Third-party libraries directory (default: `external`).
+- `PROJECT_DATA`: Project data directory (default: `data`).
+- `DOC_FOLDER_NAME`: Documentation directory (default: `doc`).
+- `PROJECT_GENERATED_DOC`: Generated documentation directory (default: `doc`).
+- `PROJECT_TESTS`: Unit tests directory (default: `tests`).
+- `PROJECT_TEMP_DIR`: Temporary files directory (default: `$(TMPDIR)/$(PROJECT_NAME)/$(PROJECT_VERSION)`).
 
 ### Repository Cloning Syntax
 

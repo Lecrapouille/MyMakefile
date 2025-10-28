@@ -1,34 +1,39 @@
 # MyMakefile
 
-[MyMakefile](https://github.com/Lecrapouille/MyMakefile) is a build system based on GNU Make for C++ projects. It serves as an alternative to CMake for medium-sized projects, eliminating the need to write complex Makefile rules from scratch.
+[MyMakefile](https://github.com/Lecrapouille/MyMakefile) is a build system based on GNU Make for C++ projects. It eliminates the need to write complex Makefile rules from scratch by offering plenty of rules and macros.
+
+**Note:** I no longer develop in C but MyMakefile should also works.
 
 ## 🤔 Why MyMakefile?
 
-While CMake is a popular choice, MyMakefile offers several advantages for smaller projects:
+While CMake is a popular choice, MyMakefile serves as an alternative to CMake for medium-sized projects. Indeed, it offers several advantages for smaller C++ projects:
 
-- **Simplicity**: No complex syntax or obscure function names
-- **Transparency**: Direct control over the build process
-- **Efficiency**: Smaller, more readable Makefiles
-- **Modern Features**: All the tools you need without the complexity
+- **Simplicity**: No complex CMake syntax or its obscure function names.
+- **Efficiency**: Smaller code you have to write, more readable Makefiles.
+- **Modern Features**: Call engineer tools you usually need without the complexity.
+
+**Limitations:** MyMakefile does not support several targets in a single Makefile file but you can achieve a project mixing generating several libraries, standalone applications, demos.
 
 ## 🌟 MyMakefile Goals
 
 - Encapsulate all complex Makefile rules in two files that you can include in your project, handling:
-  - File compilation
-  - Application bundling (including macOS bundles)
-  - Shared/static library management
-  - System installation
-  - Documentation generation
+  - C++ file compilation.
+  - Has a small manifest files to download third-parties libraries.
   - Compilation flag management
-  - pkg-config integration
-  - RPM creation
-- Define your project structure in just a few lines of Makefile syntax
-- Let MyMakefile handle all the complex build rules for you
+  - Application bundling (including macOS bundles).
+  - Shared/static library creation (contrary to CMake both are created).
+  - Installation on your system (header files, doc, libraries).
+  - Creation/installation of pkg-config files.
+  - Documentation generation (doxygen).
+  - Call unit-tests and launch code coverage.
+  - RPM creation.
+- Define your project structure in just a few lines of Makefile syntax.
+- Let MyMakefile handle all the complex build rules for you.
 
 ## 🌐 Cross-Platform Support
 
 - 🐧 Linux
-- 🍎 macOS
+- 🍎 Mac OS
 - ~~🪟 Windows~~ (not yet supported)
 - 🌐 [Emscripten](https://emscripten.org)
 - 🧸 [ExaequOS](https://www.exaequos.com)
@@ -36,6 +41,8 @@ While CMake is a popular choice, MyMakefile offers several advantages for smalle
 ## 🚀 Quick Start
 
 1. **Include MyMakefile in your project**:
+
+Either you copy directly this repo in your project or better to include it as submodule.
 
 ```bash
 # Option 1: Copy-paste
@@ -45,12 +52,12 @@ cp -r MyMakefile your-project/.makefile
 git submodule add https://github.com/Lecrapouille/MyMakefile.git .makefile
 ```
 
-The dot prefix allows you to hide MyMakefile in your project, but it's not mandatory.
+The dot prefix allows you to hide MyMakefile in your project, but it's not mandatory. The folder name is up to you.
 
-2. **Create your Makefile**:
+2. **Create your first Makefile**:
 
 ```makefile
-# Relative location of your project root folder P and MyMakefiles folder M
+# Relative location of your project root folder P and MyMakefile folder M
 P := .
 M := $(P)/.makefile
 
@@ -64,7 +71,7 @@ TARGET_DESCRIPTION := brief explanation of the target
 COMPILATION_MODE := release
 CXX_STANDARD := --std=c++14
 
-# Include MyMakefiles project file after your project definition
+# Include MyMakefile project file after your project definition
 include $(M)/project/Makefile
 
 # Define what and how to compile your target
@@ -72,20 +79,33 @@ INCLUDES := $(P)/include $(P)/src
 VPATH := $(P)/src
 DEFINES :=
 SRC_FILES += src/main.cpp
+# For compiling a library replace SRC_FILES by LIB_FILES
 
-# Include MyMakefiles rules file after your project configuration
+# Include MyMakefile rules file after your project configuration
 include $(M)/rules/Makefile
 
 # Optionally: add your custom Makefile rules here
 ```
 
-3. **Build your project**:
+First you shall define macros P and M. P indicates the relative path to the root project. M indicates where to find MyMakefile folder.
+
+The project definition is mandatory and allows you to define your project name and the target name (which is either a stand-alone application or library). You have to define a description to your target and a version to your project.
+
+Compilation definitions is up to you: release, debug, unit test as well as the C++ standard.
+
+You have to include the two MyMakefile files at the correct location in your makefile. One sets variables for your project and the other defines Makefile rules. As consequence, order and position matters.
+
+Finally, you can give options to your compiler for finding C++ sources and header files, define project macros and the list of C++ files to compile.
+
+1. **Build your project**:
 
 ```bash
-make help         # Show all available options
-make              # Start compilation
-make install      # Install your project on your system
+make help                     # Show all available options
+make [OPTIONS1]               # Start compilation
+sudo make install [OPTIONS2]  # Install your project on your system
 ```
+
+Like traditional makefile you can pass OPTIONS1 to makefile, for example which compiler you prefer (CXX). OPTIONS define where to install your project on your system.
 
 ## 📚 Projects Using MyMakefile
 
@@ -101,18 +121,20 @@ Here are some of my projects that use MyMakefile instead of CMake:
 - ♟️ [ChessNeuNeu](https://github.com/Lecrapouille/ChessNeuNeu)
 - 🔗 [LinkAgainstMyLibs](https://github.com/Lecrapouille/LinkAgainstMyLibs)
 
+**Note:** They may not refer to the HEAD of MyMakefile and may use old syntax.
+
 ## 📋 Prerequisites
 
 - 🐚 Bash interpreter (MyMakefile requires some bash assistance)
 - 🛠️ Optional tools, called by MyMakefile:
-  - `g++` or `clang++` (for compilation)
-  - `gcovr` (for code coverage)
-  - `doxygen` (for documentation)
+  - `g++` or `clang++` (for compilation).
+  - `gcovr` (for code coverage).
+  - `doxygen` (for documentation).
+  - `git` (for downloading third-parties).
 
 ## 🔧 Compiling for ExaequOS
 
-[ExaequOS](https://www.exaequos.com) is a fork of [Emscripten](https://emscripten.org).
-MyMakefile supports compilation for both platforms.
+[ExaequOS](https://www.exaequos.com) is a fork of [Emscripten](https://emscripten.org). MyMakefile supports compilation for both platforms.
 
 1. Install the ExaequOS Docker image:
 
