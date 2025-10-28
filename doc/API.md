@@ -25,7 +25,7 @@ foobar:
     ...
 ```
 
-### Example
+### Example (make help output)
 
 ```bash
 > make help
@@ -54,7 +54,7 @@ Best practice is to add them, combined with other makefile debug options:
 - `--just-print`
 - `--print-data-base`
 
-### Example
+### Example (debugging)
 
 ```bash
 > V=1 D=1 make all --warn-undefined-variables
@@ -70,7 +70,7 @@ You can override the default C/C++ compiler settings. It's recommended to set th
 
 **Note:** Additional variables can be overridden. Use `make help` to view all available options.
 
-### Example
+### Example (compiler override)
 
 ```bash
 > make CXX=clang++ all
@@ -86,17 +86,22 @@ The following mandatory variables must be defined before including `project/Make
 - `PROJECT_VERSION`: Version number in `major.minor.patch` format.
 - `TARGET_NAME`: Executable or library target name (library or standalone application).
 - `TARGET_DESCRIPTION`: Brief project description (used for documentation, pkg-config, RPMs).
+- `AUTHOR`: Project author name (default: git user or system user).
+- `LICENSE`: Default license for RPM packages (default: `MIT`). Shall match your license file!
 - `COMPILATION_MODE`: Build mode selection.
   - `release`: No debug symbols, stripped binary.
   - `debug`: GDB symbols with stack trace on segfault.
   - `normal`: GDB symbols without stack trace.
   - `test`: Debug mode with code coverage (for unit testing).
+  - `release-with-debug`: Optimized build (O2) with debug symbols.
+  - `size`: Optimize for minimal binary size (Os with LTO and garbage collection).
+  - `fast`: Maximum performance optimizations (Ofast with unsafe math).
 
 Optional variables:
 
-- `FORCE_LOWER_CASE`: When set, forces `PROJECT_NAME` and `TARGET_NAME` to lowercase. Useful when you used 'title case' convention but you want to install on operating system that need lower case (i.e. RedHat). 
+- `FORCE_LOWER_CASE`: When set, forces `PROJECT_NAME` and `TARGET_NAME` to lowercase. Useful when you used 'title case' convention but you want to install on operating system that need lower case (i.e. RedHat).
 
-### Example (Makefile)
+### Example (project configuration)
 
 ```makefile
 P := .
@@ -124,23 +129,25 @@ Optional configuration variables for project structure (define before including 
 - `PROJECT_TESTS`: Unit tests directory (default: `tests`).
 - `PROJECT_TEMP_DIR`: Temporary files directory (default: `$(TMPDIR)/$(PROJECT_NAME)/$(PROJECT_VERSION)`).
 
-### Repository Cloning Syntax
+### Third-parties Repository Cloning Syntax
 
 The manifest file (default: `external/manifest`) supports the following syntax for cloning repositories:
 
-```
+```text
 user/repo[:recurse][@ref]
 ```
 
 Where:
+
 - `user/repo`: GitHub repository path
 - `:recurse`: Optional flag to clone submodules recursively
 - `@ref`: Optional reference (branch, tag, or commit hash)
 
 Examples:
-```
+
+```text
 # Clone specific commit
-lecrapouille/Dimension3D@a6579ecf5f58e9c0ae95edaac790526e024c59f6
+SFML/SFML@a6579ecf5f58e9c0ae95edaac790526e024c59f6
 
 # Clone specific branch
 ocornut/imgui@docking
@@ -155,7 +162,7 @@ SFML/imgui-sfml:recurse@2.6.x
 SFML/SFML
 ```
 
-### Example (Makefile)
+### Example (project structure configuration)
 
 ```makefile
 P := .
@@ -168,10 +175,10 @@ TARGET_DESCRIPTION := This is a real super project
 COMPILATION_MODE := release
 
 BUILD := out
-THIRD_PARTIES := thirdparties
-PROJECT_DATA := demo/data
-PROJECT_DOC_DIR := docs
-PROJECT_GENERATED_DOC := docs/gen
+THIRD_PARTIES_FOLDER_NAME := thirdparties
+DATA_FOLDER_NAME := demo/data
+DOC_FOLDER_NAME := docs
+PROJECT_GENERATED_FOLDER_NAME := docs/gen
 PROJECT_TESTS := check
 
 include $(M)/project/Makefile
@@ -187,7 +194,7 @@ Optional compiler and linker settings (define before including `project/Makefile
 - `USER_CCFLAGS`: Override default C compilation flags
 - `USER_LDFLAGS`: Override default linker flags
 
-### Example (Makefile)
+### Example (C++ standard and flags)
 
 ```makefile
 P := .
@@ -200,19 +207,38 @@ TARGET_DESCRIPTION := This is a real super project
 COMPILATION_MODE := release
 
 CXX_STANDARD := --std=c++11
-USER_CXX_FLAGS := -Wno-old-style-cast
+USER_CXXFLAGS := -Wno-old-style-cast
 
 include $(M)/project/Makefile
 ```
 
+## Main Makefile
+
+If your main Makefile does not compile files but just launching Makefiles for compiling other internal libraries add the following line:
+
+```makefile
+ORCHESTRATOR_MODE := 1
+```
+
+## Compiling static and shared libraries
+
+The following optional variables can be defined before including `project/Makefile`:
+
+- Use `LIB_FILES` instead of SRC_FILES. Do not add `lib` to TARGET_NAME because MyMakefile will manage it.
+- `PREVENT_SHARED_LIB_UNLOAD`: Use nodelete flag for shared libraries to prevent unloading (default: unset).
+- `CUSTOM_RPATH`: Custom runtime library search paths, colon-separated (default: unset).
+- `DO_NOT_COMPILE_STATIC_LIB`: Skip static library compilation (default: unset).
+- `DO_NOT_COMPILE_SHARED_LIB`: Skip shared library compilation (default: unset).
+
 ## Documentation Configuration
 
-- `DOXYGEN_INPUTS`: Doxygen input files
+- `DOXYGEN_INPUTS`: Doxygen input files (default: `$(P)/README.md $(P)/src $(P)/include`)
 - `GENERATED_DOXYGEN_DIR`: Doxygen output directory (default: `$(PROJECT_GENERATED_DOC_DIR)/doxygen`)
 - `GPROF_ANALYSIS`: Profiling analysis output (default: `$(PROJECT_GENERATED_DOC_DIR)/profiling/analysis.txt`)
-- `COVERAGE_RAPPORT`: Code coverage report location
-- `MACOS_BUNDLE_ICON`: macOS application bundle icon
-- `PATH_PROJECT_LOGO`: Project logo path
+- `COVERAGE_HTML_RAPPORT`: Code coverage HTML report location (default: `$(COVERAGE_DIR)/coverage.html`)
+- `COVERAGE_LCOV_RAPPORT`: Code coverage LCOV report location (default: `$(COVERAGE_DIR)/lcov.info`)
+- `MACOS_BUNDLE_ICON`: macOS application bundle icon (default: `$(M)/assets/$(DATA_FOLDER_NAME)/macos.icns`)
+- `PATH_PROJECT_LOGO`: Project logo path (default: `$(M)/assets/icons/logo.png`)
 
 ## System Information
 
@@ -234,15 +260,73 @@ System-specific extensions:
 
 ## Makefile Rules
 
-### Profiling
+### Build Targets
+
+- `all`: Compile the standalone application or static/shared libraries (default target)
+- `pre-build`: Pre-build hook for custom actions before the build process
+- `post-build`: Post-build hook for custom actions after the build process
+- `rebuild`: Clean and rebuild (alias for `veryclean all`)
+- `run`: Execute the compiled application with optional arguments (e.g., `make run -- --arg1 --arg2`)
+
+### Code Quality Targets
+
+- `format-source-code`: Format source code using clang-format
+- `lint`: Run static analysis with cppcheck
+- `check-harden`: Check if binary has security hardening enabled
+
+### Diagnostic Targets
+
+- `compiler-info`: Display the compiler version and information
+- `target`: Display the description of the project
+- `project-version`: Display the version of the project
+- `project-name`: Display the name of the project
+- `target-name`: Display the name of the target
+- `target-description`: Display the description of the target
+- `compilation-mode`: Display the compilation mode of the project
+- `cxx-standard`: Display the C++ standard used
+- `list-variables`: List all key project variables
+- `list-targets`: List all available targets
+- `show-flags`: Display compilation flags
+- `show-paths`: Display project paths
+- `check-deps`: Check if required dependencies are installed
+- `build-stats`: Show build statistics (file counts, etc.)
+- `size-analysis`: Show binary/library size analysis
+
+### Profiling Targets
 
 ```bash
 make USE_GPROF=1 gprof
+make USE_GPROF=1 check-compiled-with-gprof
 ```
+
+Profiling analysis is generated to `$(GPROF_ANALYSIS)` location.
+
+### Testing Targets
+
+- `check` or `tests`: Run unit tests with code coverage
+- `coverage`: Generate code coverage report (HTML and LCOV formats)
+- `asan`: Run with address sanitizer (requires `USE_ASAN=1`)
+- `benchmark`: Run performance benchmark
+
+### Packaging Targets
+
+- `tarball`: Compress project sources for backup or sharing
+- `rpm`: Build RPM package using auto-generated spec file
+- `coverity-scan`: Create a tarball for Coverity Scan static analysis
+- `obs`: Create an uploadable tarball for the OpenSuse Build Service
+
+### Clean Targets
+
+- `clean`: Clean the build folder
+- `veryclean`: Deep clean (build, third-parties, documentation, and generated files)
+
+### Install Targets
+
+- `install`: Install the project artifacts on the operating system
 
 ## GNU Standard Installation Paths
 
-Following the GNU standards (https://www.gnu.org/prep/standards/html_node/Directory-Variables.html):
+Following the [GNU standards](https://www.gnu.org/prep/standards/html_node/Directory-Variables.html):
 
 - `DESTDIR`: Installation root (default: empty)
 - `PREFIX`: Installation prefix (default: `/usr/local`)
@@ -263,6 +347,8 @@ Following the GNU standards (https://www.gnu.org/prep/standards/html_node/Direct
 
 ## Common Commands
 
-- `make run`: Execute the compiled application (for non-library projects)
+- `make help`: Show all available targets and variables
+- `make doc`: Generate documentation with Doxygen- `make run`: Execute the compiled application (for non-library projects)
 - `make run -- your list -of --arguments`: Run with command-line arguments
-- **Note:** For Emscripten, this will launch your web browser
+- `make doc`: Generate documentation with Doxygen
+- **Note:** For Emscripten, the `run` command will launch your web browser

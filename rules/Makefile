@@ -753,13 +753,17 @@ define extract-objs-from-static-libs
 endef
 
 # Else, the user have supposed given some C/C++ file to compile. Check if at least one is present.
-# Exception: if ORCHESTRATOR_MODE or DIRS_WITH_MAKEFILE is defined, this is an orchestrator Makefile that only manages sub-projects
-ifeq ($(strip $(LIB_FILES) $(SRC_FILES)),)
-    ifndef ORCHESTRATOR_MODE
-      ifndef DIRS_WITH_MAKEFILE
-        $(error Found no C/C++ object files to compile. Please set correctly LIB_DIRS or/and SRC_DIRS, or define ORCHESTRATOR_MODE for orchestrator mode)
-      endif
+# Exception: if ORCHESTRATOR_MODE is defined, this is an orchestrator Makefile that only manages sub-projects
+ifdef ORCHESTRATOR_MODE
+  ifneq ($(strip $(LIB_FILES) $(SRC_FILES)),)
+    $(error ORCHESTRATOR_MODE is defined but LIB_FILES or SRC_FILES are also present. Cannot compile files in orchestrator mode)
+  endif
+else
+  ifeq ($(strip $(LIB_FILES) $(SRC_FILES)),)
+    ifndef DIRS_WITH_MAKEFILE
+      $(error Found no C/C++ object files to compile. Please set correctly LIB_DIRS or/and SRC_DIRS, or define ORCHESTRATOR_MODE for orchestrator mode)
     endif
+  endif
 endif
 
 # Convert C/C++ application files to object files
@@ -1187,19 +1191,27 @@ define CREATE_EXAEQUOS_HTML
 endef
 
 ###############################################################################
-# Create Doxyfile files (TODO: update license in footer.html)
+# Create Doxyfile files
 ###############################################################################
 
 define RULE_CREATE_DOXYFILES
     $(Q)$(MKDIR) $(dir $(GENERATED_DOXYGEN_DIR))
 	$(CP) $(PATH_MYMAKEFILE_DOXYFILE)/. $(GENERATED_DOXYGEN_DIR)
-	find $(GENERATED_DOXYGEN_DIR) -type f -exec sed -i 's#%VERSION#$(PROJECT_VERSION)#g' {} \;
-	find $(GENERATED_DOXYGEN_DIR) -type f -exec sed -i 's#%TARGET#$(TARGET_NAME)#g' {} \;
-	find $(GENERATED_DOXYGEN_DIR) -type f -exec sed -i 's#%PROJECT#$(PROJECT_NAME)#g' {} \;
-	find $(GENERATED_DOXYGEN_DIR) -type f -exec sed -i 's#%DESCRIPTION#$(subst /,\/,$(TARGET_DESCRIPTION))#g' {} \;
-	find $(GENERATED_DOXYGEN_DIR) -type f -exec sed -i 's#%GENDOC#$(subst /,\/,$(GENERATED_DOXYGEN_DIR))#g' {} \;
-	find $(GENERATED_DOXYGEN_DIR) -type f -exec sed -i 's#%LOGO#$(subst /,\/,$(PATH_PROJECT_LOGO))#g' {} \;
-	find $(GENERATED_DOXYGEN_DIR) -type f -exec sed -i 's#%INPUT#$(subst /,\/,$(DOXYGEN_INPUTS))#g' {} \;
+	# Copy appropriate footer template based on detected license
+	$(Q)if [ -f "$(PATH_MYMAKEFILE_DOXYFILE)/footer-$(LICENSE).html" ]; then \
+		$(CP) "$(PATH_MYMAKEFILE_DOXYFILE)/footer-$(LICENSE).html" "$(GENERATED_DOXYGEN_DIR)/footer-$(LICENSE).html"; \
+	else \
+		$(ECHO) "Warning: No footer template found for license $(LICENSE), using UNKNOWN.html instead" >&2; \
+		$(CP) "$(PATH_MYMAKEFILE_DOXYFILE)/footer-UNKNOWN.html" "$(GENERATED_DOXYGEN_DIR)/footer-$(LICENSE).html"; \
+	fi
+	sed -i 's#%VERSION#$(PROJECT_VERSION)#g' $(GENERATED_DOXYGEN_DIR)/Doxyfile
+	sed -i 's#%TARGET#$(TARGET_NAME)#g' $(GENERATED_DOXYGEN_DIR)/Doxyfile
+	sed -i 's#%PROJECT#$(PROJECT_NAME)#g' $(GENERATED_DOXYGEN_DIR)/Doxyfile
+	sed -i 's#%LICENSE#$(LICENSE)#g' $(GENERATED_DOXYGEN_DIR)/Doxyfile
+	sed -i 's#%DESCRIPTION#$(subst /,\/,$(TARGET_DESCRIPTION))#g' $(GENERATED_DOXYGEN_DIR)/Doxyfile
+	sed -i 's#%GENDOC#$(subst /,\/,$(GENERATED_DOXYGEN_DIR))#g' $(GENERATED_DOXYGEN_DIR)/Doxyfile
+	sed -i 's#%LOGO#$(subst /,\/,$(PATH_PROJECT_LOGO))#g' $(GENERATED_DOXYGEN_DIR)/Doxyfile
+	sed -i 's#%INPUT#$(subst /,\/,$(DOXYGEN_INPUTS))#g' $(GENERATED_DOXYGEN_DIR)/Doxyfile
 	$(MV) $(GENERATED_DOXYGEN_DIR)/Doxyfile $(abspath $(P)/Doxyfile)
 endef
 
@@ -1216,7 +1228,10 @@ endef
 ###############################################################################
 
 .PHONY: all
-all:: compiler-info target creating-build-folder pre-build $(DIRS_WITH_MAKEFILE) $(TARGET_SHARED_LIB_NAME) $(TARGET_STATIC_LIB_NAME) $(TARGET_PKG_FILE_NAME) $(TARGET_BINARY_NAME) post-build
+all: compiler-info target creating-build-folder pre-build internal-libs-deps $(TARGET_SHARED_LIB_NAME) $(TARGET_STATIC_LIB_NAME) $(TARGET_PKG_FILE_NAME) $(TARGET_BINARY_NAME) post-build
+
+# Ensure internal libraries are compiled before main targets
+internal-libs-deps: $(DIRS_WITH_MAKEFILE)
 
 # Ensure post-build is always executed after all other build targets
 post-build: $(TARGET_SHARED_LIB_NAME) $(TARGET_STATIC_LIB_NAME) $(TARGET_PKG_FILE_NAME) $(TARGET_BINARY_NAME)
@@ -1290,7 +1305,7 @@ endif
 ###############################################################################
 
 ifdef OBJS
-$(TARGET_BINARY_NAME): $(OBJS) $(INTERNAL_LIBS) $(LIST_MYMAKEFILES) $(DIRS_WITH_MAKEFILE)
+$(TARGET_BINARY_NAME): $(OBJS) $(LIST_MYMAKEFILES) $(DIRS_WITH_MAKEFILE)
 	@$(call print-to,Linking,$(TARGET_NAME),$@)
 	@$(MKDIR) $(dir $@)
 	$(Q)$(COMPILER) $(LDFLAGS) $(OBJS) $(THIRD_PARTIES_OBJS) -o $(TARGET_BINARY_NAME) $(THIRD_PARTIES_LIBS) $(INTERNAL_LIBS) $(NOT_PKG_LIBS) $(PKGCFG_LIBS) $(LINKER_FLAGS) $(USER_LDFLAGS)
@@ -1309,7 +1324,7 @@ endif
 ###############################################################################
 
 # Create object directory structure before compilation
-$(OBJS_ROOT_DIR)/%.o: %.cpp $(OBJS_ROOT_DIR)/%.d $(LIST_MYMAKEFILES) $(INTERNAL_LIBS) $(DEPS_DEBUG_LIBS) | $(OBJS_ROOT_DIR)
+$(OBJS_ROOT_DIR)/%.o: %.cpp $(OBJS_ROOT_DIR)/%.d $(LIST_MYMAKEFILES) $(DEPS_DEBUG_LIBS) | $(OBJS_ROOT_DIR) $(DIRS_WITH_MAKEFILE)
 	@$(call progress-in,Compiling C++,$(TARGET_NAME),$<)
 	@$(MKDIR) $(dir $@)
 	$(Q)$(CXX) $(CXX_STANDARD) $(DEPFLAGS) $(CXXFLAGS) $(PKGCFG_CFLAGS) $(OPTIM_FLAGS) $(DEFINES) $(INCLUDES) $(USER_CXXFLAGS) -c $(abspath $<) -o $(abspath $@)
@@ -1320,7 +1335,7 @@ $(OBJS_ROOT_DIR)/%.o: %.cpp $(OBJS_ROOT_DIR)/%.d $(LIST_MYMAKEFILES) $(INTERNAL_
 ###############################################################################
 
 # Create object directory structure before compilation
-$(OBJS_ROOT_DIR)/%.o: %.c $(OBJS_ROOT_DIR)/%.d $(LIST_MYMAKEFILES) $(INTERNAL_LIBS) $(DEPS_DEBUG_LIBS) | $(OBJS_ROOT_DIR)
+$(OBJS_ROOT_DIR)/%.o: %.c $(OBJS_ROOT_DIR)/%.d $(LIST_MYMAKEFILES) $(DEPS_DEBUG_LIBS) | $(OBJS_ROOT_DIR) $(DIRS_WITH_MAKEFILE)
 	@$(call progress-in,Compiling C,$(TARGET_NAME),$<)
 	@$(MKDIR) $(dir $@)
 	$(Q)$(CC) $(DEPFLAGS) $(CCFLAGS) $(PKGCFG_CFLAGS) $(OPTIM_FLAGS) $(DEFINES) $(INCLUDES) $(USER_CCFLAGS) -c $(abspath $<) -o $(abspath $@)

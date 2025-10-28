@@ -2,7 +2,7 @@
 
 [MyMakefile](https://github.com/Lecrapouille/MyMakefile) is a build system based on GNU Make for C++ projects. It eliminates the need to write complex Makefile rules from scratch by offering plenty of rules and macros.
 
-**Note:** I no longer develop in C but MyMakefile should also works.
+**Note:** I no longer develop in C but MyMakefile should also work.
 
 ## 🤔 Why MyMakefile?
 
@@ -12,21 +12,23 @@ While CMake is a popular choice, MyMakefile serves as an alternative to CMake fo
 - **Efficiency**: Smaller code you have to write, more readable Makefiles.
 - **Modern Features**: Call engineer tools you usually need without the complexity.
 
-**Limitations:** MyMakefile does not support several targets in a single Makefile file but you can achieve a project mixing generating several libraries, standalone applications, demos.
+**Limitations:** MyMakefile does not support multiple targets in a single Makefile file, but you can build a project that generates multiple libraries, standalone applications, and demos.
 
 ## 🌟 MyMakefile Goals
 
 - Encapsulate all complex Makefile rules in two files that you can include in your project, handling:
-  - C++ file compilation.
-  - Has a small manifest files to download third-parties libraries.
+  - C++ file compilation
+  - A small manifest file for downloading third-party libraries
   - Compilation flag management
-  - Application bundling (including macOS bundles).
-  - Shared/static library creation (contrary to CMake both are created).
-  - Installation on your system (header files, doc, libraries).
-  - Creation/installation of pkg-config files.
-  - Documentation generation (doxygen).
-  - Call unit-tests and launch code coverage.
-  - RPM creation.
+  - Application bundling (including macOS bundles)
+  - Shared/static library creation (contrary to CMake, both are created)
+  - Installation on your system (header files, doc, libraries)
+  - Creation/installation of pkg-config files
+  - Documentation generation (Doxygen)
+  - Unit tests and code coverage
+  - RPM creation
+  - Code formatting (clang-format integration)
+  - Static analysis (cppcheck integration)
 - Define your project structure in just a few lines of Makefile syntax.
 - Let MyMakefile handle all the complex build rules for you.
 
@@ -79,7 +81,7 @@ INCLUDES := $(P)/include $(P)/src
 VPATH := $(P)/src
 DEFINES :=
 SRC_FILES += src/main.cpp
-# For compiling a library replace SRC_FILES by LIB_FILES
+# For compiling a library, replace SRC_FILES with LIB_FILES
 
 # Include MyMakefile rules file after your project configuration
 include $(M)/rules/Makefile
@@ -87,17 +89,17 @@ include $(M)/rules/Makefile
 # Optionally: add your custom Makefile rules here
 ```
 
-First you shall define macros P and M. P indicates the relative path to the root project. M indicates where to find MyMakefile folder.
+First, you must define macros P and M. P indicates the relative path to the root project. M indicates where to find the MyMakefile folder.
 
 The project definition is mandatory and allows you to define your project name and the target name (which is either a stand-alone application or library). You have to define a description to your target and a version to your project.
 
-Compilation definitions is up to you: release, debug, unit test as well as the C++ standard.
+Compilation definitions are up to you: release, debug, unit test, and the C++ standard.
 
-You have to include the two MyMakefile files at the correct location in your makefile. One sets variables for your project and the other defines Makefile rules. As consequence, order and position matters.
+You must include the two MyMakefile files at the correct location in your Makefile. One sets variables for your project and the other defines Makefile rules. As a consequence, order and position matter.
 
 Finally, you can give options to your compiler for finding C++ sources and header files, define project macros and the list of C++ files to compile.
 
-1. **Build your project**:
+3. **Build your project**:
 
 ```bash
 make help                     # Show all available options
@@ -132,25 +134,38 @@ Here are some of my projects that use MyMakefile instead of CMake:
   - `doxygen` (for documentation).
   - `git` (for downloading third-parties).
 
+## 🔧 Compiling for MacOS
+
+By default, the behavior will compile like done with Linux. To create Bundle applications, you have to add
+the following code:
+
+```makefile
+ifeq ($(OS),Darwin)
+BUILD_MACOS_APP_BUNDLE := 1
+APPLE_IDENTIFIER := lecrapouille
+MACOS_BUNDLE_ICON := <your path>/<your icon name>.icns
+endif
+```
+
+## 🔧 Compiling for Emscripten
+
+Nothing to do, follow the Emscripten documentation for compiling a project. MyMakefile shall detect it and compile for Emscripten.
+
 ## 🔧 Compiling for ExaequOS
 
-[ExaequOS](https://www.exaequos.com) is a fork of [Emscripten](https://emscripten.org). MyMakefile supports compilation for both platforms.
+[ExaequOS](https://www.exaequos.com) is a fork of [Emscripten](https://emscripten.org) and better alternative (POSIX compliant). MyMakefile also supports the compilation for this platform.
 
-1. Install the ExaequOS Docker image:
+- Install the ExaequOS Docker image:
 
 ```bash
 # Follow instructions at https://github.com/Lecrapouille/docker-exa
 ```
 
-2. Run the ExaequOS Docker image against your project folder.
-
-3. Simply run `make` - your project will compile like a native Linux application.
-
-4. After compilation, run `make install`
-
-5. Open https://www.exaequos.com/ in your browser.
-
-6. In Havoc (ExaequOS console), run:
+- Run the ExaequOS Docker image against your project folder.
+- Simply run `make` - your project will compile like a native Linux application.
+- After compilation, run `make install`
+- Open [https://www.exaequos.com/](https://www.exaequos.com) in your browser.
+- In Havoc (ExaequOS console), run:
 
 ```bash
 /media/localhost/<your-application>

@@ -26,8 +26,8 @@
 # Check if some variables have been defined before including this file.
 ###############################################################################
 
-#? Define the author of the project.
-AUTHOR ?= lecrapouille
+#? Auto-detect author from git config or system user
+AUTHOR ?= $(shell git config --global user.name 2>/dev/null || echo $(USER))
 
 ifndef PROJECT_NAME
 $(error PROJECT_NAME is mandatory for giving a name to your project.)
@@ -55,6 +55,16 @@ endif
 
 ifndef COMPILATION_MODE
 $(error COMPILATION_MODE is mandatory for knowing if the project shall be compiled for debug or release or test or normal.)
+endif
+
+ifdef BUILD_MACOS_APP_BUNDLE
+    ifndef APPLE_IDENTIFIER
+    $(error APPLE_IDENTIFIER is mandatory for creating a macOS application bundle.)
+    endif
+
+    ifndef MACOS_BUNDLE_ICON
+    $(error MACOS_BUNDLE_ICON is mandatory for creating a macOS application bundle.)
+    endif
 endif
 
 ###############################################################################
@@ -388,9 +398,6 @@ DEPS_DEBUG_LIBS :=
 #? Use nodelete flag for shared libraries
 PREVENT_SHARED_LIB_UNLOAD ?=
 
-#? Default license for RPM packages
-LICENSE ?= MIT
-
 #? Custom runtime library search paths (rpath) - colon separated
 CUSTOM_RPATH ?=
 
@@ -422,8 +429,16 @@ SCRIPT_CONFIG := $(PATH_MYMAKEFILE_SCRIPTS)/config.sh
 SCRIPT_EXTRACT_STATIC_LIB := $(PATH_MYMAKEFILE_SCRIPTS)/alib.sh
 SCRIPT_TAR_PROJECT := $(PATH_MYMAKEFILE_SCRIPTS)/targz.sh
 SCRIPT_GIT_CLONE := $(PATH_MYMAKEFILE_SCRIPTS)/clone.sh
+SCRIPT_DETECT_LICENSE := $(PATH_MYMAKEFILE_SCRIPTS)/detect-license.sh
 SCRIPT_DOWNLOAD_THIRD_PARTIES := $(PATH_MYMAKEFILE_SCRIPTS)/download-external-libs.sh
 SCRIPT_COMPILE_THIRD_PARTIES := $(PATH_MYMAKEFILE_SCRIPTS)/compile-external-libs.sh
 PROJECT_MANIFEST_THIRD_PARTIES := $(THIRD_PARTIES_DIR)/manifest
 PROJECT_SCRIPT_COMPILE_THIRD_PARTIES := $(THIRD_PARTIES_DIR)/compilation
 SCRIPT_OBS := $(PATH_MYMAKEFILE_SCRIPTS)/obs.sh
+
+###############################################################################
+# Auto-detect license from LICENSE file or default to MIT
+###############################################################################
+
+DETECTED_LICENSE := $(shell $(SCRIPT_DETECT_LICENSE) $(P) 2>/dev/null || echo "UNKNOWN")
+LICENSE ?= $(if $(DETECTED_LICENSE),$(DETECTED_LICENSE),MIT)

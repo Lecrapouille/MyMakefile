@@ -1,21 +1,36 @@
+###################################################
+# Location of the project directory and Makefiles
+#
+P := .
+M := ../../..
+BUILD := ../../build
+
+###################################################
+# Project definition
+#
 PROJECT_NAME := TutorialMyMakefile
 PROJECT_VERSION := 0.1.0
 TARGET_NAME := HelloWorld02
 TARGET_DESCRIPTION := Hello Word
 COMPILATION_MODE := release
-#FORCE_LOWER_CASE := 1
 
-P := .
-M := ../../..
-BUILD := ../../build
 include $(M)/project/Makefile
 
+###################################################
+# Internal libs to compile in the correct order
+#
+LIB_FOO := $(call internal-lib,foo)
+LIB_BAR := $(call internal-lib,bar)
+INTERNAL_LIBS := $(LIB_FOO) $(LIB_BAR)
+DIRS_WITH_MAKEFILE := $(P)/src/bar $(P)/src/foo
+
+###################################################
+# Compile the project
+#
 INCLUDES := include
 SRC_FILES := src/main.cpp
-DIRS_WITH_MAKEFILE := src/bar src/foo
-INTERNAL_LIBS := foo bar
 
+###################################################
+# Generic Makefile rules
+#
 include $(M)/rules/Makefile
-
-# Optional: to force compilation order of libraries
-src/bar: src/foo
