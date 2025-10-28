@@ -1,5 +1,5 @@
 #!/bin/bash -e
-##==================================================================================
+##=============================================================================
 ## MIT License
 ##
 ## Copyright (c) 2019 Quentin Quadrat <lecrapouille@gmail.com>
@@ -21,25 +21,36 @@
 ## LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 ## OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 ## SOFTWARE.
-##==================================================================================
+##==============================================================================
 
-### This script is called by (make download-external-libs). It will git clone
-### third party libraries needed for this project but does not compile them.
-### It replaces git submodules.
+### This script is called by (make download-external-libs). It will read the
+### manifest file and clone the repositories set in each line. It will then wait
+### for all the repositories to be cloned before exiting.
+### Manifest file format: one repository per line: user/repo[:recurse][@ref]
+### Examples:
+###   angeluriot/Dimension3D@84b20021f08aa89755fae83c39fc59a815f54033
+###   SFML/imgui-sfml:recurse@2.6.x
 ###
-### Input of this script:
-### $1: target (your application name)
-### $2: manifest file containing list of repositories to clone
-###     Format: one repository per line: user/repo[:recurse][@ref]
-###     Example:
-###     angeluriot/Dimension3D@84b20021f08aa89755fae83c39fc59a815f54033
-###     SFML/imgui-sfml:recurse@2.6.x
+### Note: repositories are GitHub only.
 
+###############################################################################
+### Input of this script:
+### $1: target (your application name).
+### $2: manifest file containing list of repositories to clone.
+###############################################################################
 GITHUB_URL="https://github.com"
 PROJECT_NAME=$1
 MANIFEST_FILE=$2
 
+function fatal()
+{
+    echo -e "\033[35mFailure! $1\033[00m"
+    exit 1
+}
+
+###############################################################################
 # Force git to be completely silent
+###############################################################################
 export GIT_TERMINAL_PROMPT=0
 export GIT_QUIET=1
 export GIT_SSH_COMMAND="ssh -o LogLevel=ERROR"
@@ -52,12 +63,32 @@ export GIT_TRACE_PACK_ACCESS=0
 export GIT_TRACE_PERFORMANCE=0
 export GIT_TRACE_SETUP=0
 
-function fatal()
+###############################################################################
+# Post-clone operations: fetch, checkout and update submodules if recursive
+###############################################################################
+function post_clone_operations()
 {
-    echo -e "\033[35mFailure! $1\033[00m"
-    exit 1
+    local dir_name=$1
+    local ref=$2
+    local recursive=$3
+
+    (cd "$dir_name" && {
+        if [[ "$ref" =~ ^[0-9a-f]{40}$ ]]; then
+            # SHA1: fetch, checkout and update submodules if recursive
+            git fetch --quiet origin "$ref" && \
+            git checkout --quiet -b "sha1-$ref" "$ref" 2> /dev/null && \
+            ([ "$recursive" = true ] && git submodule update --init --recursive --quiet || true)
+        else
+            # Branch/tag: checkout and update submodules if recursive
+            git checkout --quiet "$ref" && \
+            ([ "$recursive" = true ] && git submodule update --init --recursive --quiet || true)
+        fi
+    })
 }
 
+###############################################################################
+# Clone repository
+###############################################################################
 function clone_repo()
 {
     local repo=$1
@@ -69,6 +100,7 @@ function clone_repo()
     if [[ "$repo" == *":recurse"* ]]; then
         recursive=true
         repo=${repo/:recurse/}
+        clone_args+=("--recursive")
     fi
 
     # Parse repository and reference
@@ -80,36 +112,33 @@ function clone_repo()
         ref=""
     fi
 
-    echo -e "\033[35m*** Cloning: \033[36m$GITHUB_URL/$repo_name\033[00m => \033[33m$PROJECT_NAME\033[00m"
-    if [ -n "$ref" ]; then
-        echo -e "\033[35m*** Using reference: \033[36m$ref\033[00m"
-    fi
-    if [ "$recursive" = true ]; then
-        echo -e "\033[35m*** Cloning recursively\033[00m"
-        clone_args+=("--recursive")
-    fi
+    # Determine clone message
+    local clone_msg="Cloning"
+    [ "$recursive" = true ] && clone_msg="Cloning recursive"
+
+    local ref_msg="[HEAD]"
+    [ -n "$ref" ] && ref_msg="[$ref]"
+    echo -e "\033[35m*** $clone_msg: \033[36m$GITHUB_URL/$repo_name\033[00m => \033[33m$PROJECT_NAME \033[37m$ref_msg\033[00m"
 
     # Extract repo name for directory
     local dir_name=${repo_name##*/}
     rm -rf "$dir_name"
 
-    # Clone with specified reference if provided
+    # Clone repository
     if [ -n "$ref" ]; then
-        # Check if ref is a SHA1 (40 characters hex)
         if [[ "$ref" =~ ^[0-9a-f]{40}$ ]]; then
-            # For SHA1, use partial clone and create a branch
-            git clone --quiet --filter=blob:none "$GITHUB_URL/$repo_name" "${clone_args[@]}" 2> /dev/null && \
-            (cd "$dir_name" && \
-             git fetch --quiet origin "$ref" && \
-             git checkout --quiet -b "sha1-$ref" "$ref" 2> /dev/null)
+            # SHA1: partial clone
+            git clone --quiet --filter=blob:none "$GITHUB_URL/$repo_name" "${clone_args[@]}" 2> /dev/null
         else
-            # For branches and tags, clone with specific reference
-            git clone --quiet "$GITHUB_URL/$repo_name" --branch "$ref" "${clone_args[@]}" || \
-            git clone --quiet "$GITHUB_URL/$repo_name" "${clone_args[@]}" && \
-            (cd "$dir_name" && git checkout --quiet "$ref")
+            # Branch/tag: try specific branch first, fallback to default
+            git clone --quiet "$GITHUB_URL/$repo_name" --branch "$ref" "${clone_args[@]}" 2> /dev/null || \
+            git clone --quiet "$GITHUB_URL/$repo_name" "${clone_args[@]}"
         fi
+
+        # Post-clone operations
+        post_clone_operations "$dir_name" "$ref" "$recursive"
     else
-        # For default branch, use shallow clone
+        # Default branch: shallow clone
         git clone --quiet "$GITHUB_URL/$repo_name" --depth=1 "${clone_args[@]}"
     fi
 }
