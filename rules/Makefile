@@ -1204,14 +1204,17 @@ define RULE_CREATE_DOXYFILES
 		$(ECHO) "Warning: No footer template found for license $(LICENSE), using UNKNOWN.html instead" >&2; \
 		$(CP) "$(PATH_MYMAKEFILE_DOXYFILE)/footer-UNKNOWN.html" "$(GENERATED_DOXYGEN_DIR)/footer-$(LICENSE).html"; \
 	fi
-	sed -i 's#%VERSION#$(PROJECT_VERSION)#g' $(GENERATED_DOXYGEN_DIR)/Doxyfile
-	sed -i 's#%TARGET#$(TARGET_NAME)#g' $(GENERATED_DOXYGEN_DIR)/Doxyfile
-	sed -i 's#%PROJECT#$(PROJECT_NAME)#g' $(GENERATED_DOXYGEN_DIR)/Doxyfile
-	sed -i 's#%LICENSE#$(LICENSE)#g' $(GENERATED_DOXYGEN_DIR)/Doxyfile
-	sed -i 's#%DESCRIPTION#$(subst /,\/,$(TARGET_DESCRIPTION))#g' $(GENERATED_DOXYGEN_DIR)/Doxyfile
-	sed -i 's#%GENDOC#$(subst /,\/,$(GENERATED_DOXYGEN_DIR))#g' $(GENERATED_DOXYGEN_DIR)/Doxyfile
-	sed -i 's#%LOGO#$(subst /,\/,$(PATH_PROJECT_LOGO))#g' $(GENERATED_DOXYGEN_DIR)/Doxyfile
-	sed -i 's#%INPUT#$(subst /,\/,$(DOXYGEN_INPUTS))#g' $(GENERATED_DOXYGEN_DIR)/Doxyfile
+	# Apply sed replacements to all files in the generated doxygen directory
+	$(Q)for file in $(GENERATED_DOXYGEN_DIR)/Doxyfile $(GENERATED_DOXYGEN_DIR)/doxygen.css $(GENERATED_DOXYGEN_DIR)/header.html $(GENERATED_DOXYGEN_DIR)/footer-$(LICENSE).html; do \
+		sed -i 's#%VERSION#$(PROJECT_VERSION)#g' $$file; \
+		sed -i 's#%PROJECT#$(PROJECT_NAME)#g' $$file; \
+		sed -i 's#%DESCRIPTION#$(subst /,\/,$(TARGET_DESCRIPTION))#g' $$file; \
+		sed -i 's#%LOGO#$(subst /,\/,$(PATH_PROJECT_LOGO))#g' $$file; \
+        sed -i 's#%TARGET#$(TARGET_NAME)#g' $$file; \
+		sed -i 's#%LICENSE#$(LICENSE)#g' $$file; \
+		sed -i 's#%GENDOC#$(subst /,\/,$(GENERATED_DOXYGEN_DIR))#g' $$file; \
+		sed -i 's#%INPUT#$(subst /,\/,$(DOXYGEN_INPUTS))#g' $$file; \
+	done
 	$(MV) $(GENERATED_DOXYGEN_DIR)/Doxyfile $(abspath $(P)/Doxyfile)
 endef
 
