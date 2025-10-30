@@ -273,6 +273,7 @@ ifdef USE_VECTORIZATION
 endif
 
 # Optional strict flags for extra pedantic compilation
+STRICT_FLAGS :=
 ifdef USE_STRICT_FLAGS
     STRICT_FLAGS := -Werror -Wconversion -Wsign-conversion -Wcast-qual \
         -Wwrite-strings -Wredundant-decls -Winline -Wdisabled-optimization
@@ -710,6 +711,8 @@ ifdef USE_BACKWARD
     endif
 endif
 
+PRIVATE_SRC_FILES :=
+PRIVATE_LIB_FILES :=
 ifdef USE_BACKWARD
     DEPS_DEBUG_LIBS += $(DOWNLOAD_DIR)/backward-cpp/backward.cpp
     PRIVATE_SRC_FILES += $(DOWNLOAD_DIR)/backward-cpp/backward.cpp
@@ -767,6 +770,8 @@ else
 endif
 
 # Convert C/C++ application files to object files
+_SRC_DIRS :=
+OBJS :=
 ifdef SRC_FILES
     SRC_FILES := $(foreach d,$(SRC_FILES) $(PRIVATE_SRC_FILES),$(abspath $d))
     SRC_FILES := $(patsubst $(abspath $(P))/%,%,$(SRC_FILES))
@@ -775,6 +780,8 @@ ifdef SRC_FILES
 endif
 
 # Convert C/C++ library files to object files
+_LIB_DIRS :=
+LIB_OBJS :=
 ifdef LIB_FILES
     LIB_FILES := $(foreach d,$(LIB_FILES) $(PRIVATE_LIB_FILES),$(abspath $d))
     LIB_FILES := $(patsubst $(abspath $(P))/%,%,$(LIB_FILES))
@@ -827,6 +834,8 @@ ifdef LIB_OBJS
 endif
 
 # Define the target binary base name and name.
+TARGET_BINARY_BASE_NAME :=
+TARGET_BINARY_NAME :=
 ifdef OBJS
     TARGET_BINARY_BASE_NAME := $(BUILD_PATH)/$(TARGET_NAME)
     TARGET_BINARY_NAME := $(TARGET_BINARY_BASE_NAME)$(EXT_BINARY)
@@ -861,6 +870,7 @@ endif
 ###############################################################################
 
 ifdef PKG_LIBS
+    SEARCH_CMD :=
     # Define where to install pkg-config file
     ifdef EXAEQUOS
         PKG_CONFIG_SEARCH_PATH := $(abspath $(P)/exapkgs/pkgconfigs)
@@ -1583,7 +1593,7 @@ tarball:
 .PHONY: compiler-info
 compiler-info:
 ifeq ($(abspath .), $(abspath $(P)))
-	@$(call print-simple,About compiler,$(COMPILER))
+	@$(call print-simple,About compiler,$(COMPILER),,)
 	$(Q)$(COMPILER) --version
   ifeq ($(OS),Emscripten)
     ifdef EXAEQUOS

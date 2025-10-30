@@ -323,6 +323,11 @@ endif
 # Set internal project paths.
 ###############################################################################
 
+SRC_FILES :=
+LIB_FILES :=
+INTERNAL_LIBS :=
+DIRS_WITH_MAKEFILE :=
+
 #? Name of the directory holding the compilation artifacts.
 BUILD ?= build
 BUILD_PATH := $(abspath $(P)/$(BUILD))
@@ -426,6 +431,8 @@ endif
 ifneq (,$(wildcard $(P)/Makefile.common))
     LIST_MYMAKEFILES += $(P)/Makefile.common
 endif
+else
+LIST_MYMAKEFILES :=
 endif
 
 ###############################################################################
