@@ -177,6 +177,67 @@ Nothing to do, follow the Emscripten documentation for compiling a project. MyMa
 make rpm
 ```
 
+## Compiling standalone applications
+
+Use, `SRC_FILES` to set the local paths to C++ files you want to compile. For example `SRC_FILES := $(call rwildcard,$(CURRENT_DIR),*.cpp)`.
+
+## Compiling an internal library
+
+You can mix with `LIB_FILES` instead of `SRC_FILES`. One library managed by Makefile.
+
+## Compiling standalone applications using several internal libraries
+
+You have to set:
+
+- Use the macro `$(call internal-lib,xxx)` to set a library.
+- Set `INTERNAL_LIBS` with the list of libraries previously defined.
+- Set `DIRS_WITH_MAKEFILE` the list of folder in which there is a Makefile to compile the lib.
+- Set the order of library compilation with rules using paths (not library names).
+
+Example
+
+```makefile
+LIB_FOO := $(call internal-lib,foo)
+LIB_BAR := $(call internal-lib,robotik-bar)
+INTERNAL_LIBS := $(LIB_FOO) $(LIB_BAR)
+DIRS_WITH_MAKEFILE := $(P)/src/path/to/foo $(P)/src/path/to/bar
+$(P)/src/path/to/foo $(P)/src/path/to/bar
+```
+
+We suppose that a Makefile exists in `$(P)/src/path/to/foo` and in `$(P)/src/path/to/bar`.
+
+## Pre and Post compilation
+
+You can use `pre-build::` and `post-build::` goals. Place them after `include $(M)/rules/Makefile`. You can compile it to demos and examples.
+
+## Using third-parties libraries
+
+Create a folder named `external` create a file named `manifest` with list of GitHub repos to clone. For example:
+
+```txt
+zeux/pugixml
+ocornut/imgui@docking
+```
+
+To download them, call in the console:
+
+```bash
+make download-external-libs
+```
+
+The `external` folder will be populated.
+
+In Makefile: use the variable `$(THIRD_PARTIES_DIR)` to refer to the `external` folder. For example:
+
+```makefile
+INCLUDES += $(THIRD_PARTIES_DIR)/imgui
+VPATH += $(THIRD_PARTIES_DIR)/imgui
+```
+
+## Orchestrator Makefile
+
+This Makefile does not compile `SRC_FILES` or `LIB_FILES` files but only call other Makefiles that will be used to compile internal lib, demos, ...
+
 ## 📖 Documentation
 
 - The `help` rule will display you all variables you can override and prebuilt rules you can call. Note that rules with `::` allow you to append your own commands.
