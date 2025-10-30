@@ -50,6 +50,10 @@ endif
 .DELETE_ON_ERROR:
 .SUFFIXES:
 
+# Force the default goal to be all: else with DIRS_WITH_MAKEFILE we have to
+# set an order of compilation and the rules will be placed after the all: goal.
+.DEFAULT_GOAL := all
+
 ###############################################################################
 # C/C++ compilers
 ###############################################################################
