@@ -373,7 +373,9 @@ PROJECT_TESTS ?= tests
 
 # Generated file holding project information used i.e. by MyLogger.
 PROJECT_INFO := project_info
-GENERATED_HEADER_PROJECT_INFO := $(GENERATION_DIR)/$(PROJECT_INFO).hpp
+PROJECT_INFO_TXT := $(PROJECT_INFO).txt
+PROJECT_INFO_HPP := $(PROJECT_INFO).hpp
+GENERATED_HEADER_PROJECT_INFO := $(GENERATION_DIR)/$(PROJECT_INFO_FILE)
 
 #? Path to the default icon for MacOS bundle applications.
 ifeq ($(OS),Darwin)
@@ -387,7 +389,7 @@ DOXYGEN_INPUTS ?= $(abspath $(P)/README.md $(P)/src $(P)/include)
 PROJECT_TEMP_DIR ?= $(TMPDIR)/$(PROJECT_NAME)/$(PROJECT_VERSION)
 
 # Files that may not exist but giving information about the project.
-PROJECT_INFO_FILES := AUTHORS LICENSE README.md ChangeLog VERSION
+PROJECT_OTHER_FILES ?= AUTHORS LICENSE README.md ChangeLog VERSION
 
 # File extensions matching for C++ header files.
 REGEXP_CXX_HEADER_FILES ?= *.hpp *.ipp *.tpp *.hh *.h *.hxx *.incl
@@ -411,12 +413,16 @@ DO_NOT_COMPILE_SHARED_LIB ?=
 # Rebuild the whole project if a Makefile has been modified
 ###############################################################################
 
+REBUILD_IF_MAKEFILE_MODIFIED ?=
+
+ifndef REBUILD_IF_MAKEFILE_MODIFIED
 LIST_MYMAKEFILES := $(M)/project/Makefile $(M)/rules/Makefile
 ifneq (,$(wildcard $(P)/Makefile))
     LIST_MYMAKEFILES += $(P)/Makefile
 endif
 ifneq (,$(wildcard $(P)/Makefile.common))
     LIST_MYMAKEFILES += $(P)/Makefile.common
+endif
 endif
 
 ###############################################################################

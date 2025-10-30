@@ -825,10 +825,14 @@ ifdef LIB_OBJS
         SHARED_LIB_NAME :=
     endif
 endif
+
+# Define the target binary base name and name.
 ifdef OBJS
     TARGET_BINARY_BASE_NAME := $(BUILD_PATH)/$(TARGET_NAME)
     TARGET_BINARY_NAME := $(TARGET_BINARY_BASE_NAME)$(EXT_BINARY)
 endif
+RUNNING_TARGET_NAME ?= $(TARGET_NAME)
+RUNNING_TARGET_NAME := $(BUILD_PATH)/$(RUNNING_TARGET_NAME)$(EXT_BINARY)
 
 # Convert <path>/libtoto.a into -ltoto
 SHORT_INTERNAL_LIBS := $(subst $(BUILD_PATH)/lib,-l,$(INTERNAL_LIBS))
@@ -900,108 +904,87 @@ else
 endif
 
 ###############################################################################
-# Installing a list of files $1 to destination $2.
-###############################################################################
-
-define HELPER_INSTALL_LIST_OF_FILES
+#? Install a list of existing files $1 to destination $2.
+define INSTALL_FILES
 	@$(call print-install,$(TARGET_NAME),$1,$2)
 	$(Q)$(foreach folder,$(sort $(dir $1)),install -d -m 755 "$(abspath $2/$(folder))";)
  	$(Q)$(foreach file,$1,install -m 644 "$(abspath $(file))" "$2/$(file)";)
 endef
 
 ###############################################################################
-# From $1, install a list of files $2 to destination $3.
-###############################################################################
+#? Install list of files that may not exist from folder $1 to destination folder $2.
+define INSTALL_OPTIONAL_FILES
+	@$(call INSTALL_FILES,$(wildcard $1),$2)
+endef
 
-define HELPER_INSTALL_LIST_OF_FILES_FROM_FOLDER
+###############################################################################
+#? From folder $1, install a list of files $2 to destination $3.
+define INSTALL_FILES_FROM_FOLDER
 	@$(call print-install,$(TARGET_NAME),$2,$3, [$(abspath $1)])
 	$(Q)$(foreach folder,$(sort $(dir $2)),install -d -m 755 "$(abspath $3/$(folder))";)
 	$(Q)$(foreach file,$2,install -m 644 "$(abspath $1/$(file))" "$3/$(file)";)
 endef
 
 ###############################################################################
-# Installing a list of folders $2 to destination $3. $1 is for the title.
+#? Install recursively all C++ header files from folder $1 to destination $2.
+define INSTALL_CXX_HEADER_FILES
+	@$(call INSTALL_FILES_FROM_FOLDER,$1,$(strip $(subst $1/,,$(call rwildcard,$1,$(REGEXP_CXX_HEADER_FILES)))),$2)
+endef
+
 ###############################################################################
-
-# Does not work since * can be either folder or files and we do not have function
-# to distinguish them
-#@$(call HELPER_INSTALL_LIST_OF_FILES,$1,$(call rwildcard,$2,*),$3)
-
-define HELPER_INSTALL_LIST_OF_FOLDERS
+#? Install a list of existing folders $1 to destination $2.
+define INSTALL_FOLDERS
 	@$(call print-install,$(TARGET_NAME),$1,$2)
     $(Q)install -d -m 755 $(foreach d,$1,$2/$(notdir $(d)))
     $(Q)$(foreach d,$1,cp -fr $(d)/. $2/$(notdir $(d)); )
 endef
 
-define HELPER_INSTALL_OPTIONAL_FOLDERS
-	@$(if $(wildcard $1),$(call HELPER_INSTALL_LIST_OF_FOLDERS,$(wildcard $1),$2))
+###############################################################################
+#? Install a list of folders $1 that may not exist to destination $2.
+define INSTALL_OPTIONAL_FOLDERS
+	@$(if $(wildcard $1),$(call INSTALL_FOLDERS,$(wildcard $1),$2))
 endef
 
 ###############################################################################
-# Installing a list of C++ header files from $1 to destination $2.
-###############################################################################
-
-define HELPER_INSTALL_CXX_HEADER_FILES
-	@$(call HELPER_INSTALL_LIST_OF_FILES_FROM_FOLDER,$1,$(strip $(subst $1/,,$(call rwildcard,$1,$(REGEXP_CXX_HEADER_FILES)))),$2)
-endef
-
-###############################################################################
-# Installing files that may not exist from folder $1 to destination folder $2.
-###############################################################################
-
-define HELPER_INSTALL_OPTIONAL_FILES
-	@$(call HELPER_INSTALL_LIST_OF_FILES,$(wildcard $1),$2)
-endef
-
-###############################################################################
-# Install the project doc and generated doc folders.
-###############################################################################
-
+#? Install the project doc and generated doc folders.
 define INSTALL_PROJECT_DOC
-	@$(call HELPER_INSTALL_OPTIONAL_FOLDERS,$(PROJECT_DOC_DIR) $(PROJECT_GENERATED_DOC),$(INSTALL_PROJECT_DIR))
+	@$(call INSTALL_OPTIONAL_FOLDERS,$(PROJECT_DOC_DIR) $(PROJECT_GENERATED_DOC),$(INSTALL_PROJECT_DIR))
 endef
 
 ###############################################################################
-# Install the project data folder and its content.
-###############################################################################
-
+#? Install the project data folder and its content.
 define INSTALL_PROJECT_DATA
-	@$(call HELPER_INSTALL_OPTIONAL_FOLDERS,$(PROJECT_DATA_DIR),$(INSTALL_PROJECT_DIR))
+	@$(call INSTALL_OPTIONAL_FOLDERS,$(PROJECT_DATA_DIR),$(INSTALL_PROJECT_DIR))
 endef
 
 ###############################################################################
-# Install the project information files: license, readme, version, changelog ...
-###############################################################################
-
-define INSTALL_PROJECT_INFO_FILES
-	@$(call HELPER_INSTALL_OPTIONAL_FILES,$(PROJECT_INFO_FILES),$(INSTALL_PROJECT_DIR))
+#? Install the project information files: license, readme, version, changelog ...
+define INSTALL_PROJECT_OTHER_FILES
+	@$(call INSTALL_OPTIONAL_FILES,$(PROJECT_OTHER_FILES),$(INSTALL_PROJECT_DIR))
 endef
 
 ###############################################################################
-# Install the project binary  (the project target shall be a stand alone app).
-###############################################################################
-
-ifndef EXAEQUOS
-  define INSTALL_PROJECT_BINARY
-	@$(call print-install,$(TARGET_NAME),$(TARGET_NAME),$(INSTALL_BINDIR))
-	$(Q)install -d -m 755 $(INSTALL_BINDIR)
-	$(Q)install -m 644 $(TARGET_BINARY_NAME) $(INSTALL_BINDIR)/$(TARGET_NAME)-$(PROJECT_VERSION)
-	$(Q)cd $(INSTALL_BINDIR) && ln -sf $(TARGET_NAME)-$(PROJECT_VERSION) $(TARGET_NAME)
-  endef
-else
-  define INSTALL_PROJECT_BINARY
-	@$(call print-install,$(TARGET_NAME),$(TARGET_NAME),$(INSTALL_BINDIR))
-	$(Q)install -d -m 755 $(INSTALL_BINDIR)
-	$(Q)install -m 644 $(TARGET_BINARY_BASE_NAME).js $(INSTALL_BINDIR)/$(TARGET_NAME).js
-	$(Q)install -m 644 $(TARGET_BINARY_BASE_NAME).wasm $(INSTALL_BINDIR)/$(TARGET_NAME).wasm
-	$(call CREATE_EXAEQUOS_HTML,exa.html)
-  endef
-endif
+#? Install the generated project_info.hpp header file
+# FIXME le chemin de destination est incorrect: il faudrait trouver le dossier de la lib qui ne correspond pas au target_name
+define INSTALL_PROJECT_INFO_HEADER
+	@$(call print-install,$(TARGET_NAME),$(PROJECT_INFO_HPP),$(INSTALL_INCLUDEDIR))
+	@$(call INSTALL_FILES_FROM_FOLDER,$(GENERATION_DIR),$(PROJECT_INFO_HPP),$(INSTALL_INCLUDEDIR)/$(TARGET_NAME))
+endef
 
 ###############################################################################
-# Install the pkg-config file (the project target shall be a library).
-###############################################################################
+#? Install hpp files from include/ folder into INSTALL_INCLUDEDIR
+define INSTALL_INCLUDE_FOLDER
+    @$(call INSTALL_CXX_HEADER_FILES,$(P)/include,$(INSTALL_INCLUDEDIR))
+endef
 
+###############################################################################
+#? Install hpp files from src/ folder into INSTALL_INCLUDEDIR
+define INSTALL_PROJECT_HEADERS_FROM_SRC_FOLDER
+    @$(call INSTALL_CXX_HEADER_FILES,$(P)/src,$(INSTALL_INCLUDEDIR))
+endef
+
+###############################################################################
+#? Install the project pkg-config file
 define INSTALL_PROJECT_PKG_CONFIG
 	@$(call print-install,$(TARGET_NAME),$(PKG_FILE_NAME),$(INSTALL_PKGLIBDIR))
 	$(Q)install -d -m 755 $(INSTALL_PKGLIBDIR)
@@ -1010,9 +993,7 @@ define INSTALL_PROJECT_PKG_CONFIG
 endef
 
 ###############################################################################
-# Install shared libraries (the project target shall be a library).
-###############################################################################
-
+#? Install shared libraries
 define INSTALL_PROJECT_SHARED_LIBRARIES
 	@$(call print-install,$(TARGET_NAME),$(SHARED_LIB_NAME),$(INSTALL_LIBDIR))
 	$(Q)install -d -m 755 $(INSTALL_LIBDIR)
@@ -1022,9 +1003,7 @@ define INSTALL_PROJECT_SHARED_LIBRARIES
 endef
 
 ###############################################################################
-# Install static libraries (the project target shall be a library).
-###############################################################################
-
+#? Install static libraries
 define INSTALL_PROJECT_STATIC_LIBRARIES
 	@$(call print-install,$(TARGET_NAME),$(STATIC_LIB_NAME),$(INSTALL_LIBDIR))
 	$(Q)install -d -m 755 $(INSTALL_LIBDIR)
@@ -1032,12 +1011,52 @@ define INSTALL_PROJECT_STATIC_LIBRARIES
 endef
 
 ###############################################################################
-# Install all .hpp files (the project target shall be a library).
-###############################################################################
+#? Install the project binary
+define INSTALL_PROJECT_BINARY
+	@$(call print-install,$(TARGET_NAME),$(TARGET_NAME),$(INSTALL_BINDIR))
+	$(Q)install -d -m 755 $(INSTALL_BINDIR)
+ifndef EXAEQUOS
+	$(Q)install -m 644 $(TARGET_BINARY_NAME) $(INSTALL_BINDIR)/$(TARGET_NAME)-$(PROJECT_VERSION)
+	$(Q)cd $(INSTALL_BINDIR) && ln -sf $(TARGET_NAME)-$(PROJECT_VERSION) $(TARGET_NAME)
+else
+	$(Q)install -m 644 $(TARGET_BINARY_BASE_NAME).js $(INSTALL_BINDIR)/$(TARGET_NAME).js
+	$(Q)install -m 644 $(TARGET_BINARY_BASE_NAME).wasm $(INSTALL_BINDIR)/$(TARGET_NAME).wasm
+	$(call CREATE_EXAEQUOS_HTML,exa.html)
+endif
+endef
 
-define INSTALL_PROJECT_HEADERS
-	@$(call HELPER_INSTALL_CXX_HEADER_FILES,$(P)/include,$(INSTALL_INCLUDEDIR))
-	@$(call HELPER_INSTALL_CXX_HEADER_FILES,$(P)/src,$(INSTALL_INCLUDEDIR))
+###############################################################################
+# Install all .hpp files selected by HEADER_FILES
+# Helper macro: Install files from absolute paths, converting them to relative paths
+# $1: List of files (absolute paths)
+# $2: Destination directory
+# This converts paths like $(P)/src/Robotik/Renderer/file.hpp to Robotik/Renderer/file.hpp
+###############################################################################
+define INSTALL_ABSOLUTE_FILES_AS_RELATIVE
+	@$(call print-install,$(TARGET_NAME),$1,$2)
+	$(Q)P_ROOT="$(abspath $(P))"; \
+	DEST="$(abspath $2)"; \
+	for file in $1; do \
+		FILE="$$(readlink -f "$$file" 2>/dev/null || echo "$$file")"; \
+		SRC_PATH="$${FILE#$$P_ROOT/src/}"; \
+		INC_PATH="$${FILE#$$P_ROOT/include/}"; \
+		if [ "$$SRC_PATH" != "$$FILE" ]; then \
+			REL_PATH="$$SRC_PATH"; \
+		elif [ "$$INC_PATH" != "$$FILE" ]; then \
+			REL_PATH="$$INC_PATH"; \
+		else \
+			REL_PATH="$$(basename "$$FILE")"; \
+		fi; \
+		REL_DIR="$$(dirname "$$REL_PATH")"; \
+		mkdir -p "$$DEST/$$REL_DIR" && \
+		install -m 644 "$$FILE" "$$DEST/$$REL_PATH"; \
+	done
+endef
+
+###############################################################################
+#? Install the selected header files
+define INSTALL_SELECTED_HEADERS
+    @$(call INSTALL_ABSOLUTE_FILES_AS_RELATIVE,$(HEADER_FILES),$(INSTALL_INCLUDEDIR))
 endef
 
 ###############################################################################
@@ -1231,7 +1250,7 @@ endef
 ###############################################################################
 
 .PHONY: all
-all: compiler-info target creating-build-folder pre-build internal-libs-deps $(TARGET_SHARED_LIB_NAME) $(TARGET_STATIC_LIB_NAME) $(TARGET_PKG_FILE_NAME) $(TARGET_BINARY_NAME) post-build
+all: compiler-info print-target creating-build-folder pre-build internal-libs-deps $(TARGET_SHARED_LIB_NAME) $(TARGET_STATIC_LIB_NAME) $(TARGET_PKG_FILE_NAME) $(TARGET_BINARY_NAME) post-build
 
 # Ensure internal libraries are compiled before main targets
 internal-libs-deps: $(DIRS_WITH_MAKEFILE)
@@ -1368,7 +1387,7 @@ endif
 
 ifdef DIRS_WITH_MAKEFILE
 .PHONY: $(DIRS_WITH_MAKEFILE)
-$(DIRS_WITH_MAKEFILE):
+$(DIRS_WITH_MAKEFILE): | compiler-info
 	$(Q)$(MAKE) --no-print-directory $(addprefix --directory=,$@) all
 endif
 
@@ -1396,13 +1415,13 @@ $(LIB_OBJS) $(OBJS): | $(GENERATED_HEADER_PROJECT_INFO)
 $(GENERATED_HEADER_PROJECT_INFO): $(LIST_MYMAKEFILES) | creating-build-folder
 	@$(call print-out,Generating projet info,$(TARGET_NAME),$(GENERATED_HEADER_PROJECT_INFO))
 	@$(MKDIR) $(GENERATION_DIR)
-	@$(ECHO) "VERSION=$(PROJECT_VERSION)" > $(GENERATION_DIR)/$(PROJECT_INFO).txt
-	@$(ECHO) "PROJECT=$(PROJECT_NAME)" >> $(GENERATION_DIR)/$(PROJECT_INFO).txt
-	@$(ECHO) "TARGET=$(TARGET_NAME)" >> $(GENERATION_DIR)/$(PROJECT_INFO).txt
-	@$(ECHO) "TARGET_DESCRIPTION=\"$(TARGET_DESCRIPTION)\"" >> $(GENERATION_DIR)/$(PROJECT_INFO).txt
-	@$(ECHO) "DATA_PATHS=$(SEARCH_DATA_PATHS)" >> $(GENERATION_DIR)/$(PROJECT_INFO).txt
-	@$(ECHO) "TEMPDIR=$(PROJECT_TEMP_DIR)" >> $(GENERATION_DIR)/$(PROJECT_INFO).txt
-	@$(ECHO) "COMPILATION_MODE=$(COMPILATION_MODE)" >> $(GENERATION_DIR)/$(PROJECT_INFO).txt
+	@$(ECHO) "VERSION=$(PROJECT_VERSION)" > $(GENERATION_DIR)/$(PROJECT_INFO_TXT)
+	@$(ECHO) "PROJECT=$(PROJECT_NAME)" >> $(GENERATION_DIR)/$(PROJECT_INFO_TXT)
+	@$(ECHO) "TARGET=$(TARGET_NAME)" >> $(GENERATION_DIR)/$(PROJECT_INFO_TXT)
+	@$(ECHO) "TARGET_DESCRIPTION=\"$(TARGET_DESCRIPTION)\"" >> $(GENERATION_DIR)/$(PROJECT_INFO_TXT)
+	@$(ECHO) "DATA_PATHS=$(SEARCH_DATA_PATHS)" >> $(GENERATION_DIR)/$(PROJECT_INFO_TXT)
+	@$(ECHO) "TEMPDIR=$(PROJECT_TEMP_DIR)" >> $(GENERATION_DIR)/$(PROJECT_INFO_TXT)
+	@$(ECHO) "COMPILATION_MODE=$(COMPILATION_MODE)" >> $(GENERATION_DIR)/$(PROJECT_INFO_TXT)
 	@$(SCRIPT_CONFIG) $(GENERATION_DIR)/$(PROJECT_INFO)
 
 ###############################################################################
@@ -1522,17 +1541,17 @@ ifneq ($(OS),Emscripten)
   ifdef TARGET_PKG_FILE_NAME
 	$(Q)$(call INSTALL_PROJECT_PKG_CONFIG)
   endif
-# FIXME: Actuellement on copie plusieurs fois les memes fichiers. Seul la regle
-# du Makefile a la racine devrait le faire mais actuellement il faut compiler une
-# lib. Si on compile une application et des sous lib, on ne compie pas les fichiers
-# headers.
-#  ifeq ($(abspath .), $(abspath $(P)))
-	$(Q)$(call INSTALL_PROJECT_HEADERS)
-#  endif
+  ifdef HEADER_FILES
+	$(Q)$(call INSTALL_SELECTED_HEADERS)
+	$(Q)$(call INSTALL_PROJECT_INFO_HEADER)
+  endif
+  ifdef LIB_OBJS
+	$(Q)$(call INSTALL_INCLUDE_FOLDER)
+  endif
   ifeq ($(abspath .), $(abspath $(P)))
 	$(Q)$(call INSTALL_PROJECT_DOC)
 	$(Q)$(call INSTALL_PROJECT_DATA)
-	$(Q)$(call INSTALL_PROJECT_INFO_FILES)
+	$(Q)$(call INSTALL_PROJECT_OTHER_FILES)
   endif
 endif
 
@@ -1576,14 +1595,6 @@ ifeq ($(abspath .), $(abspath $(P)))
 endif
 
 ###############################################################################
-#? Display the description of the project.
-###############################################################################
-
-.PHONY: target
-target: compiler-info
-	@$(call print-to,"[TARGET]",$(TARGET_DESCRIPTION),$(PROJECT_NAME))
-
-###############################################################################
 #? Display the version of the project.
 ###############################################################################
 
@@ -1606,6 +1617,11 @@ project-name:
 .PHONY: target-name
 target-name:
 	@$(ECHO) $(TARGET_NAME)
+
+# Private rules
+.PHONY: print-target
+print-target:
+	@$(call print-to,"[TARGET]",$(TARGET_DESCRIPTION),$(PROJECT_NAME))
 
 ###############################################################################
 #? Display the description of the target.
@@ -1642,34 +1658,34 @@ ifeq ($(COMPILATION_MODE),debug)
 	@$(ECHO) " Project compiled in debug mode"
 endif
 
-###############################################################################
-#? Run the binary with optional arguments. For example make run -- foo --help
-###############################################################################
+##############################################################################
+# Pass extra arguments to your applications. For example make run -- foo --help
+##############################################################################
 
-ifdef TARGET_BINARY_NAME
-# Pass extra arguments to your applications
 ifeq (run,$(firstword $(MAKECMDGOALS)))
     RUN_ARGS := $(wordlist 2,$(words $(MAKECMDGOALS)),$(MAKECMDGOALS))
 endif
 
-.PHONY: run
-run: all
-	$(Q)$(RUN) $(TARGET_BINARY_NAME) $(RUN_ARGS) && $(ECHO_COLOR) "$(GREEN)  Error code: $$?$(COLOR_DEFAULT)" || $(ECHO_COLOR) "$(RED)  Error code: $$?$(COLOR_DEFAULT)"
-
-# Do not interprete arguments as makefile rule
+# Do not interpret arguments as makefile goals
 ifdef RUN_ARGS
 .PHONY: $(RUN_ARGS)
 $(RUN_ARGS):;@:
 endif
-endif
+
+###############################################################################
+#? Run the binary with optional arguments. For example make run -- foo --help
+###############################################################################
+
+.PHONY: run
+run:
+	$(Q)$(RUN) $(RUNNING_TARGET_NAME) $(RUN_ARGS) && $(ECHO_COLOR) "$(GREEN)  Error code: $$?$(COLOR_DEFAULT)" || $(ECHO_COLOR) "$(RED)  Error code: $$?$(COLOR_DEFAULT)"
 
 ###############################################################################
 #? Call unit-tests with code coverage.
 ###############################################################################
 
 .PHONY: check tests
-check:
-tests:
+check tests:
 	@$(call print-simple,"Compiling unit tests",$(PROJECT_NAME))
 ifneq ($(wildcard $(PROJECT_TESTS)/.),)
 	@$(MAKE) -C $(PROJECT_TESTS) coverage
