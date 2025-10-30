@@ -17,18 +17,19 @@ While CMake is a popular choice, MyMakefile serves as an alternative to CMake fo
 ## 🌟 MyMakefile Goals
 
 - Encapsulate all complex Makefile rules in two files that you can include in your project, handling:
-  - C++ file compilation
-  - A small manifest file for downloading third-party libraries
-  - Compilation flag management
-  - Application bundling (including macOS bundles)
-  - Shared/static library creation (contrary to CMake, both are created)
-  - Installation on your system (header files, doc, libraries)
-  - Creation/installation of pkg-config files
-  - Documentation generation (Doxygen)
-  - Unit tests and code coverage
-  - RPM creation
-  - Code formatting (clang-format integration)
-  - Static analysis (cppcheck integration)
+  - C++ file compilation.
+  - A small manifest file for downloading third-party libraries.
+  - Compilation flag management.
+  - Application bundling (including macOS bundles).
+  - Shared/static library creation (contrary to CMake, both are created).
+  - Installation on your system (header files, doc, libraries).
+  - Creation/installation of pkg-config files.
+  - Documentation generation (Doxygen).
+  - Unit tests and code coverage.
+  - RPM creation.
+  - Code formatting (clang-format integration).
+  - Static analysis (cppcheck integration).
+  - call dev tools (cppcheck, clang-format, asan, benchmark, gprof, coverity-scan, OpenSuse Build System, )
 - Define your project structure in just a few lines of Makefile syntax.
 - Let MyMakefile handle all the complex build rules for you.
 
@@ -136,8 +137,7 @@ Here are some of my projects that use MyMakefile instead of CMake:
 
 ## 🔧 Compiling for MacOS
 
-By default, the behavior will compile like done with Linux. To create Bundle applications, you have to add
-the following code:
+By default, the behavior will compile like done with Linux. To create Bundle applications, you have to add the following code:
 
 ```makefile
 ifeq ($(OS),Darwin)
@@ -179,7 +179,152 @@ make rpm
 
 ## 📖 Documentation
 
+- The `help` rule will display you all variables you can override and prebuilt rules you can call. Note that rules with `::` allow you to append your own commands.
 - For detailed API documentation, see [API.md](doc/API.md).
+
+```bash
+make help
+Usage:
+  [VERBOSE=1] make [flags...] <target>
+
+You can override the following flags:
+
+  AUTHOR                                                                Auto-detect author from git config or system user
+    Default value: $(shell git config --global user.name 2>/dev/null                                                                                                       echo $(USER))
+  ECHO                                                                  Echo command for colors
+    Default value: echo
+  ECHO_COLOR                                                            Echo command for colors
+    Default value: $(ECHO) -e
+  DESTDIR                                                               Define where the project will be installed: $(DESTDIR)$(PREFIX)/lib and $(DESTDIR)$(PREFIX)/bin.
+    Default value:
+  PREFIX                                                                Define where the project will be installed: $(DESTDIR)$(PREFIX)/lib and $(DESTDIR)$(PREFIX)/bin
+    Default value: /usr/local
+  INCLUDEDIR                                                            Define where to install includes.
+    Default value: $(PREFIX)/include
+  LIBDIR                                                                Define where to install libraries.
+    Default value: $(PREFIX)/lib
+  PKGLIBDIR                                                             Define where to install pkgconfig files.
+    Default value: $(LIBDIR)/pkgconfig
+  DATADIR                                                               Define where to install data and documentation.
+    Default value: $(PREFIX)/share
+  BINDIR                                                                Define where to install standalone applications.
+    Default value: $(PREFIX)/bin
+  TMPDIR                                                                Define where to you can store temporary files.
+    Default value: /tmp
+  BUILD                                                                 Name of the directory holding the compilation artifacts.
+    Default value: build
+  THIRD_PARTIES_FOLDER_NAME                                             Name of the directory holding third parties libraries (external libraries).
+    Default value: external
+  DOC_FOLDER_NAME                                                       Name of the directory holding documentation.
+    Default value: doc
+  PROJECT_GENERATED_FOLDER_NAME                                         Name of the directory holding generated reports.
+    Default value: doc
+  GENERATED_DOXYGEN_DIR                                                 Directory where Doxygen is generated
+    Default value: $(PROJECT_GENERATED_DOC_DIR)/doxygen
+  GPROF_ANALYSIS                                                        Path of the generated profiling analysis
+    Default value: $(PROJECT_GENERATED_DOC_DIR)/profiling/analysis.txt
+  COVERAGE_DIR                                                          Path of the generated code coverage report
+    Default value: $(PROJECT_GENERATED_DOC_DIR)/code-coverage
+  COVERAGE_HTML_RAPPORT                                                 Path of the generated code coverage report
+    Default value: $(COVERAGE_DIR)/coverage.html
+  COVERAGE_LCOV_RAPPORT                                                 Path of the generated code coverage report
+    Default value: $(COVERAGE_DIR)/lcov.info
+  DATA_FOLDER_NAME                                                      Define the directory holding project data.
+    Default value: data
+  PROJECT_TESTS                                                         Define the directory holding unit tests.
+    Default value: tests
+  MACOS_BUNDLE_ICON                                                     Path to the default icon for MacOS bundle applications.
+    Default value: $(M)/assets/$(DATA_FOLDER_NAME)/macos.icns
+  PATH_PROJECT_LOGO                                                     Path to the default icon for MacOS bundle applications.
+    Default value: $(abspath $(M)/assets/icons/logo.png)
+  DOXYGEN_INPUTS                                                        Path to the default icon for MacOS bundle applications.
+    Default value: $(abspath $(P)/README.md $(P)/src $(P)/include)
+  PROJECT_TEMP_DIR                                                      Path where to store temporary project files.
+    Default value: $(TMPDIR)/$(PROJECT_NAME)/$(PROJECT_VERSION)
+  PROJECT_OTHER_FILES                                                    Path where to store temporary project files.
+    Default value: AUTHORS LICENSE README.md ChangeLog VERSION
+  REGEXP_CXX_HEADER_FILES                                               Path where to store temporary project files.
+    Default value: *.hpp *.ipp *.tpp *.hh *.h *.hxx *.incl
+  PREVENT_SHARED_LIB_UNLOAD                                             Use nodelete flag for shared libraries
+    Default value:
+  CUSTOM_RPATH                                                          Custom runtime library search paths (rpath) - colon separated
+    Default value:
+  DO_NOT_COMPILE_STATIC_LIB                                             Do not compile static library
+    Default value:
+  DO_NOT_COMPILE_SHARED_LIB                                             Do not compile shared library
+    Default value:
+  LICENSE                                                               Do not compile shared library
+    Default value: $(if $(DETECTED_LICENSE),$(DETECTED_LICENSE),MIT)
+  CXX_STANDARD                                                          Select the C++ standard.
+    Default value: --std=c++14
+  EMCC                                                                  Select the C++ standard.
+    Default value: emcc
+  EMCXX                                                                 Select the C++ standard.
+    Default value: em++
+  EMAR                                                                  Select the C++ standard.
+    Default value: emar
+  CC                                                                    Select the C++ standard.
+    Default value:
+  CXX                                                                   Select the C++ standard.
+    Default value:
+  AR                                                                    Select the C++ standard.
+    Default value: ar
+  ARFLAGS                                                               Select the C++ standard.
+    Default value: crs
+  RUN                                                                   Select the C++ standard.
+    Default value:
+  STRIP                                                                 Select the C++ standard.
+    Default value: strip -R .comment -R .note -R .note.ABI-tag
+  PKG_CONFIG_SEARCH_PATH                                                Select the C++ standard.
+    Default value:
+
+Targets:
+
+  all:                        Compile the standalone application or static/shared libraries.
+  asan:                       Launch the executable with address sanitizer (if enabled).
+  benchmark:                  Run benchmark.
+  build-stats:                Show build statistics.
+  check:                      Call unit-tests with code coverage.
+  check-compiled-with-gprof:  Launch the executable with gprof.
+  check-deps:                 Check dependencies.
+  check-harden:               Check if your project is harden
+  clean::                     Clean the build folder.
+  compilation-mode:           Display the compilation mode of the project.
+  compile-external-libs:      Compile external projects needed.
+  compiler-info:              Display the compiler version and information.
+  coverage:                   Generate the code coverage html rapport.
+  coverity-scan:              Create a tarball for Coverity Scan a static analysis of code.
+  creating-build-folder:      Ensure .clang-format file exists at the project root.
+  cxx-standard:               Display the C++ standard used.
+  doc:                        Generate the code source documentation with doxygen.
+  download-external-libs::    Download external github code source needed by this project.
+  ensure-clang-format:        Ensure .clang-format file exists at the project root or install it.
+  format-source-code:         Format source code with .clang-format file (else a default one is installed).
+  gprof:                      Launch the executable with gprof.
+  help:                       Show this help.
+  install::                   Install the project artifacts on the operating system
+  internal-libs-deps:         Compile the standalone application or static/shared libraries.
+  lint:                       Run static analysis.
+  list-targets:               List all available targets.
+  list-variables:             List all key project variables.
+  obs:                        Create an uploadable tarball for the OpenSuse Build Service.
+  post-build::                Compile the standalone application or static/shared libraries.
+  post-build::                Post-build actions: rules to extend after the build process.
+  pre-build::                 Pre-build actions: rules to extend before the build process.
+  project-name:               Display the name of the project.
+  project-version:            Display the version of the project.
+  rebuild:                    Rebuild the project.
+  rpm:                        Build RPM package using auto-generated spec file.
+  run:                        Run the binary with optional arguments. For example make run -- foo --help
+  show-flags:                 Show compilation flags.
+  show-paths:                 Show project paths.
+  size-analysis:              Show size analysis.
+  tarball:                    Compress project sources without in the goal to backup the code or share it.
+  target-description:         Display the description of the target.
+  target-name:                Display the name of the target.
+  tests:                      Call unit-tests with code coverage.
+  veryclean::                 Clean everything: build, third-parties, documentation, and generated files.
+```
 
 ## 📝 License
 
