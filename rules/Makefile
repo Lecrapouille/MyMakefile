@@ -124,7 +124,9 @@ endif
 # Compiler detection and version management
 ###############################################################################
 
-ifneq ($(filter %.cpp,$(strip $(SRC_FILES) $(LIB_FILES))),)
+ifdef ORCHESTRATOR_MODE
+    COMPILER := $(CXX) $(CXX_STANDARD)
+else ifneq ($(filter %.cpp,$(strip $(SRC_FILES) $(LIB_FILES))),)
     COMPILER := $(CXX) $(CXX_STANDARD)
 else
     COMPILER := $(CC)
