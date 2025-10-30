@@ -1265,14 +1265,7 @@ endef
 #? Compile the standalone application or static/shared libraries.
 ###############################################################################
 
-.PHONY: all
-all: compiler-info print-target creating-build-folder pre-build internal-libs-deps $(TARGET_SHARED_LIB_NAME) $(TARGET_STATIC_LIB_NAME) $(TARGET_PKG_FILE_NAME) $(TARGET_BINARY_NAME) post-build
-
-# Ensure internal libraries are compiled before main targets
-internal-libs-deps: $(DIRS_WITH_MAKEFILE)
-
-# Ensure post-build is always executed after all other build targets
-post-build: $(TARGET_SHARED_LIB_NAME) $(TARGET_STATIC_LIB_NAME) $(TARGET_PKG_FILE_NAME) $(TARGET_BINARY_NAME)
+all: compiler-info print-target creating-build-folder pre-build $(DIRS_WITH_MAKEFILE) $(TARGET_SHARED_LIB_NAME) $(TARGET_STATIC_LIB_NAME) $(TARGET_PKG_FILE_NAME) $(TARGET_BINARY_NAME) post-build
 
 ###############################################################################
 #? Pre-build actions: rules to extend before the build process.
@@ -1286,7 +1279,17 @@ pre-build::
 ###############################################################################
 
 .PHONY: post-build
-post-build:
+post-build::
+
+###############################################################################
+# Compile sub Makefiles we depend on.
+###############################################################################
+
+ifdef DIRS_WITH_MAKEFILE
+.PHONY: $(DIRS_WITH_MAKEFILE)
+$(DIRS_WITH_MAKEFILE):
+	$(Q)$(MAKE) --no-print-directory $(addprefix --directory=,$@) all
+endif
 
 ###############################################################################
 #? Ensure .clang-format file exists at the project root.
@@ -1395,16 +1398,6 @@ $(OBJS_ROOT_DIR)/%.o: %.S $(OBJS_ROOT_DIR)/%.d $(LIST_MYMAKEFILES) | $(OBJS_ROOT
 	@$(MKDIR) $(dir $@)
 	$(Q)$(CC) $(DEPFLAGS) $(CCFLAGS) $(DEFINES) $(INCLUDES) -c $(abspath $<) -o $(abspath $@)
 	@$(POSTCOMPILE)
-endif
-
-###############################################################################
-# Compile sub Makefiles we depend on.
-###############################################################################
-
-ifdef DIRS_WITH_MAKEFILE
-.PHONY: $(DIRS_WITH_MAKEFILE)
-$(DIRS_WITH_MAKEFILE): | compiler-info
-	$(Q)$(MAKE) --no-print-directory $(addprefix --directory=,$@) all
 endif
 
 ###############################################################################
