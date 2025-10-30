@@ -271,6 +271,9 @@ PREFIX ?= /usr/local
 #? Define where to install includes.
 INCLUDEDIR ?= $(PREFIX)/include
 
+# Workaround initial missing initial space
+INCLUDES := " "
+
 #? Define where to install libraries.
 LIBDIR ?= $(PREFIX)/lib
 

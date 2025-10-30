@@ -1907,14 +1907,18 @@ endif
 
 .PHONY: build-stats
 build-stats:
-	@$(ECHO_COLOR) "$(CYAN)Build statistics:$(COLOR_DEFAULT)"
-	@$(ECHO_COLOR) "  $(PURPLE)Source files$(COLOR_DEFAULT): $(words $(SRC_FILES))"
-	@$(ECHO_COLOR) "  $(PURPLE)Library files$(COLOR_DEFAULT): $(words $(LIB_FILES))"
-	@$(ECHO_COLOR) "  $(PURPLE)Object files$(COLOR_DEFAULT): $(words $(OBJS) $(LIB_OBJS))"
-	@$(ECHO_COLOR) "  $(PURPLE)Include directories$(COLOR_DEFAULT): $(words $(INCLUDES))"
+	@$(ECHO_COLOR) "$(CYAN)Build statistics for $(TARGET_NAME):$(COLOR_DEFAULT)"
+	@$(ECHO_COLOR) "  $(PURPLE)Source files$(COLOR_DEFAULT): $(words $(SRC_FILES)): $(strip $(SRC_FILES))"
+	@$(ECHO_COLOR) "  $(PURPLE)Library files$(COLOR_DEFAULT): $(words $(LIB_FILES)): $(strip $(LIB_FILES))"
+	@$(ECHO_COLOR) "  $(PURPLE)Object files$(COLOR_DEFAULT): $(words $(OBJS) $(LIB_OBJS)): $(strip $(OBJS) $(LIB_OBJS))"
+	@$(ECHO_COLOR) "  $(PURPLE)Include directories$(COLOR_DEFAULT): $(words $(INCLUDES)): $(strip $(INCLUDES))"
+	@$(ECHO_COLOR) "  $(PURPLE)Internal libraries$(COLOR_DEFAULT): $(words $(INTERNAL_LIBS)): $(strip $(INTERNAL_LIBS))"
 ifdef PKG_LIBS
-	@$(ECHO_COLOR) "  $(PURPLE)External libraries$(COLOR_DEFAULT): $(words $(PKG_LIBS))"
+	@$(ECHO_COLOR) "  $(PURPLE)External libraries$(COLOR_DEFAULT): $(words $(PKG_LIBS)): $(strip $(PKG_LIBS))"
 endif
+	$(Q)for d in $(DIRS_WITH_MAKEFILE); do \
+	$(MAKE) --no-print-directory $(addprefix --directory=,$$d) build-stats; \
+	done
 
 ###############################################################################
 #? Format source code.
