@@ -333,7 +333,7 @@ RPM_SPEC_FILE := $(RPM_TOPDIR)/SPECS/$(PROJECT_NAME).spec
 OBJS_ROOT_DIR := $(BUILD_PATH)/$(COMPILATION_MODE)/objs-$(OS)/$(TARGET_NAME)
 
 # Directory holding generated files.
-GENERATION_DIR := $(BUILD_PATH)/generated/$(PROJECT_NAME)
+GENERATION_DIR := $(BUILD_PATH)/generated/$(TARGET_NAME)
 COMPILER_INFO_DONE := $(GENERATION_DIR)/.compiler-info
 
 # Directory holding downloaded stuffs.
