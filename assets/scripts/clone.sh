@@ -52,7 +52,7 @@ CLONE_ARGS=("$@")
 RECURSIVE=false
 if [[ "$REPO" == *":recurse"* ]]; then
     RECURSIVE=true
-    REPO=${repo/:recurse/}
+    REPO=${REPO/:recurse/}
 fi
 
 # Parse repository and reference
@@ -75,10 +75,53 @@ fi
 
 # Extract repo name for directory
 DIR_NAME=${REPO_NAME##*/}
+REPO_PATH="$DEST_PATH/$DIR_NAME"
+EXPECTED_REMOTE="$GITHUB_URL/$REPO_NAME"
 
-# Check if destination path does not exist
-if [ -d "$DEST_PATH/$DIR_NAME" ]; then
-    echo -e "\033[35m*** Destination path already exists: \033[36m$DEST_PATH/$DIR_NAME\033[00m"
+# Update existing repository when destination exists
+if [ -d "$REPO_PATH" ]; then
+    echo -e "\033[35m*** Updating existing repository: \033[36m$REPO_PATH\033[00m"
+    if [ ! -d "$REPO_PATH/.git" ]; then
+        fatal "Destination path exists but is not a git repository: $REPO_PATH"
+    fi
+
+    CURRENT_REMOTE=$(git -C "$REPO_PATH" remote get-url origin 2>/dev/null || echo "")
+
+    if [ -n "$CURRENT_REMOTE" ] && [ "$CURRENT_REMOTE" != "$EXPECTED_REMOTE" ]; then
+        fatal "Existing repository remote '$CURRENT_REMOTE' differs from expected '$EXPECTED_REMOTE'"
+    fi
+
+    (
+        cd "$REPO_PATH"
+
+        if [ -z "$CURRENT_REMOTE" ]; then
+            git remote add origin "$EXPECTED_REMOTE" > /dev/null
+        fi
+
+        git fetch origin --tags --prune > /dev/null 2>&1
+
+        if [ -n "$REF" ]; then
+            if [[ "$REF" =~ ^[0-9a-f]{40}$ ]]; then
+                git fetch origin "$REF" > /dev/null 2>&1
+                git checkout -B "sha1-$REF" "$REF" > /dev/null
+                echo -e "\033[35m*** Fetched SHA1: \033[36m$REF\033[00m"
+            else
+                git fetch origin "$REF" > /dev/null 2>&1 || true
+                if git show-ref --verify --quiet "refs/heads/$REF"; then
+                    git checkout "$REF" > /dev/null 2>&1
+                    git pull --ff-only origin "$REF" > /dev/null 2>&1
+                elif git show-ref --verify --quiet "refs/remotes/origin/$REF"; then
+                    git checkout -B "$REF" "origin/$REF" > /dev/null 2>&1
+                else
+                    git checkout "$REF" > /dev/null 2>&1
+                fi
+                echo -e "\033[35m*** Checked out branch: \033[36m$REF\033[00m"
+            fi
+        else
+            git pull --ff-only --no-tags > /dev/null 2>&1
+            echo -e "\033[35m*** Pulled default branch\033[00m"
+        fi
+    )
     exit 0
 fi
 

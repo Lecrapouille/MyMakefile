@@ -118,11 +118,64 @@ function clone_repo()
 
     local ref_msg="[HEAD]"
     [ -n "$ref" ] && ref_msg="[$ref]"
-    echo -e "\033[35m*** $clone_msg: \033[36m$GITHUB_URL/$repo_name\033[00m => \033[33m$PROJECT_NAME \033[37m$ref_msg\033[00m"
 
     # Extract repo name for directory
     local dir_name=${repo_name##*/}
-    rm -rf "$dir_name"
+    local repo_path="$dir_name"
+    local expected_remote="$GITHUB_URL/$repo_name"
+
+    if [ -d "$repo_path" ]; then
+        echo -e "\033[35m*** Updating: \033[36m$expected_remote\033[00m => \033[33m$PROJECT_NAME \033[37m$ref_msg\033[00m"
+        if [ ! -d "$repo_path/.git" ]; then
+            fatal "Destination path exists but is not a git repository: $repo_path"
+        fi
+
+        local current_remote
+        current_remote=$(git -C "$repo_path" remote get-url origin 2>/dev/null || echo "")
+
+        if [ -n "$current_remote" ] && [ "$current_remote" != "$expected_remote" ]; then
+            fatal "Existing repository remote '$current_remote' differs from expected '$expected_remote'"
+        fi
+
+        (
+            cd "$repo_path"
+
+            if [ -z "$current_remote" ]; then
+                git remote add origin "$expected_remote" > /dev/null
+            fi
+
+            git fetch --quiet origin --tags --prune
+
+            if [ -n "$ref" ]; then
+                if [[ "$ref" =~ ^[0-9a-f]{40}$ ]]; then
+                    git fetch --quiet origin "$ref"
+                    git checkout --quiet -B "sha1-$ref" "$ref" 2> /dev/null || git checkout --quiet "sha1-$ref"
+                    echo -e "\033[35m*** Fetched SHA1: \033[36m$ref\033[00m"
+                else
+                    git fetch --quiet origin "$ref" || true
+                    if git show-ref --verify --quiet "refs/heads/$ref"; then
+                        git checkout --quiet "$ref"
+                        git pull --quiet --ff-only origin "$ref"
+                    elif git show-ref --verify --quiet "refs/remotes/origin/$ref"; then
+                        git checkout --quiet -B "$ref" "origin/$ref"
+                    else
+                        git checkout --quiet "$ref"
+                    fi
+                    echo -e "\033[35m*** Checked out branch: \033[36m$ref\033[00m"
+                fi
+            else
+                git pull --quiet --ff-only --no-tags
+                echo -e "\033[35m*** Pulled default branch\033[00m"
+            fi
+
+            if [ "$recursive" = true ]; then
+                git submodule update --init --recursive --quiet
+            fi
+        )
+        return
+    fi
+
+    echo -e "\033[35m*** $clone_msg: \033[36m$GITHUB_URL/$repo_name\033[00m => \033[33m$PROJECT_NAME \033[37m$ref_msg\033[00m"
 
     # Clone repository
     if [ -n "$ref" ]; then
