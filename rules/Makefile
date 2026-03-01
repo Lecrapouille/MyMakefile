@@ -184,7 +184,12 @@ endif
 
 # Advanced security and hardening flags
 HARDENING_FLAGS := -Wformat -Wformat-security -Werror=format-security \
-    -D_FORTIFY_SOURCE=2 -fPIE -fexceptions
+    -fPIE -fexceptions
+
+# _FORTIFY_SOURCE requires optimization (-O1 or higher)
+ifneq ($(COMPILATION_MODE),debug)
+    HARDENING_FLAGS += -D_FORTIFY_SOURCE=2
+endif
 
 # Add platform-specific hardening flags
 ifneq ($(OS),Darwin)
