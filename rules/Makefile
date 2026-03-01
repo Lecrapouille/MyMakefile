@@ -1509,9 +1509,11 @@ veryclean::
 	$(Q)$(RM) $(dir $(GPROF_ANALYSIS)) $(COVERAGE_DIR) 2> /dev/null || true
 	$(Q)$(RM) $(P)/Doxyfile compile_commands.json 2>/dev/null || true
 ifneq ("$(wildcard $(PROJECT_MANIFEST_THIRD_PARTIES))","")
-	$(Q)while IFS= read -r line; do \
+	$(Q)while IFS= read -r line || [ -n "$$line" ]; do \
 		if [ -n "$$line" ] && [ "$${line#\#}" = "$$line" ]; then \
-			lib_name=$$(echo "$$line" | cut -d'/' -f2); \
+			repo_name=$${line%@*}; \
+			repo_name=$${repo_name%:*}; \
+			lib_name=$${repo_name##*/}; \
 			if [ -d "$(THIRD_PARTIES_DIR)/$$lib_name" ]; then \
 				$(RM) "$(THIRD_PARTIES_DIR)/$$lib_name" 2>/dev/null || true; \
 			fi; \
