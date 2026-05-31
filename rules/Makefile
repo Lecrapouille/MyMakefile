@@ -844,6 +844,15 @@ ifdef LIB_OBJS
     endif
 endif
 
+# BUILD_MACOS_APP_BUNDLE is often set after include $(M)/project/Makefile
+# (e.g. once OS is known). Apply bundle settings here, before target names.
+ifdef BUILD_MACOS_APP_BUNDLE
+ifeq ($(OS),Darwin)
+EXT_BINARY := .app
+MACOS_APP_BINARY ?= $(OBJS_ROOT_DIR)/$(TARGET_NAME)
+endif
+endif
+
 # Define the target binary base name and name.
 TARGET_BINARY_BASE_NAME :=
 TARGET_BINARY_NAME :=
@@ -1089,24 +1098,26 @@ endef
 ###############################################################################
 
 define CREATE_MACOS_INFO_PLIST
-	@$(ECHO) "<?xml version=\"1.0\" encoding=\"UTF-8\"?>" > $(OBJS_ROOT_DIR)/$1
-	@$(ECHO) "<!DOCTYPE plist PUBLIC \"-//Apple//DTD PLIST 1.0//EN\" \"http://www.apple.com/DTDs/PropertyList-1.0.dtd\">" >> $(OBJS_ROOT_DIR)/$1
-	@$(ECHO) "<plist version=\"1.0\">" >> $(OBJS_ROOT_DIR)/$1
-	@$(ECHO) "<dict>" >> $(OBJS_ROOT_DIR)/$1
-	@$(ECHO) "    <key>CFBundleExecutable</key>" >> $(OBJS_ROOT_DIR)/$1
-	@$(ECHO) "    <string>${TARGET}</string>" >> $(OBJS_ROOT_DIR)/$1
-	@$(ECHO) "    <key>CFBundleIdentifier</key>" >> $(OBJS_ROOT_DIR)/$1
-	@$(ECHO) "    <string>com.${APPLE_IDENTIFIER}.${TARGET}</string>" >> $(OBJS_ROOT_DIR)/$1
-	@$(ECHO) "    <key>CFBundleInfoDictionaryVersion</key>" >> $(OBJS_ROOT_DIR)/$1
-	@$(ECHO) "    <string>6.0</string>" >> $(OBJS_ROOT_DIR)/$1
-	@$(ECHO) "    <key>CFBundleName</key>" >> $(OBJS_ROOT_DIR)/$1
-	@$(ECHO) "    <string>${TARGET}</string>" >> $(OBJS_ROOT_DIR)/$1
-	@$(ECHO) "    <key>CFBundlePackageType</key>" >> $(OBJS_ROOT_DIR)/$1
-	@$(ECHO) "    <string>APPL</string>" >> $(OBJS_ROOT_DIR)/$1
-	@$(ECHO) "    <key>CFBundleIconFile</key>" >> $(OBJS_ROOT_DIR)/$1
-	@$(ECHO) "    <string>${TARGET}.icns</string>" >> $(OBJS_ROOT_DIR)/$1
-	@$(ECHO) "</dict>" >> $(OBJS_ROOT_DIR)/$1
-	@$(ECHO) "</plist>" >> $(OBJS_ROOT_DIR)/$1
+	@$(ECHO) "<?xml version=\"1.0\" encoding=\"UTF-8\"?>" > $1
+	@$(ECHO) "<!DOCTYPE plist PUBLIC \"-//Apple//DTD PLIST 1.0//EN\" \"http://www.apple.com/DTDs/PropertyList-1.0.dtd\">" >> $1
+	@$(ECHO) "<plist version=\"1.0\">" >> $1
+	@$(ECHO) "<dict>" >> $1
+	@$(ECHO) "    <key>CFBundleExecutable</key>" >> $1
+	@$(ECHO) "    <string>$(TARGET_NAME)</string>" >> $1
+	@$(ECHO) "    <key>CFBundleIdentifier</key>" >> $1
+	@$(ECHO) "    <string>com.$(APPLE_IDENTIFIER).$(TARGET_NAME)</string>" >> $1
+	@$(ECHO) "    <key>CFBundleInfoDictionaryVersion</key>" >> $1
+	@$(ECHO) "    <string>6.0</string>" >> $1
+	@$(ECHO) "    <key>CFBundleName</key>" >> $1
+	@$(ECHO) "    <string>$(TARGET_NAME)</string>" >> $1
+	@$(ECHO) "    <key>CFBundlePackageType</key>" >> $1
+	@$(ECHO) "    <string>APPL</string>" >> $1
+ifneq ("$(wildcard $(MACOS_BUNDLE_ICON))","")
+	@$(ECHO) "    <key>CFBundleIconFile</key>" >> $1
+	@$(ECHO) "    <string>$(TARGET_NAME).icns</string>" >> $1
+endif
+	@$(ECHO) "</dict>" >> $1
+	@$(ECHO) "</plist>" >> $1
 endef
 
 ###############################################################################
@@ -1115,12 +1126,15 @@ endef
 
 define CREATE_MACOS_APP_BUNDLE
 	@$(call print-to,Generating bundle application,$(TARGET_NAME),$1)
-	$(Q)$(RM) $(OBJS_ROOT_DIR)/$(TARGET_NAME)$(EXT) 2> /dev/null
-	$(Q)$(MKDIR) $(OBJS_ROOT_DIR)/$(TARGET_NAME)$(EXT)/Contents/{MacOS,Resources}
-	$(Q)$(CP) $(OBJS_ROOT_DIR)/$(TARGET_NAME) $(OBJS_ROOT_DIR)/$(TARGET_NAME)$(EXT)/Contents/MacOS
-	$(Q)$(CP) $(MACOS_BUNDLE_ICON) $(OBJS_ROOT_DIR)/$(TARGET_NAME)$(EXT)/Contents/Resources/$(TARGET_NAME).icns
-	$(Q)cp -r $(PROJECT_DATA_DIR)/* $(OBJS_ROOT_DIR)/$(TARGET_NAME)$(EXT)/Contents/Resources
-	@$(call CREATE_MACOS_INFO_PLIST,$(TARGET_NAME)$(EXT)/Contents/Info.plist)
+	$(Q)$(RM) $1 2> /dev/null || true
+	$(Q)$(MKDIR) $1/Contents/MacOS
+	$(Q)$(MKDIR) $1/Contents/Resources
+	$(Q)$(CP) $(MACOS_APP_BINARY) $1/Contents/MacOS/$(TARGET_NAME)
+ifneq ("$(wildcard $(MACOS_BUNDLE_ICON))","")
+	$(Q)$(CP) $(MACOS_BUNDLE_ICON) $1/Contents/Resources/$(TARGET_NAME).icns
+endif
+	$(Q)cp -r $(PROJECT_DATA_DIR)/* $1/Contents/Resources/
+	@$(call CREATE_MACOS_INFO_PLIST,$1/Contents/Info.plist)
 endef
 
 ###############################################################################
@@ -1358,13 +1372,20 @@ ifdef OBJS
 $(TARGET_BINARY_NAME): $(OBJS) $(LIST_MYMAKEFILES) $(DIRS_WITH_MAKEFILE)
 	@$(call print-to,Linking,$(TARGET_NAME),$@)
 	@$(MKDIR) $(dir $@)
+ifdef BUILD_MACOS_APP_BUNDLE
+	@$(MKDIR) $(OBJS_ROOT_DIR)
+	$(Q)$(COMPILER) $(LDFLAGS) $(OBJS) $(THIRD_PARTIES_OBJS) -o $(MACOS_APP_BINARY) $(THIRD_PARTIES_LIBS) $(INTERNAL_LIBS) $(NOT_PKG_LIBS) $(PKGCFG_LIBS) $(LINKER_FLAGS) $(USER_LDFLAGS)
+ifdef STRIP
+	@$(call print-to,Stripping,$(TARGET_NAME),$(MACOS_APP_BINARY))
+	$(Q)$(STRIP) $(MACOS_APP_BINARY) || $(ECHO_COLOR) "$(YELLOW)Warning: Failed to strip symbols$(COLOR_DEFAULT)"
+endif
+	$(Q)$(call CREATE_MACOS_APP_BUNDLE,$(abspath $(TARGET_BINARY_NAME)))
+else
 	$(Q)$(COMPILER) $(LDFLAGS) $(OBJS) $(THIRD_PARTIES_OBJS) -o $(TARGET_BINARY_NAME) $(THIRD_PARTIES_LIBS) $(INTERNAL_LIBS) $(NOT_PKG_LIBS) $(PKGCFG_LIBS) $(LINKER_FLAGS) $(USER_LDFLAGS)
 ifdef STRIP
 	@$(call print-to,Stripping,$(TARGET_NAME),$@)
 	$(Q)$(STRIP) $(TARGET_BINARY_NAME) || $(ECHO_COLOR) "$(YELLOW)Warning: Failed to strip symbols$(COLOR_DEFAULT)"
 endif
-ifdef BUILD_MACOS_APP_BUNDLE
-	$(Q)$(call CREATE_MACOS_APP_BUNDLE,$(TARGET_BINARY_NAME)$(EXT))
 endif
 	@$(call print-to,Build completed,$(TARGET_NAME),$@)
 endif

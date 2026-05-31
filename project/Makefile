@@ -340,6 +340,11 @@ RPM_SPEC_FILE := $(RPM_TOPDIR)/SPECS/$(PROJECT_NAME).spec
 # Root directory holding compiled C/C++ files.
 OBJS_ROOT_DIR := $(BUILD_PATH)/$(COMPILATION_MODE)/objs-$(OS)/$(TARGET_NAME)
 
+# Mach-O binary linked before wrapping into a macOS .app bundle directory.
+ifdef BUILD_MACOS_APP_BUNDLE
+MACOS_APP_BINARY := $(OBJS_ROOT_DIR)/$(TARGET_NAME)
+endif
+
 # Directory holding generated files.
 GENERATION_DIR := $(BUILD_PATH)/generated/$(TARGET_NAME)
 COMPILER_INFO_DONE := $(GENERATION_DIR)/.compiler-info
