@@ -1033,18 +1033,22 @@ endef
 
 ###############################################################################
 #? Install the project binary
+ifdef EXAEQUOS
 define INSTALL_PROJECT_BINARY
 	@$(call print-install,$(TARGET_NAME),$(TARGET_NAME),$(INSTALL_BINDIR))
 	$(Q)install -d -m 755 $(INSTALL_BINDIR)
-ifndef EXAEQUOS
-	$(Q)install -m 644 $(TARGET_BINARY_NAME) $(INSTALL_BINDIR)/$(TARGET_NAME)-$(PROJECT_VERSION)
-	$(Q)cd $(INSTALL_BINDIR) && ln -sf $(TARGET_NAME)-$(PROJECT_VERSION) $(TARGET_NAME)
-else
 	$(Q)install -m 644 $(TARGET_BINARY_BASE_NAME).js $(INSTALL_BINDIR)/$(TARGET_NAME).js
 	$(Q)install -m 644 $(TARGET_BINARY_BASE_NAME).wasm $(INSTALL_BINDIR)/$(TARGET_NAME).wasm
 	$(call CREATE_EXAEQUOS_HTML,exa.html)
-endif
 endef
+else
+define INSTALL_PROJECT_BINARY
+	@$(call print-install,$(TARGET_NAME),$(TARGET_NAME),$(INSTALL_BINDIR))
+	$(Q)install -d -m 755 $(INSTALL_BINDIR)
+	$(Q)install -m 644 $(TARGET_BINARY_NAME) $(INSTALL_BINDIR)/$(TARGET_NAME)-$(PROJECT_VERSION)
+	$(Q)cd $(INSTALL_BINDIR) && ln -sf $(TARGET_NAME)-$(PROJECT_VERSION) $(TARGET_NAME)
+endef
+endif
 
 ###############################################################################
 # Install all .hpp files selected by HEADER_FILES
