@@ -1112,10 +1112,9 @@ define CREATE_MACOS_INFO_PLIST
 	@$(ECHO) "    <string>$(TARGET_NAME)</string>" >> $1
 	@$(ECHO) "    <key>CFBundlePackageType</key>" >> $1
 	@$(ECHO) "    <string>APPL</string>" >> $1
-ifneq ("$(wildcard $(MACOS_BUNDLE_ICON))","")
-	@$(ECHO) "    <key>CFBundleIconFile</key>" >> $1
-	@$(ECHO) "    <string>$(TARGET_NAME).icns</string>" >> $1
-endif
+	@$(if $(wildcard $(MACOS_BUNDLE_ICON)),\
+		$(ECHO) "    <key>CFBundleIconFile</key>" >> $1 ;\
+		$(ECHO) "    <string>$(TARGET_NAME).icns</string>" >> $1)
 	@$(ECHO) "</dict>" >> $1
 	@$(ECHO) "</plist>" >> $1
 endef
@@ -1130,9 +1129,7 @@ define CREATE_MACOS_APP_BUNDLE
 	$(Q)$(MKDIR) $1/Contents/MacOS
 	$(Q)$(MKDIR) $1/Contents/Resources
 	$(Q)$(CP) $(MACOS_APP_BINARY) $1/Contents/MacOS/$(TARGET_NAME)
-ifneq ("$(wildcard $(MACOS_BUNDLE_ICON))","")
-	$(Q)$(CP) $(MACOS_BUNDLE_ICON) $1/Contents/Resources/$(TARGET_NAME).icns
-endif
+	$(Q)$(if $(wildcard $(MACOS_BUNDLE_ICON)),$(Q)$(CP) $(MACOS_BUNDLE_ICON) $1/Contents/Resources/$(TARGET_NAME).icns)
 	$(Q)cp -r $(PROJECT_DATA_DIR)/* $1/Contents/Resources/
 	@$(call CREATE_MACOS_INFO_PLIST,$1/Contents/Info.plist)
 endef
@@ -1484,7 +1481,7 @@ ifdef EXAEQUOS
 	$(Q)epm.py install exa-wayland glfw raylib
 endif
 	@$(call print-to,Downloading third-party libs,$(TARGET_NAME),$(THIRD_PARTIES_DIR))
-ifneq ("$(wildcard $(PROJECT_MANIFEST_THIRD_PARTIES))","")
+ifneq ($(wildcard $(PROJECT_MANIFEST_THIRD_PARTIES)),)
 	$(Q)cd $(THIRD_PARTIES_DIR) && $(SCRIPT_DOWNLOAD_THIRD_PARTIES) $(PROJECT_NAME) $(PROJECT_MANIFEST_THIRD_PARTIES)
 else
 	$(Q)$(ECHO_COLOR) "  $(YELLOW):( $(CYAN)Missing file $(PROJECT_MANIFEST_THIRD_PARTIES) $(YELLOW):("
@@ -1498,7 +1495,7 @@ endif
 .PHONY: compile-external-libs
 compile-external-libs:
 	@$(call print-to,Compiling third-party libs,$(TARGET_NAME),$(THIRD_PARTIES_DIR))
-ifneq ("$(wildcard $(PROJECT_SCRIPT_COMPILE_THIRD_PARTIES))","")
+ifneq ($(wildcard $(PROJECT_SCRIPT_COMPILE_THIRD_PARTIES)),)
 	$(Q)$(CD) $(THIRD_PARTIES_DIR) && $(SCRIPT_COMPILE_THIRD_PARTIES) $(PROJECT_NAME) $(PROJECT_SCRIPT_COMPILE_THIRD_PARTIES) $(OS) $(CC) $(CXX)
 else
 	$(Q)$(ECHO_COLOR) "  $(YELLOW):( $(CYAN)Missing file $(PROJECT_SCRIPT_COMPILE_THIRD_PARTIES) $(YELLOW):("
@@ -1533,7 +1530,7 @@ veryclean::
 	$(Q)$(RM) $(BUILD_PATH) $(GENERATED_DOXYGEN_DIR) 2> /dev/null || true
 	$(Q)$(RM) $(dir $(GPROF_ANALYSIS)) $(COVERAGE_DIR) 2> /dev/null || true
 	$(Q)$(RM) $(P)/Doxyfile compile_commands.json 2>/dev/null || true
-ifneq ("$(wildcard $(PROJECT_MANIFEST_THIRD_PARTIES))","")
+ifneq ($(wildcard $(PROJECT_MANIFEST_THIRD_PARTIES)),)
 	$(Q)while IFS= read -r line || [ -n "$$line" ]; do \
 		if [ -n "$$line" ] && [ "$${line#\#}" = "$$line" ]; then \
 			repo_name=$${line%@*}; \
