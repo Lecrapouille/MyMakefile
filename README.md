@@ -198,7 +198,7 @@ Example
 
 ```makefile
 LIB_FOO := $(call internal-lib,foo)
-LIB_BAR := $(call internal-lib,robotik-bar)
+LIB_BAR := $(call internal-lib,my-project-bar)
 INTERNAL_LIBS := $(LIB_FOO) $(LIB_BAR)
 DIRS_WITH_MAKEFILE := $(P)/src/path/to/foo $(P)/src/path/to/bar
 $(P)/src/path/to/foo $(P)/src/path/to/bar

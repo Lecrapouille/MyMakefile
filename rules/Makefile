@@ -1064,7 +1064,7 @@ endif
 # Helper macro: Install files from absolute paths, converting them to relative paths
 # $1: List of files (absolute paths)
 # $2: Destination directory
-# This converts paths like $(P)/src/Robotik/Renderer/file.hpp to Robotik/Renderer/file.hpp
+# This converts paths like $(P)/src/MyProject/foo/bar.hpp to MyProject/foo/bar.hpp
 ###############################################################################
 define INSTALL_ABSOLUTE_FILES_AS_RELATIVE
 	@$(call print-install,$(TARGET_NAME),$1,$2)
