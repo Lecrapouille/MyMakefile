@@ -1145,10 +1145,14 @@ define CREATE_PKG_CONFIG
 	@$(ECHO) "libdir=$(LIBDIR)" >> $1
 	@$(ECHO) "includedir=$(INCLUDEDIR)/$(PROJECT_NAME)/$(PROJECT_VERSION)" >> $1
 	@$(ECHO) "Name: lib$(TARGET_NAME)" >> $1
-	@$(ECHO) "Description: $(DESCRIPTION)" >> $1
+	@$(ECHO) "Description: $(TARGET_DESCRIPTION)" >> $1
 	@$(ECHO) "Version: $(PROJECT_VERSION)" >> $1
-	@$(ECHO) "Libs: -L$$""{libdir} $(strip -l$(TARGET_NAME) $(SHORT_INTERNAL_LIBS) $(NOT_PKG_LIBS) $(PKGCFG_LIBS))" >> $1
-	@$(ECHO) "Cflags: -I$$""{includedir}" >> $1
+	@$(ECHO) "Libs: -L$$""{libdir} -l$(TARGET_NAME)" >> $1
+	@$(ECHO) "Libs.private: $(strip $(SHORT_INTERNAL_LIBS) $(NOT_PKG_LIBS) $(if $(PKG_LIBS),,$(PKGCFG_LIBS)))" >> $1
+	$(Q)if [ -n "$(strip $(PKG_LIBS))" ]; then \
+		$(ECHO) "Requires.private: $(PKG_LIBS)" >> $1; \
+	fi
+	@$(ECHO) "Cflags: -I$$""{includedir} $(PKGCFG_CFLAGS)" >> $1
 endef
 
 ###############################################################################
