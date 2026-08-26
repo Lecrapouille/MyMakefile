@@ -32,7 +32,7 @@ ifeq ($(OS),Linux)
 else ifeq ($(OS),Darwin)
     NPROCS := $(shell sysctl -n hw.ncpu)
 else ifeq ($(OS),Windows)
-    NPROCS := $(shell echo %NUMBER_OF_PROCESSORS%)
+    NPROCS := $(or $(NUMBER_OF_PROCESSORS),$(shell nproc 2>/dev/null),8)
 else
     NPROCS := 1
 endif
@@ -407,7 +407,7 @@ else ifeq ($(OS),Windows)
         DEFINES += -DAPI_LINKAGE="__declspec(dllimport)"
     endif
     ifeq ($(WIN_ENV),MINGW)
-        LDFLAGS += -lmingw32
+        DLL_LDFLAGS += -lmingw32
     else
         $(error Unknown Windows environment for shared library compilation)
     endif
@@ -762,7 +762,7 @@ endif
 # include them. Let only include static third party libs inside internal libs
 # since we do not want to force installing them on the user system.
 define extract-objs-from-static-libs
-    @$(SCRIPT_EXTRACT_STATIC_LIB) $(OBJS_ROOT_DIR) $(THIRD_PARTIES_LIBS)
+    @$(BASH) $(SCRIPT_EXTRACT_STATIC_LIB) $(OBJS_ROOT_DIR) $(THIRD_PARTIES_LIBS)
     $(eval EXTRACTED_OBJS=$(addsuffix /*.o,$(addprefix $(OBJS_ROOT_DIR)/,$(basename $(notdir $(filter-out \,$(THIRD_PARTIES_LIBS) $(INTERNAL_LIBS)))))))
 endef
 
@@ -1282,7 +1282,7 @@ endef
 ###############################################################################
 
 define GIT_CLONE
-	$(SCRIPT_GIT_CLONE) $(PROJECT_NAME) $2 $1
+	$(BASH) $(SCRIPT_GIT_CLONE) $(PROJECT_NAME) $2 $1
 endef
 
 ###############################################################################
@@ -1462,7 +1462,7 @@ $(GENERATED_HEADER_PROJECT_INFO): $(LIST_MYMAKEFILES) | creating-build-folder
 	@$(ECHO) "DATA_PATHS=$(SEARCH_DATA_PATHS)" >> $(GENERATION_DIR)/$(PROJECT_INFO_TXT)
 	@$(ECHO) "TEMPDIR=$(PROJECT_TEMP_DIR)" >> $(GENERATION_DIR)/$(PROJECT_INFO_TXT)
 	@$(ECHO) "COMPILATION_MODE=$(COMPILATION_MODE)" >> $(GENERATION_DIR)/$(PROJECT_INFO_TXT)
-	@$(SCRIPT_CONFIG) $(GENERATION_DIR)/$(PROJECT_INFO)
+	@$(BASH) $(SCRIPT_CONFIG) $(GENERATION_DIR)/$(PROJECT_INFO)
 
 ###############################################################################
 # Auto-Dependency Generation
@@ -1486,7 +1486,7 @@ ifdef EXAEQUOS
 endif
 	@$(call print-to,Downloading third-party libs,$(TARGET_NAME),$(THIRD_PARTIES_DIR))
 ifneq ($(wildcard $(PROJECT_MANIFEST_THIRD_PARTIES)),)
-	$(Q)cd $(THIRD_PARTIES_DIR) && $(SCRIPT_DOWNLOAD_THIRD_PARTIES) $(PROJECT_NAME) $(PROJECT_MANIFEST_THIRD_PARTIES)
+	$(Q)cd $(THIRD_PARTIES_DIR) && $(BASH) $(SCRIPT_DOWNLOAD_THIRD_PARTIES) $(PROJECT_NAME) $(PROJECT_MANIFEST_THIRD_PARTIES)
 else
 	$(Q)$(ECHO_COLOR) "  $(YELLOW):( $(CYAN)Missing file $(PROJECT_MANIFEST_THIRD_PARTIES) $(YELLOW):("
 	$(Q)$(ECHO_COLOR) "  $(YELLOW):) $(CYAN)Or no third-party libs to download ! $(YELLOW):)$(COLOR_DEFAULT)"
@@ -1500,7 +1500,7 @@ endif
 compile-external-libs:
 	@$(call print-to,Compiling third-party libs,$(TARGET_NAME),$(THIRD_PARTIES_DIR))
 ifneq ($(wildcard $(PROJECT_SCRIPT_COMPILE_THIRD_PARTIES)),)
-	$(Q)$(CD) $(THIRD_PARTIES_DIR) && $(SCRIPT_COMPILE_THIRD_PARTIES) $(PROJECT_NAME) $(PROJECT_SCRIPT_COMPILE_THIRD_PARTIES) $(OS) $(CC) $(CXX)
+	$(Q)$(CD) $(THIRD_PARTIES_DIR) && $(BASH) $(SCRIPT_COMPILE_THIRD_PARTIES) $(PROJECT_NAME) $(PROJECT_SCRIPT_COMPILE_THIRD_PARTIES) $(OS) $(CC) $(CXX)
 else
 	$(Q)$(ECHO_COLOR) "  $(YELLOW):( $(CYAN)Missing file $(PROJECT_SCRIPT_COMPILE_THIRD_PARTIES) $(YELLOW):("
 	$(Q)$(ECHO_COLOR) "  $(YELLOW):) $(CYAN)Or no third-party libs to compile ! $(YELLOW):)$(COLOR_DEFAULT)"
@@ -1616,7 +1616,7 @@ doc:
 
 .PHONY: tarball
 tarball:
-	$(Q)$(SCRIPT_TAR_PROJECT) $(abspath $(P)) $(TARGET_NAME) $(THIRD_PARTIES_DIR) $(PROJECT_VERSION)
+	$(Q)$(BASH) $(SCRIPT_TAR_PROJECT) $(abspath $(P)) $(TARGET_NAME) $(THIRD_PARTIES_DIR) $(PROJECT_VERSION)
 
 ###############################################################################
 #? Display the compiler version and information.
@@ -1798,7 +1798,7 @@ coverity-scan: clean
 
 .PHONY: obs
 obs:
-	$(Q)$(SCRIPT_OBS)
+	$(Q)$(BASH) $(SCRIPT_OBS)
 
 ###############################################################################
 #? Build RPM package using auto-generated spec file.

@@ -112,15 +112,12 @@ endif
 
 ###############################################################################
 # Use bash instead of shell for Unix systems. Activate debug mode for Makefile.
+# On MSYS2/MINGW64, /bin/bash may resolve to the WSL stub on GitHub Actions;
+# use the MSYS interpreter explicitly.
 ###############################################################################
 
-SHELL := /bin/bash
 ifdef D
     DEBUG := $(D)
-endif
-ifdef DEBUG
-    OLD_SHELL := $(SHELL)
-    SHELL = $(warning [$@])$(OLD_SHELL) -x
 endif
 
 ###############################################################################
@@ -129,13 +126,30 @@ endif
 
 ifeq ($(OS),Windows_NT)
     OS := Windows
-    WIN_ENV := $(patsubst CYGWIN%,Cygwin,$(OS))
-    WIN_ENV := $(patsubst MSYS%,MSYS,$(WIN_ENV))
-    WIN_ENV := $(patsubst MINGW%,MINGW,$(WIN_ENV))
+    ifdef MSYSTEM
+        WIN_ENV := $(patsubst CYGWIN%,Cygwin,$(MSYSTEM))
+        WIN_ENV := $(patsubst MSYS%,MSYS,$(WIN_ENV))
+        WIN_ENV := $(patsubst MINGW%,MINGW,$(WIN_ENV))
+    else
+        WIN_ENV := MINGW
+    endif
     ifeq ($(PROCESSOR_ARCHITEW6432),AMD64)
         ARCH := 64
     endif
     ifeq ($(PROCESSOR_ARCHITECTURE),AMD64)
+        ARCH := 64
+    else
+        ARCH := 32
+    endif
+else ifdef MSYSTEM
+    # MSYS2/MINGW64 on GitHub Actions: OS may be unset while MSYSTEM is set.
+    OS := Windows
+    WIN_ENV := $(patsubst CYGWIN%,Cygwin,$(MSYSTEM))
+    WIN_ENV := $(patsubst MSYS%,MSYS,$(WIN_ENV))
+    WIN_ENV := $(patsubst MINGW%,MINGW,$(WIN_ENV))
+    ifeq ($(PROCESSOR_ARCHITEW6432),AMD64)
+        ARCH := 64
+    else ifeq ($(PROCESSOR_ARCHITECTURE),AMD64)
         ARCH := 64
     else
         ARCH := 32
@@ -150,11 +164,42 @@ else ifdef EMSCRIPTEN
     OS := Emscripten
 # Linux or Darwin (MacOS)
 else
-    OS := $(shell sh -c 'uname -s 2>/dev/null || echo Unknown')
+    _UNAME_OS := $(shell sh -c 'uname -s 2>/dev/null || echo Unknown')
+    OS := $(_UNAME_OS)
     ARCH := $(shell sh -c 'uname -m 2>/dev/null || echo Unknown')
-    ifeq "$(OS)" "Unknown"
+    ifneq ($(findstring MINGW,$(_UNAME_OS)),)
+        OS := Windows
+        WIN_ENV := MINGW
+    else ifneq ($(findstring MSYS,$(_UNAME_OS)),)
+        OS := Windows
+        WIN_ENV := MSYS
+    else ifneq ($(findstring CYGWIN,$(_UNAME_OS)),)
+        OS := Windows
+        WIN_ENV := Cygwin
+    else ifeq "$(OS)" "Unknown"
         $(error Unknown architecture. Abort!)
     endif
+endif
+
+export OS
+export WIN_ENV
+export ARCH
+
+ifeq ($(OS),Windows)
+    ifneq ($(MSYSTEM),)
+        SHELL := /usr/bin/bash.exe
+        BASH := /usr/bin/bash.exe
+    else
+        BASH := bash
+    endif
+else
+    SHELL := /bin/bash
+    BASH := /bin/bash
+endif
+
+ifdef DEBUG
+    OLD_SHELL := $(SHELL)
+    SHELL = $(warning [$@])$(OLD_SHELL) -x
 endif
 
 ###############################################################################
@@ -162,10 +207,19 @@ endif
 ###############################################################################
 
 ifeq "$(OS)" "Windows"
-    MKDIR := mkdir
-    RM := rmdir /S/Q
-    CP := copy /y
-    CD := dir
+    ifneq ($(findstring MINGW,$(MSYSTEM))$(findstring MSYS,$(MSYSTEM)),)
+        # MSYS2/MINGW64 shells provide Unix mkdir and paths like D:/a/...
+        MKDIR := mkdir -p
+        RM := rm -fr
+        CP := cp -fr
+        CD := cd
+        MV := mv
+    else
+        MKDIR := mkdir
+        RM := rmdir /S/Q
+        CP := copy /y
+        CD := dir
+    endif
 else
     MKDIR := mkdir -p
     RM := rm -fr
@@ -219,7 +273,7 @@ list-folders=$(sort $(dir $(call rwildcard,$1,*)))
 # present on the build folder.
 ###############################################################################
 define internal-lib
-    $(addsuffix .a,$(addprefix $(BUILD_PATH)/lib,$1))
+    $(BUILD_PATH)/lib$(1)$(EXT_STATIC_LIB)
 endef
 
 ###############################################################################
@@ -244,7 +298,12 @@ else ifeq ($(OS),Darwin)
 else ifeq ($(OS),Windows)
     EXT_BINARY := .exe
     EXT_DYNAMIC_LIB := .dll
-    EXT_STATIC_LIB := .lib
+    # MinGW ar/ranlib produce Unix static archives (.a), not MSVC import libs.
+    ifeq ($(WIN_ENV),MINGW)
+        EXT_STATIC_LIB := .a
+    else
+        EXT_STATIC_LIB := .lib
+    endif
 else ifeq ($(OS),Emscripten)
     ifdef EXAEQUOS
         EXT_BINARY := .js
@@ -461,5 +520,5 @@ SCRIPT_OBS := $(PATH_MYMAKEFILE_SCRIPTS)/obs.sh
 # Auto-detect license from LICENSE file or default to MIT
 ###############################################################################
 
-DETECTED_LICENSE := $(shell $(SCRIPT_DETECT_LICENSE) $(P) 2>/dev/null || echo "UNKNOWN")
+DETECTED_LICENSE := $(shell $(BASH) $(SCRIPT_DETECT_LICENSE) $(P) 2>/dev/null || echo "UNKNOWN")
 LICENSE ?= $(if $(DETECTED_LICENSE),$(DETECTED_LICENSE),MIT)
