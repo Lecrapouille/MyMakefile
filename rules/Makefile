@@ -166,8 +166,8 @@ CLANG_GREATER_V15 := $(shell expr $(CLANG_VERSION_NUM) \>= 150)
 # Base flags common to all compilers
 BASE_FLAGS := -pipe
 
-# Performance flags
-PERFORMANCE_FLAGS := -ffast-math -funroll-loops
+# Performance flags (-ffast-math breaks INFINITY/NaN; enable via USE_FAST_MATH)
+PERFORMANCE_FLAGS := -funroll-loops
 
 # Modern warning flags common to C and C++
 COMMON_WARNING_FLAGS := -Wall -Wextra -Wuninitialized -Wundef -Wunused \
