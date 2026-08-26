@@ -904,7 +904,11 @@ ifdef PKG_LIBS
 
     # Cache pkg-config results to avoid repeated calls
     ifndef PKGCFG_LIBS_CACHED
-        PKGCFG_LIBS := $(shell $(SEARCH_CMD) pkg-config --libs $(PKG_LIBS) 2>/dev/null)
+        ifdef STATIC_PKG_LIBS
+            PKGCFG_LIBS := $(shell $(SEARCH_CMD) pkg-config --static --libs $(PKG_LIBS) 2>/dev/null)
+        else
+            PKGCFG_LIBS := $(shell $(SEARCH_CMD) pkg-config --libs $(PKG_LIBS) 2>/dev/null)
+        endif
         PKGCFG_CFLAGS := $(shell $(SEARCH_CMD) pkg-config --cflags $(PKG_LIBS) 2>/dev/null)
         PKGCFG_LIBS_CACHED := 1
     endif
