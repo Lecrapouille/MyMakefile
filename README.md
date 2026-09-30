@@ -118,7 +118,7 @@ Here are some of my projects that use MyMakefile instead of CMake:
 - 🎮 [OpenGlassBox](https://github.com/Lecrapouille/OpenGlassBox)
 - 📦 [Zipper](https://github.com/Lecrapouille/zipper)
 - 🛣️ [Highway](https://github.com/Lecrapouille/Highway)
-- 🎮 [OpenGLCppWrapper](https://github.com/Lecrapouille/OpenGLCppWrapper)
+- 🎮 [Compages](https://github.com/Lecrapouille/Compages)
 - 🔬 [SimTaDyn](https://github.com/Lecrapouille/SimTaDyn)
 - 🧮 [SimForth](https://github.com/Lecrapouille/SimForth)
 - ♟️ [ChessNeuNeu](https://github.com/Lecrapouille/ChessNeuNeu)
