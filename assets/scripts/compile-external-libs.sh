@@ -73,10 +73,9 @@ fi
 
 function print-compile
 {
-    THIRD_PARTIES_NAME=$1
+    THIRD_PARTIES_NAME="$1"
     echo -e "\033[35m*** Compiling:\033[00m \033[36m$PROJECT_NAME\033[00m <= \033[33m$THIRD_PARTIES_NAME\033[00m"
-    if [ ! -e $1 ];
-    then
+    if [ ! -e "$1" ]; then
         echo "Failed compiling external/$PROJECT_NAME: directory does not exist"
     fi
 }
