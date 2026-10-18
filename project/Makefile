@@ -415,6 +415,10 @@ DOWNLOAD_DIR := $(BUILD_PATH)/downloaded
 THIRD_PARTIES_FOLDER_NAME ?= external
 THIRD_PARTIES_DIR := $(abspath $(P)/$(THIRD_PARTIES_FOLDER_NAME))
 
+# gcovr treats --exclude-directories and -e as regex; use the folder name, not the absolute path.
+GCOVR_EXCLUDE_FLAGS := -e '/usr/*' -e '.*/$(THIRD_PARTIES_FOLDER_NAME)/.*'
+GCOVR_EXCLUDE_DIRECTORY_FLAGS := --exclude-directories '.*/$(THIRD_PARTIES_FOLDER_NAME)/.*'
+
 #? Name of the directory holding documentation.
 DOC_FOLDER_NAME ?= doc
 PROJECT_DOC_DIR := $(abspath $(P)/$(DOC_FOLDER_NAME))

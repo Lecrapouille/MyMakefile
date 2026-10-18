@@ -1778,8 +1778,8 @@ coverage: all
 	$(Q)$(TARGET_BINARY_NAME)
 	@$(call print-to,Coverage report,$(abspath $(TARGET_BINARY_NAME)),$(COVERAGE_HTML_RAPPORT))
 	$(Q)$(MKDIR) $(dir $(COVERAGE_HTML_RAPPORT))
-	$(Q)gcovr --root $(P) --object-directory $(OBJS_ROOT_DIR) --html-details $(COVERAGE_HTML_RAPPORT) -e '/usr/*' --exclude-directories $(THIRD_PARTIES_DIR)
-	$(Q)gcovr --root $(P) --object-directory $(OBJS_ROOT_DIR) --lcov $(COVERAGE_LCOV_RAPPORT) -e '/usr/*' --exclude-directories $(THIRD_PARTIES_DIR)
+	$(Q)gcovr --root $(P) --object-directory $(OBJS_ROOT_DIR) --html-details $(COVERAGE_HTML_RAPPORT) $(GCOVR_EXCLUDE_FLAGS) $(GCOVR_EXCLUDE_DIRECTORY_FLAGS)
+	$(Q)gcovr --root $(P) --object-directory $(OBJS_ROOT_DIR) --lcov $(COVERAGE_LCOV_RAPPORT) $(GCOVR_EXCLUDE_FLAGS) $(GCOVR_EXCLUDE_DIRECTORY_FLAGS)
 	$(Q)sed -i 's|$(abspath $(P))/||g' $(COVERAGE_LCOV_RAPPORT)
 	$(Q)xdg-open $(COVERAGE_HTML_RAPPORT) >/dev/null
 
