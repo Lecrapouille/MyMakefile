@@ -1970,16 +1970,25 @@ endif
 #? Format source code.
 ###############################################################################
 
+# Project trees only (never external/ nor plugin-local external/).
+FORMAT_SOURCE_DIRS := $(wildcard $(P)/src $(P)/include $(P)/tests $(P)/simulator $(P)/headless $(P)/plugins)
+
 .PHONY: format-source-code
 format-source-code: ensure-clang-format
 	@$(call print-simple,"Formatting source code",$(PROJECT_NAME))
 	@if command -v clang-format >/dev/null 2>&1; then \
-		find $(P) -name "*.cpp" -o -name "*.hpp" -o -name "*.c" -o -name "*.h" | \
-		grep -v $(BUILD_PATH) | grep -v $(THIRD_PARTIES_DIR) | \
-		xargs clang-format -i; \
+		if [ -z "$(strip $(FORMAT_SOURCE_DIRS))" ]; then \
+			$(ECHO_COLOR) "$(RED)No source directories to format$(COLOR_DEFAULT)"; \
+			exit 1; \
+		fi; \
+		find $(FORMAT_SOURCE_DIRS) -type f \
+			\( -name '*.cpp' -o -name '*.hpp' -o -name '*.c' -o -name '*.h' \) \
+			! -path '*/external/*' -print0 | \
+		xargs -0r clang-format -i --style=file:$(P)/.clang-format && \
 		$(ECHO_COLOR) "$(GREEN)Code formatted successfully$(COLOR_DEFAULT)"; \
 	else \
 		$(ECHO_COLOR) "$(RED)clang-format not found$(COLOR_DEFAULT)"; \
+		exit 1; \
 	fi
 
 ###############################################################################
