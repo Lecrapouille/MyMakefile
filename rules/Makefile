@@ -237,10 +237,16 @@ define add_gcc_version_flags
         $(1) += -Wpessimizing-move -Wredundant-move
     endif
     ifeq ($(GCC_GREATER_V10),1)
-        $(1) += -Warith-conversion -Wcomma-subscript
+        $(1) += -Warith-conversion
+        # C++ only: GCC warns when the C compiler is given them.
+        ifeq ($(1),CXXFLAGS)
+            $(1) += -Wcomma-subscript
+        endif
     endif
     ifeq ($(GCC_GREATER_V11),1)
-        $(1) += -Wrange-loop-construct -Wmismatched-tags
+        ifeq ($(1),CXXFLAGS)
+            $(1) += -Wrange-loop-construct -Wmismatched-tags
+        endif
     endif
     ifeq ($(GCC_GREATER_V12),1)
         $(1) += -Wbidi-chars=any -Wopenacc-parallelism
