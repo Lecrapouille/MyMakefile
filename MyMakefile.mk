@@ -1,7 +1,9 @@
+###############################################################################
 # SPDX-License-Identifier: GPL-3.0-or-later OR LicenseRef-MyMakefile-Commercial
 # Copyright (c) 2019-2026 Quentin Quadrat
 #
 # This file is part of MyMakefile. See LICENSING.md for details.
+###############################################################################
 #
 # MyMakefile 3: include this file at the end of the Makefile of the project.
 #
@@ -27,43 +29,81 @@ MYMAKEFILE_VERSION := 3.0.0-experimental
 include $(MYMAKEFILE)/engine/functions.mk
 
 # 4.2 for $(file <): the stamps are read with it.
-_mm_make_major := $(call _mm_version_field,1,$(MAKE_VERSION))
-_mm_make_minor := $(call _mm_version_field,2,$(MAKE_VERSION))
-ifeq ($(or $(call _mm_ge,$(_mm_make_major),5),$(and $(filter 4,$(_mm_make_major)),$(call _mm_ge,$(_mm_make_minor),2))),)
+MAKE_MAJOR := $(call version-field,1,$(MAKE_VERSION))
+MAKE_MINOR := $(call version-field,2,$(MAKE_VERSION))
+ifeq ($(or $(call ge,$(MAKE_MAJOR),5),$(and $(filter 4,$(MAKE_MAJOR)),$(call ge,$(MAKE_MINOR),2))),)
     $(error MyMakefile needs GNU Make 4.2 or newer, this is $(MAKE_VERSION). macOS: brew install make, then use gmake)
 endif
-
-###############################################################################
-# Project and build configuration
-###############################################################################
-
-ifndef PROJECT_NAME
-    $(error MyMakefile: PROJECT_NAME is not set)
-endif
-PROJECT_VERSION ?= 0.0.0
-CXX_STANDARD ?= c++17
-C_STANDARD ?=
-COMPILATION_MODE ?= normal
-ifeq ($(filter debug normal release,$(COMPILATION_MODE)),)
-    $(error MyMakefile: COMPILATION_MODE is '$(COMPILATION_MODE)', expected debug, normal or release)
-endif
-BUILD_DIR ?= build
-EXTERNAL_DIR ?= external
-DOC_DIR ?= doc
-PREFIX ?= /usr/local
-
-Q := $(if $(V),,@)
 
 include $(MYMAKEFILE)/engine/platform.mk
 include $(MYMAKEFILE)/engine/display.mk
 
-# emmake, emsdk and the ExaequOS image give em++ as CXX or set these variables.
-TOOLCHAIN ?= $(if $(or $(EMSCRIPTEN),$(EXAEQUOS),$(filter em++%,$(notdir $(CXX)))),emscripten,$(if $(filter Darwin,$(HOST_OS)),clang,gcc))
+###############################################################################
+# Project
+###############################################################################
 
+ifndef PROJECT_NAME
+    $(call fail,PROJECT_NAME is mandatory for giving a name to your project)
+endif
+ifndef PROJECT_VERSION
+    $(call fail,PROJECT_VERSION is mandatory for giving a version to your binaries and libraries: 1.0.0)
+endif
+ifneq ($(filter lib%,$(PROJECT_NAME)),)
+    $(call fail,PROJECT_NAME shall not start by lib)
+endif
+CXX_STANDARD ?= c++17
+C_STANDARD ?=
+
+#? Lower case names for the files built and installed (libfoo, not libFoo).
+FORCE_LOWER_CASE ?=
+INSTALL_NAME := $(if $(FORCE_LOWER_CASE),$(call lower,$(PROJECT_NAME)),$(PROJECT_NAME))
+
+###############################################################################
+# Compilation mode
+###############################################################################
+
+COMPILATION_MODES := debug normal release release-with-debug size fast
+COMPILATION_MODE ?= normal
+# The unit test mode of MyMakefile 2.
+ifeq ($(COMPILATION_MODE),test)
+    override COMPILATION_MODE := debug
+    COVERAGE := 1
+endif
+ifeq ($(filter $(COMPILATION_MODES),$(COMPILATION_MODE)),)
+    $(call fail,COMPILATION_MODE is '$(COMPILATION_MODE)'$(COMMA) expected one of: $(COMPILATION_MODES))
+endif
 # 'make coverage' builds with the coverage instrumentation.
 ifneq ($(filter coverage,$(MAKECMDGOALS)),)
     COVERAGE := 1
 endif
+
+###############################################################################
+# Directories
+###############################################################################
+
+BUILD_DIR ?= build
+EXTERNAL_DIR ?= external
+DOC_DIR ?= doc
+
+#? Installation, as in MyMakefile 2. For headers in a directory of their own
+#? version: INCLUDEDIR = $(PREFIX)/include/$(PROJECT_NAME)/$(PROJECT_VERSION)
+PREFIX ?= /usr/local
+BINDIR ?= $(PREFIX)/bin
+LIBDIR ?= $(PREFIX)/lib
+INCLUDEDIR ?= $(PREFIX)/include
+PKGLIBDIR ?= $(LIBDIR)/pkgconfig
+DATADIR ?= $(PREFIX)/share
+PROJECT_DATADIR ?= $(DATADIR)/$(INSTALL_NAME)
+DOCDIR ?= $(DATADIR)/doc/$(INSTALL_NAME)
+
+Q := $(if $(V),,@)
+
+###############################################################################
+# Toolchain
+###############################################################################
+
+# emmake, emsdk and the ExaequOS image give em++ as CXX or set these variables.
+TOOLCHAIN ?= $(if $(or $(EMSCRIPTEN),$(EXAEQUOS),$(filter em++%,$(notdir $(CXX)))),emscripten,$(if $(filter Darwin,$(HOST_OS)),clang,gcc))
 
 ifeq ($(TOOLCHAIN),msvc)
     include $(MYMAKEFILE)/engine/toolchain-msvc.mk
@@ -75,13 +115,22 @@ PKG_CONFIG ?= pkg-config
 
 #? Build directory of this configuration: build/linux-gcc-normal,
 #? build/emscripten-release, build/linux-gcc-debug-coverage...
-_mm_os := $(call _mm_lc,$(TARGET_OS))
-BUILD := $(BUILD_DIR)/$(if $(filter $(_mm_os),$(TOOLCHAIN)),,$(_mm_os)-)$(TOOLCHAIN)-$(COMPILATION_MODE)$(if $(COVERAGE),-coverage)$(if $(SANITIZER),-$(SANITIZER))
+OS_NAME := $(call lower,$(TARGET_OS))
+BUILD := $(BUILD_DIR)/$(if $(filter $(OS_NAME),$(TOOLCHAIN)),,$(OS_NAME)-)$(TOOLCHAIN)-$(COMPILATION_MODE)$(if $(COVERAGE),-coverage)$(if $(SANITIZERS),-$(subst $(SPACE),-,$(SANITIZERS)))$(if $(filter 1 yes,$(GPROF)),-gprof)
+
+###############################################################################
+# Goals which neither compile nor need the third parties: with only them,
+# MyMakefile does not fetch, write the stamps or call pkg-config.
+###############################################################################
+
+PASSIVE_GOALS := clean distclean veryclean clean-% help list-targets print-% \
+    ci-info format check-format tarball uninstall cache-clean
+BUILDING := $(if $(MAKECMDGOALS),$(filter-out $(PASSIVE_GOALS),$(MAKECMDGOALS)),all)
 
 # 'make rebuild': the build of this configuration is removed before make
 # looks at what is up to date.
 ifneq ($(filter rebuild,$(MAKECMDGOALS)),)
-    _mm_rebuild := $(shell $(call _mm_rmdir,$(BUILD)))
+    REBUILD := $(shell $(call remove-dir,$(BUILD)))
 endif
 
 ###############################################################################
@@ -89,17 +138,20 @@ endif
 # declaring it; the targets of the main Makefile have the root of the project.
 ###############################################################################
 
-define _mm_include_target_file
-_mm_before := $$(TARGETS)
+define INCLUDE_SUBMAKEFILE
+TARGETS_BEFORE := $$(TARGETS)
 HERE := $(dir $(1))
 include $(1)
-$$(foreach t,$$(filter-out $$(_mm_before),$$(TARGETS)),$$(eval $$t.DIR := $$(HERE)))
+$$(foreach t,$$(filter-out $$(TARGETS_BEFORE),$$(TARGETS)),$$(eval $$t.DIR := $$(HERE)))
 endef
 
-$(foreach f,$(SUBMAKEFILES),$(eval $(call _mm_include_target_file,$f)))
+$(foreach f,$(SUBMAKEFILES),$(eval $(call INCLUDE_SUBMAKEFILE,$f)))
 HERE :=
+TARGETS := $(call uniq,$(TARGETS))
 
+include $(MYMAKEFILE)/engine/externals.mk
 include $(MYMAKEFILE)/engine/targets.mk
 include $(MYMAKEFILE)/engine/info.mk
 include $(MYMAKEFILE)/engine/goals.mk
+include $(MYMAKEFILE)/engine/install.mk
 include $(MYMAKEFILE)/engine/tools.mk

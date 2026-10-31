@@ -18,8 +18,9 @@ Version 3 is a rewrite. Compared with version 2:
 - **One build directory per configuration**, e.g. `build/linux-gcc-normal`
   and `build/emscripten-release`, and one object directory per target, so two
   targets can compile the same file with different flags.
-- **Third parties are targets** with a `GIT` URL: cloned on the first build,
-  then compiled like the other targets.
+- **Third parties are targets** with a `GIT` URL: their commits are locked,
+  their sources and builds shared by all your projects in a cache.
+- **ccache** is used when it is installed.
 
 Branch `version-2` keeps the previous MyMakefile.
 
@@ -92,7 +93,7 @@ A target is a name added to `TARGETS`, plus variables prefixed by that name.
 
 | Variable           | Meaning |
 | ------------------ | ------- |
-| `TYPE`             | `executable` (default with sources), `test`, `static`, `shared`, `library` (static and shared), `header-only` (default without sources) |
+| `TYPE`             | `executable` (default with sources), `test`, `static`, `shared`, `library` (static and shared), `objects` (linked as objects in the targets using it), `header-only` (default without sources) |
 | `SOURCES`          | Files and patterns: `src/*.cpp`, `src/**/*.cpp` (recursive) |
 | `INCLUDES`         | Include directories for this target only |
 | `PUBLIC_INCLUDES`  | Include directories for this target and for the targets depending on it |
@@ -102,7 +103,10 @@ A target is a name added to `TARGETS`, plus variables prefixed by that name.
 | `PKG_CONFIG`       | pkg-config packages: their flags go to this target and to the targets depending on it |
 | `CXXFLAGS`, `CFLAGS`, `LDFLAGS` | Additional flags for this target only |
 | `LIBS`             | Libraries at the end of the link line, e.g. `-lpthread`; also for the targets depending on it |
-| `WARNINGS`         | `strict` (default), `default` (`-Wall -Wextra`) or `none` |
+| `WARNINGS`         | `strict` (default), `paranoid` (also `-Weffc++`, or `-Weverything` with clang), `default` (`-Wall -Wextra`) or `none` |
+| `RPATH`            | Run time search paths of the libraries, separated by `:` |
+| `MERGE`            | Static libraries (targets or `.a` files) whose objects are put in this static library, as `extract-objs-from-static-libs` did |
+| `PUBLIC_HEADERS`, `PRIVATE_HEADERS` | Headers installed besides those of `PUBLIC_INCLUDES`, and headers not installed: see [Installation](#installation) |
 | `NAME`             | Name of the file built, if not the name of the target |
 | `DESCRIPTION`      | One line about the target |
 | `PROJECT_INFO`     | `1` to generate `project_info.hpp` (version, git commit, data paths) |
@@ -111,10 +115,14 @@ A target is a name added to `TARGETS`, plus variables prefixed by that name.
 | `INSTALL`          | `no` to keep the target out of `make install` |
 | `CLEAN`            | Files and patterns removed by `make veryclean` |
 | `BUNDLE`, `ICON`, `BUNDLE_ID` | macOS: `1` to build `<name>.app` too, with its `.icns` icon |
-| `GIT`, `VERSION`, `COMMIT` | Third party: see below |
+| `GIT`, `VERSION`, `COMMIT`, `PATH` | Third party: see below |
 
 Targets are linked in the right order whatever the order of the `DEPENDS`.
-A dependency cycle or an unknown target stops make with an error.
+MyMakefile stops with a message on: a dependency cycle, an unknown target, a
+dependency on an executable, a source file or pattern matching nothing, a
+library without sources, a name starting with `lib`, a missing
+`PROJECT_NAME` or `PROJECT_VERSION`. It warns about variables of a target it
+does not know (`app.SOURCE := ...`: a typo).
 
 ### Paths and `HERE`
 
@@ -126,10 +134,23 @@ value changes from one file to the next.
 
 ### Third parties
 
-A target with a `GIT` URL is cloned into `external/<name>` (`EXTERNAL_DIR`)
-the first time it is needed, then built as any other target. Its paths are
-relative to its clone, its warnings are disabled and its public includes are
-system includes, so that its headers do not raise warnings in your code.
+A target with a `GIT` URL is fetched the first time it is needed, then built
+as any other target. Its paths are relative to its sources, its warnings are
+disabled and its public includes are system includes, so that its headers do
+not raise warnings in your code.
+
+- **Locked versions.** Its `VERSION` (branch or tag, default branch without
+  it) is resolved once to a commit, written in `external/versions.lock`
+  (`EXTERNAL_LOCK`). Commit this file: everybody, and the CI, then build the
+  same commits, without asking the network. `make update-externals` moves to
+  the last commits.
+- **Shared cache.** The sources are fetched once per commit, and compiled once
+  per configuration and flags, in `~/.cache/mymakefile` (`EXTERNAL_CACHE`,
+  `%LOCALAPPDATA%` on Windows): all your projects share them. `make
+  cache-info` shows where they are, `make cache-clean` empties the cache.
+  `EXTERNAL_CACHE=` (empty) clones them in `external/` of the project instead.
+- **Local copy.** `imgui.PATH := ../imgui` uses a directory of yours, never
+  fetched.
 
 ```makefile
 TARGETS += imgui
@@ -140,18 +161,43 @@ imgui.SOURCES := imgui.cpp imgui_draw.cpp imgui_tables.cpp imgui_widgets.cpp
 imgui.PUBLIC_INCLUDES := .
 ```
 
-## Options
+In debug mode, as MyMakefile 2 did, the executables get
+[backward-cpp](https://github.com/bombela/backward-cpp) (stack of a crash, on
+Linux when `libdw` is installed; `BACKWARD=0` to do without) and every target
+[dbg-macro](https://github.com/sharkdp/dbg-macro) (`dbg(...)`; `DBG_MACRO=0`).
+
+## Compilation
 
 | Option             | Values |
 | ------------------ | ------ |
-| `COMPILATION_MODE` | `debug`, `normal` (default: `-O2 -g`), `release` |
+| `COMPILATION_MODE` | `debug` (`-O0 -g3`), `normal` (default: `-O2 -g`, assertions kept), `release` (`-O3`, LTO, stripped), `release-with-debug` (`-O2 -g`, LTO), `size` (`-Os`), `fast` (`-O3 -ffast-math -march=native`); `test` is `debug` with `COVERAGE=1`, as in MyMakefile 2 |
 | `TOOLCHAIN`        | `gcc` (default), `clang` (default on macOS), `mingw`, `emscripten`, `msvc` |
-| `COVERAGE=1`, `SANITIZER=address` | Instrumentation, for every target |
+| `SANITIZER`        | `address`, `undefined`, `thread`, `memory`, `leak`, `hwaddress`, `cfi`, `safe-stack`, or several: `address,undefined`. Incompatible ones stop make. `make run-<target>` and `make check` set their `*SAN_OPTIONS` |
+| `COVERAGE=1`, `GPROF=1`, `VALGRIND=1` | Instrumentation, for every target |
+| `PGO=generate`, `PGO=use` | Profile guided optimization |
+| `NATIVE=1`, `FAST_MATH=1`, `VECTORIZE_REPORT=1` | Options of MyMakefile 2 |
+| `LTO=0`, `HARDENING=0`, `STRIP=0`, `CCACHE=0` | Turn off what is on by default |
+| `WERROR=1`         | Warnings are errors, for the targets of the project (not the third parties) |
 | `V=1`              | Show the commands |
 | `COLORS=0`, `COLORS=1` | Colors off, or on even when the output is not a terminal; `NO_COLOR` also turns them off |
 | `BUILD_DIR`        | `build` by default |
 | `PREFIX`, `DESTDIR`| Where `make install` copies the files |
 | `CXX`, `CC`, `AR`, `CXXFLAGS`, `LDFLAGS` | The usual make variables, applied to every target |
+| `FORCE_LOWER_CASE=1` | Lower case names for the files built and installed (`libfoo`, not `libFoo`) |
+
+The flags, all from MyMakefile 2 and more (`make show-flags` prints them):
+
+- **Warnings**: about 60 for gcc and clang, the newer ones given only to the
+  compilers knowing them; `-Wc++20-compat` when compiling C++17.
+- **Hardening**: `-fstack-protector-strong`, `-fstack-clash-protection`,
+  `-fcf-protection=full` (x86_64), `_FORTIFY_SOURCE=3` (2 for older
+  compilers) when optimized, position independent executables, and on Linux
+  `-z relro -z now -z noexecstack` at link.
+- **Optimized modes**: `-ffunction-sections -fdata-sections` and
+  `--gc-sections`, LTO (`-flto=auto -ffat-lto-objects` with gcc, ThinLTO with
+  clang when `ld.lld` and `llvm-ar` are there).
+- **Debug**: `-fno-omit-frame-pointer`, `_GLIBCXX_ASSERTIONS` (also in
+  normal), backward-cpp.
 
 After the include, `TARGET_OS` (`Linux`, `Darwin`, `Windows`, `Emscripten`,
 ...), `HOST_OS` and `COMPILER_FAMILY` (`gcc`, `clang`, `msvc`) can be tested by
@@ -169,19 +215,53 @@ the target files.
 | `rebuild` | Builds the current configuration from scratch |
 | `clean-<target>`, `clean`, `distclean` | Remove the build of one target, of this configuration, of every configuration |
 | `veryclean` | Also removes the clones of the third parties, the documentation, the coverage report, the leftovers of the tools (`*.gcda`, `*.orig`, `*~`...), the `CLEAN` files of every target and `CLEAN_FILES` |
-| `install` | Installs executables, bundles, libraries, public headers, pkg-config files and data in `DESTDIR`/`PREFIX` |
+| `install`, `uninstall` | See [Installation](#installation) |
 | `doc` | Doxygen documentation in `doc/doxygen/`, with the footer of the license found in `LICENSE` |
 | `format`, `check-format` | clang-format the sources and headers of the project, or fail if one is not formatted |
 | `lint` | cppcheck, target by target with their flags |
 | `compile-commands` | Writes `compile_commands.json` for clangd |
 | `tarball` | Archive of the sources, third parties included, in `build/dist/` |
 | `rpm` | RPM package built with `make install` |
+| `update-externals`, `cache-info`, `cache-clean` | Third parties: see above |
 | `list-targets`, `show-flags`, `help` | Print the targets, their flags, the goals and the options |
 
-A change of flags rebuilds the targets concerned, and only them.
+A change of flags, or of compiler, rebuilds the targets concerned, and only
+them.
 
-`clean`, `distclean`, `veryclean` and `install` are double-colon rules: a
-project adds its own recipe with `clean::`.
+`clean`, `distclean`, `veryclean`, `install` and `uninstall` are double-colon
+rules: a project adds its own recipe with `clean::`.
+
+## Installation
+
+`make install` copies, in `DESTDIR` and the directories of MyMakefile 2
+(`PREFIX`, `BINDIR`, `LIBDIR`, `INCLUDEDIR`, `PKGLIBDIR`, `DATADIR`): the
+executables and bundles, the libraries (with the links of the shared ones),
+their headers and pkg-config file, the `DATA` of the targets in
+`share/<project>/`, and the license and readme in `share/doc/<project>/`.
+`make uninstall` removes them. It works with sh and with cmd.exe.
+
+The headers of a library are those of its `PUBLIC_INCLUDES` (a directory of
+headers, A), plus its `PUBLIC_HEADERS` (files or patterns anywhere, B), less
+its `PRIVATE_HEADERS`. Each one is installed at the path the code includes it
+with: relative to the deepest include directory of the library holding it.
+Both ways can be mixed:
+
+```makefile
+mylib.PUBLIC_INCLUDES := include          # include/MyLib/Api.hpp -> MyLib/Api.hpp
+mylib.INCLUDES := src
+mylib.PUBLIC_HEADERS := src/**/*.hpp      # src/MyLib/Tool.hpp    -> MyLib/Tool.hpp
+mylib.PRIVATE_HEADERS := src/MyLib/detail/*.hpp
+```
+
+The build tree has its own pkg-config files: with
+`PKG_CONFIG_PATH=build/linux-gcc-normal/lib/pkgconfig`, another project uses
+a library of yours without installing it. The installed `.pc` file finds its
+prefix from its own place, so that an archive of `make dist` works where it is
+unpacked. A third party used by an installed library is not installed: put it
+in the library with `MERGE`, as MyMakefile 2 did, or make warns.
+
+To keep each version of the headers apart, as MyMakefile 2 did:
+`INCLUDEDIR = $(PREFIX)/include/$(PROJECT_NAME)/$(PROJECT_VERSION)`.
 
 ## Continuous integration
 
@@ -209,6 +289,9 @@ On GitHub Actions:
     path: ${{ steps.info.outputs.dist_dir }}/
 ```
 
+Cache `~/.cache/mymakefile` with the key `hashFiles('external/versions.lock')`
+to fetch and build the third parties once.
+
 The same commands run with `mingw32-make` on MSYS2, `gmake` on macOS and
 `emmake make` for Emscripten (MyMakefile picks the Emscripten toolchain when
 the compiler is `em++`). Colors are off in CI logs, which are not a terminal;
@@ -227,9 +310,17 @@ pkg-config stops the build of the target needing it with its name.
 
 ## Not ported from version 2
 
-Not yet: cache of third parties shared between projects, lock file of their
-versions. Dropped: the OBS package (its script was missing), gprof, Coverity,
-benchmark and size statistics goals, the progress bar.
+The OBS package (its script was missing), the goals around gprof, Coverity,
+benchmarks and size statistics (`GPROF=1` remains), the progress bar,
+`API_LINKAGE` (MinGW exports the symbols of a DLL by itself).
+
+## Writing MyMakefile
+
+Functions called with `$(call ...)` are in lower case with dashes
+(`rwildcard`, `print-to`); macros (`define`: templates of rules and of files)
+and variables in upper case (`TARGET_RULES`, `BUILD`). The variables of a
+target are `t.SOMETHING` when the user writes them, `t._SOMETHING` when
+MyMakefile computes them.
 
 ## License
 
