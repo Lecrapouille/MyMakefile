@@ -11,6 +11,12 @@
 # Set a tool unless the user gave it (command line or environment).
 set-tool = $(if $(filter default undefined,$(origin $1)),$(eval $1 := $2))
 
+# MSYS2 exports MINGW_PREFIX=/mingw64, its directory, not the prefix of a
+# cross compiler (x86_64-w64-mingw32-).
+ifeq ($(origin MINGW_PREFIX)$(filter %-,$(MINGW_PREFIX)),environment)
+    MINGW_PREFIX :=
+endif
+
 ifeq ($(TOOLCHAIN),gcc)
     $(call set-tool,CC,gcc)
     $(call set-tool,CXX,g++)

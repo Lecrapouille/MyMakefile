@@ -358,6 +358,9 @@ in the library with `MERGE`, as MyMakefile 2 did, or make warns.
 `bin/<name>-<version>` and `<name>-<version>.pc`, with links without the
 version. With `EXAEQUOS`, `make install` puts each application in
 `media/localhost/<name>/exa/` with its `exa.html`, as MyMakefile 2 did.
+The packages of `PKG_CONFIG` that pkg-config does not know (`glfw`,
+`exa-wayland`...) are installed once by `epm.py` in `EXAEQUOS_PKGS`
+(`build/exaequos`).
 
 ## Continuous integration
 

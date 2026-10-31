@@ -218,6 +218,24 @@ ifneq ($(BUILDING),)
     endif
 endif
 
+###############################################################################
+# ExaequOS: epm.py installs the packages its pkg-config does not know (glfw,
+# exa-wayland...), once, in the current directory: EXAEQUOS_PKGS/exapkgs.
+###############################################################################
+
+#? Where epm.py installs the packages of ExaequOS.
+EXAEQUOS_PKGS ?= $(abspath $(BUILD_DIR)/exaequos)
+
+ifneq ($(and $(EXAEQUOS),$(BUILDING)),)
+    # make 4.3 does not give the exported variables to $(shell).
+    PKG_CONFIG := PKG_CONFIG_PATH=$(EXAEQUOS_PKGS)/exapkgs/pkgconfigs$(if $(PKG_CONFIG_PATH),:$(PKG_CONFIG_PATH)) $(PKG_CONFIG)
+    EXAEQUOS_MISSING := $(strip $(foreach p,$(call uniq,$(foreach t,$(TARGETS),$($t.PKG_CONFIG))),$(if $(shell $(PKG_CONFIG) --exists $p && echo 1),,$p)))
+    ifneq ($(EXAEQUOS_MISSING),)
+        $(call print-to,Installing ExaequOS packages,$(EXAEQUOS_MISSING),$(EXAEQUOS_PKGS))
+        $(info $(shell $(call make-dir,$(EXAEQUOS_PKGS)) && cd $(EXAEQUOS_PKGS) && epm.py install $(EXAEQUOS_MISSING) 2>&1))
+    endif
+endif
+
 #? Move the third parties to the last commit of their VERSION, and rewrite
 #? EXTERNAL_LOCK.
 .PHONY: update-externals
