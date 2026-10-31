@@ -140,6 +140,7 @@ ifeq ($$($(1)._FETCHED),)
         FETCH_LOG += $$(shell $$(call git-clone,$(1),$$($(1)._SRCDIR),$$($(1)._SHA)) 2>&1)
     endif
     ifneq ($$(call git-head,$$($(1)._SRCDIR)),$$($(1)._SHA))
+        FETCH_LOG += $$(shell $$(call remove-dir,$$($(1)._SRCDIR)))
         $$(call fail,cannot fetch $$($(1)._SHA) of $$($(1).GIT): $$(FETCH_LOG))
     endif
     $$(file >$$($(1)._SRCDIR)/.git/mymakefile-ok,$$($(1)._SHA))
