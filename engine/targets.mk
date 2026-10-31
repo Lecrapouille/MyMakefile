@@ -26,11 +26,11 @@ BUILD_DIRS :=
 #? What a target can define: anything else is reported as a typo.
 TARGET_ATTRIBUTES := TYPE SOURCES INCLUDES PUBLIC_INCLUDES DEFINES \
     PUBLIC_DEFINES DEPENDS PKG_CONFIG CXXFLAGS CFLAGS LDFLAGS LIBS RPATH \
-    WARNINGS NAME DESCRIPTION PROJECT_INFO DATA ARGS INSTALL CLEAN \
+    WARNINGS NAME DESCRIPTION PROJECT_INFO DATA ARGS WORKDIR INSTALL CLEAN \
     PUBLIC_HEADERS PRIVATE_HEADERS MERGE BUNDLE ICON BUNDLE_ID EXT SYSTEM \
     ASFLAGS NODELETE POST_BUILD CMAKE_ARGS LIBRARIES URL SHA256 SUBDIR \
     GENERATED_SOURCES GENERATED_HEADERS \
-    GIT VERSION COMMIT PATH DIR LOCKED LOCKED_REF
+    GIT VERSION COMMIT SUBMODULES MAKEFILES PATH DIR LOCKED LOCKED_REF
 
 # The object file of a source: the tree of the sources is kept below the
 # object directory, and never escapes from it. The sources of a third party
@@ -124,7 +124,10 @@ $(foreach t,$(TARGETS),$(eval $(call RESOLVE_TARGET,$t)))
 # or not, in link order: a library comes after the libraries using it.
 ###############################################################################
 
-closure = $(foreach d,$($1.DEPENDS),$(if $(filter $d,$2),$(call fail,dependency cycle: $2 $d))$(if $(filter $d,$(TARGETS)),,$(call fail,'$(lastword $2)' depends on '$d' which is not in TARGETS))$(if $($d._IS_EXE),$(call fail,'$(lastword $2)' depends on the $($d.TYPE) '$d': only libraries can be linked))$d $(call closure,$d,$2 $d))
+# Without building (clean, help...), the targets of the projects given by
+# 't.MAKEFILES' are not read: a dependency on them is not an error then.
+UNREAD_EMBEDDED := $(if $(BUILDING),,$(strip $(foreach t,$(TARGETS),$(if $($t.MAKEFILES),$t))))
+closure = $(foreach d,$($1.DEPENDS),$(if $(filter $d,$2),$(call fail,dependency cycle: $2 $d))$(if $(filter $d,$(TARGETS))$(UNREAD_EMBEDDED),,$(call fail,'$(lastword $2)' depends on '$d' which is not in TARGETS))$(if $($d._IS_EXE),$(call fail,'$(lastword $2)' depends on the $($d.TYPE) '$d': only libraries can be linked))$d $(call closure,$d,$2 $d))
 
 $(foreach t,$(TARGETS),$(eval $t._DEPS := $(call uniq-last,$(call closure,$t,$t))))
 
@@ -196,8 +199,10 @@ pkg-found = $(if $(filter undefined,$(origin PKG_FOUND.$1)),$(eval PKG_FOUND.$1 
 pkg-missing = $(if $(BUILDING),$(foreach p,$1,$(if $(call pkg-found,$p),,$p)))
 check-packages = $(if $($1._PKG_MISSING),$(call fail,$1 needs the packages '$($1._PKG_MISSING)'$(COMMA) unknown to $(PKG_CONFIG): install them or set PKG_CONFIG_PATH))
 
-# A macro holding parentheses is quoted for the shell: "-DAPI=__declspec(dllexport)"
-define-flags = $(foreach d,$1,$(if $(findstring $(OPEN_PAREN),$d),"$(TC_DEF)$d",$(TC_DEF)$d))
+# A macro holding parentheses is quoted for the shell: "-DAPI=__declspec(dllexport)",
+# a string keeps its quotes: '-DDATA="/usr/share/foo/"' (cmd: "-DDATA=\"...\"").
+quote-string-define = $(if $(filter cmd,$(HOST_SHELL)),"$(subst ",\",$1)",'$1')
+define-flags = $(foreach d,$1,$(if $(findstring ",$d),$(call quote-string-define,$(TC_DEF)$d),$(if $(findstring $(OPEN_PAREN),$d),"$(TC_DEF)$d",$(TC_DEF)$d)))
 
 #? Macro of MyMakefile 2 for the symbols exported by a DLL: __declspec(dllexport)
 #? while building a library for Windows, empty otherwise. EXPORT_MACRO= to
@@ -263,16 +268,19 @@ $(foreach t,$(filter-out $(CMAKE_TARGETS),$(TARGETS)),$(eval $t._LINKABLE := $(i
 ###############################################################################
 # Pass 5: link flags. 't.MERGE := imgui path/libfoo.a' puts the objects of
 # these static libraries in the static library of t (the targets depending on
-# t then do not link them again).
+# t then do not link them again). A target without objects of its own (cmake,
+# prebuilt LIBRARIES) gives its static libraries.
 ###############################################################################
 
 define LINK_FLAGS
-$(1)._MERGE_TARGETS := $$(filter $$(TARGETS),$$($(1).MERGE))
-$(1)._MERGE_ARCHIVES := $$(call resolve,$$(filter-out $$(TARGETS),$$($(1).MERGE)),$$($(1).DIR))
+$(1)._MERGED := $$(filter $$(TARGETS),$$($(1).MERGE))
+$(1)._MERGE_TARGETS := $$(foreach d,$$($(1)._MERGED),$$(if $$($$d._OBJS),$$d))
+$(1)._MERGE_ARCHIVES := $$(call resolve,$$(filter-out $$(TARGETS),$$($(1).MERGE)),$$($(1).DIR)) \
+    $$(foreach d,$$($(1)._MERGED),$$(if $$($$d._OBJS),,$$(filter %$$(STATIC_EXT),$$($$d._LINKABLE))))
 $(1)._MERGE_DIRS := $$(foreach a,$$($(1)._MERGE_ARCHIVES),$$($(1)._OBJDIR)/merged/$$(basename $$(notdir $$a)))
 $(1)._ARCHIVE_OBJS := $$($(1)._OBJS) $$(foreach d,$$($(1)._MERGE_TARGETS),$$($$d._OBJS)) $$(addsuffix /*$$(OBJ_EXT),$$($(1)._MERGE_DIRS))
 $(1)._LINK_OBJS := $$($(1)._OBJS)
-$(1)._MERGED_BY_DEPS := $$(foreach d,$$($(1)._DEPS),$$($$d._MERGE_TARGETS))
+$(1)._MERGED_BY_DEPS := $$(foreach d,$$($(1)._DEPS),$$($$d._MERGED))
 $(1)._LINKDEPS := $$(foreach d,$$(filter-out $$($(1)._MERGED_BY_DEPS),$$($(1)._DEPS)),$$($$d._LINKABLE))
 $(1)._LINKER := $$(if $$(filter $$(CXX_EXTS),$$($(1)._SRCS) $$(foreach d,$$($(1)._DEPS),$$($$d._SRCS)))$$(filter $$(CMAKE_TARGETS),$$($(1)._DEPS)),$$(CXX),$$(CC))
 $(1)._SHARED_DEPS := $$(foreach d,$$($(1)._DEPS),$$(foreach l,$$($$d._LINKABLE),$$(if $$(findstring $$(SHARED_EXT),$$(notdir $$l)),$$l)))
@@ -334,7 +342,7 @@ $$(foreach s,$$($(1)._SRCS),$$(eval $$(call COMPILE_RULE,$(1),$$s,$$(call object
 BUILD_DIRS += $$(patsubst %/,%,$$(dir $$($(1)._OBJS) $$($(1)._OUTS) $$($(1)._IMPLIB) $$($(1)._INFO))) $$(if $$($(1)._BUNDLE),$$($(1)._OBJDIR))
 
 ifneq ($$($(1)._ARCHIVE),)
-$$($(1)._ARCHIVE): $$($(1)._OBJS) $$(foreach d,$$($(1)._MERGE_TARGETS),$$($$d._OBJS)) $$($(1)._MERGE_ARCHIVES) $$($(1)._LD_STAMP) | $$(patsubst %/,%,$$(dir $$($(1)._ARCHIVE)))
+$$($(1)._ARCHIVE): $$($(1)._OBJS) $$(foreach d,$$($(1)._MERGE_TARGETS),$$($$d._OBJS)) $$(foreach d,$$($(1)._MERGED),$$(if $$($$d._OBJS),,$$($$d._OUTS))) $$($(1)._MERGE_ARCHIVES) $$($(1)._LD_STAMP) | $$(patsubst %/,%,$$(dir $$($(1)._ARCHIVE)))
 	$$(call print-to,Static library,$(1),$$@)
 	$$(Q)$$(call remove-files,$$@)
 	$$(foreach a,$$($(1)._MERGE_ARCHIVES),$$(call extract-archive,$$a,$$($(1)._OBJDIR)/merged/$$(basename $$(notdir $$a))))
@@ -355,7 +363,7 @@ endif
 endif
 
 ifneq ($$($(1)._PC),)
-$$($(1)._PC): $$($(1)._LD_STAMP) | $$(patsubst %/,%,$$(dir $$($(1)._PC)))
+$$($(1)._PC): $$($(1)._CC_STAMP) $$($(1)._LD_STAMP) | $$(patsubst %/,%,$$(dir $$($(1)._PC)))
 	$$(call print-to,pkg-config,$(1),$$@)
 	$$(file >$$@,$$(call PKG_CONFIG_BUILD,$(1)))
 endif
@@ -420,7 +428,9 @@ endef
 cmd = $(Q)$1$(NEWLINE)
 
 # Run an executable of the project, with the options of the sanitizers.
-run-target = $(call with-env,$(TC_RUN_ENV),$(if $(filter test,$($1.TYPE)),$(TEST_RUNNER),$(RUNNER)) $(call run-path,$($1._EXE)) $($1.ARGS) $2)
+# 't.WORKDIR': the directory it runs in, relative to the one of the target
+# (the root of the project by default).
+run-target = $(if $($1.WORKDIR),cd $(call run-path,$(call resolve,$($1.WORKDIR),$($1.DIR))) && )$(call with-env,$(TC_RUN_ENV),$(if $(filter test,$($1.TYPE)),$(TEST_RUNNER),$(RUNNER)) $(call run-path,$(if $($1.WORKDIR),$(abspath $($1._EXE)),$($1._EXE))) $($1.ARGS) $2)
 
 $(foreach t,$(TARGETS),$(eval $(call TARGET_RULES,$t)))
 

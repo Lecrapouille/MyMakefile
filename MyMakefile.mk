@@ -24,7 +24,7 @@
 # that file. That directory is also in HERE while the file is read.
 
 MYMAKEFILE := $(patsubst %/,%,$(dir $(lastword $(MAKEFILE_LIST))))
-MYMAKEFILE_VERSION := 3.0.0-experimental
+MYMAKEFILE_VERSION := 3.0.0
 
 include $(MYMAKEFILE)/engine/functions.mk
 
@@ -120,11 +120,11 @@ endif
 PKG_CONFIG ?= pkg-config
 
 #? Build directory of this configuration: build/linux-gcc-normal,
-#? build/emscripten-release, build/linux-gcc-debug-coverage...
+#? build/emscripten-release, build/exaequos-normal, build/linux-gcc-debug-coverage...
 OS_NAME := $(call lower,$(TARGET_OS))
 #? Generated headers: GEN_DIR/<target>/project_info.hpp
 GEN_DIR = $(BUILD)/gen
-BUILD := $(BUILD_DIR)/$(if $(filter $(OS_NAME),$(TOOLCHAIN)),,$(OS_NAME)-)$(TOOLCHAIN)-$(COMPILATION_MODE)$(if $(COVERAGE),-coverage)$(if $(SANITIZERS),-$(subst $(SPACE),-,$(SANITIZERS)))$(if $(filter 1 yes,$(GPROF)),-gprof)
+BUILD := $(BUILD_DIR)/$(if $(EXAEQUOS),exaequos,$(if $(filter $(OS_NAME),$(TOOLCHAIN)),,$(OS_NAME)-)$(TOOLCHAIN))-$(COMPILATION_MODE)$(if $(COVERAGE),-coverage)$(if $(SANITIZERS),-$(subst $(SPACE),-,$(SANITIZERS)))$(if $(filter 1 yes,$(GPROF)),-gprof)
 
 ###############################################################################
 # Goals which neither compile nor need the third parties: with only them,

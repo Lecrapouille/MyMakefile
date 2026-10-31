@@ -41,14 +41,16 @@ stage-headers = $(foreach dd,$(sort $(dir $(call header-dests,$1))),\
 
 ###############################################################################
 # pkg-config files. The one of the build tree points to the sources and to the
-# build; the installed one finds its prefix from its own place, so that it
-# also works unpacked from an archive of 'make dist'.
+# build, with the include folders of the targets without a .pc file of their
+# own (third parties, header-only targets); the installed one finds its
+# prefix from its own place, so that it also works unpacked from an archive
+# of 'make dist'.
 ###############################################################################
 
 # Libraries of the project needed by $1, which have their own .pc file.
 pc-requires = $(strip $($1.PKG_CONFIG) $(foreach d,$(filter $(INSTALLED_LIBS),$($1._DEPS)),$($d.NAME)))
 # Third parties needed by $1: their headers and libraries are not installed.
-pc-externals = $(filter-out $(foreach d,$($1._DEPS),$($d._MERGE_TARGETS)) $($1._MERGE_TARGETS),$(filter $(EXTERNAL_TARGETS),$($1._DEPS)))
+pc-externals = $(filter-out $(foreach d,$($1._DEPS),$($d._MERGED)) $($1._MERGED),$(filter $(EXTERNAL_TARGETS),$($1._DEPS)))
 pc-libs-private = $(strip $($1.LIBS) $(foreach d,$($1._DEPS),$($d.LIBS)))
 
 define PKG_CONFIG_BUILD
@@ -60,7 +62,7 @@ Version: $(PROJECT_VERSION)
 Requires.private: $(call pc-requires,$1)
 Libs: -L$${libdir} -l$($1.NAME)
 Libs.private: $(abspath $(foreach d,$(call pc-externals,$1),$($d._LINKABLE))) $(call pc-libs-private,$1)
-Cflags: $(addprefix -I,$(abspath $($1._PUB_INCS) $(foreach d,$(call pc-externals,$1),$($d._PUB_INCS)))) $(addprefix -D,$($1.PUBLIC_DEFINES))
+Cflags: $(addprefix -I,$(call uniq,$(abspath $($1._PUB_INCS) $(foreach d,$($1._DEPS),$(if $(filter $d,$(INSTALLED_LIBS)),,$($d._PUB_INCS)))))) $(addprefix -D,$($1.PUBLIC_DEFINES))
 endef
 
 define PKG_CONFIG_INSTALLED
@@ -131,8 +133,10 @@ stage = \
     $(if $($1._IS_LIB),$(call stage-headers,$1,$(call stage-path,$(INCLUDEDIR),$2))) \
     $(foreach d,$($1._DATA),$(call cmd,$(call copy-dir,$d,$(call stage-path,$(PROJECT_DATADIR),$2))))
 
-# A third party used by a library is neither installed nor merged in it.
-warn-externals = $(foreach t,$(INSTALLED_LIBS),$(if $(call pc-externals,$t),$(call print-warning,$t uses the third parties '$(call pc-externals,$t)' which are not installed: add them to $t.MERGE)))
+# A compiled third party used by a library is neither installed nor merged in
+# it. The header-only ones (dbg-macro...) have nothing to merge.
+linked-externals = $(strip $(foreach d,$(call pc-externals,$1),$(if $($d._LINKABLE),$d)))
+warn-externals = $(foreach t,$(INSTALLED_LIBS),$(if $(call linked-externals,$t),$(call print-warning,$t uses the third parties '$(call linked-externals,$t)' which are not installed: add them to $t.MERGE)))
 
 ###############################################################################
 # ExaequOS, as MyMakefile 2 did: each application in

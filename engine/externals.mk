@@ -86,10 +86,7 @@ ifneq ($(USE_DBG_MACRO),)
     $(foreach t,$(OWN_SOURCE_TARGETS),$(eval $t.DEPENDS += dbg-macro))
 endif
 
-EXTERNAL_TARGETS := $(strip $(foreach t,$(TARGETS),$(if $($t.GIT)$($t.PATH)$($t.URL),$t)))
-GIT_TARGETS := $(strip $(foreach t,$(TARGETS),$(if $($t.GIT),$(if $($t.PATH),,$t))))
-URL_TARGETS := $(strip $(foreach t,$(TARGETS),$(if $($t.URL),$(if $($t.PATH)$($t.GIT),,$t))))
-FETCHED_TARGETS := $(GIT_TARGETS) $(URL_TARGETS)
+external-targets = $(strip $(foreach t,$(TARGETS),$(if $($t.GIT)$($t.PATH)$($t.URL),$t)))
 
 ###############################################################################
 # Resolution of the versions into commits.
@@ -116,8 +113,10 @@ locked-sha = $(if $(and $(filter $(call git-ref,$1),$($1.LOCKED_REF)),$(if $(UPD
 resolve-sha = $(or $($1.COMMIT),$(call locked-sha,$1),$(call remote-sha,$(call ls-remote,$1,$(call git-ref,$1))))
 
 # Fetch only the commit; a server refusing it gets a full clone.
-git-fetch = git init -q $2 && git -C $2 fetch -q --depth 1 $($1.GIT) $3 && git -C $2 checkout -q FETCH_HEAD
-git-clone = git clone -q $($1.GIT) $2 && git -C $2 checkout -q $3
+# 't.SUBMODULES := 1' also fetches the submodules of the third party.
+git-submodules = $(if $(filter 1 yes,$($1.SUBMODULES)), && git -C $2 submodule -q update --init --recursive --depth 1)
+git-fetch = git init -q $2 && git -C $2 fetch -q --depth 1 $($1.GIT) $3 && git -C $2 checkout -q FETCH_HEAD$(call git-submodules,$1,$2)
+git-clone = git clone -q $($1.GIT) $2 && git -C $2 checkout -q $3$(call git-submodules,$1,$2)
 git-head = $(shell git -C $1 rev-parse HEAD 2>$(DEVNULL))
 
 define FETCH_EXTERNAL
@@ -208,8 +207,53 @@ define LOCK_FILE
 $(subst $(SPACE)$(NEWLINE),$(NEWLINE),$(foreach t,$(sort $(GIT_TARGETS) $(LOCKED_TARGETS)),$(NEWLINE)$t.LOCKED_REF := $(call lock-ref,$t)$(NEWLINE)$t.LOCKED := $(call lock-sha,$t)))
 endef
 
+###############################################################################
+# Projects built by MyMakefile 3: 't.MAKEFILES' lists the files of the third
+# party declaring its targets (its libraries, its own third parties), read
+# once it is fetched, with their paths relative to them. Their targets are
+# third parties of the project: no warnings, not installed. A target the
+# project declares too keeps the declaration of the project. The third
+# parties they declare are fetched in turn, at the commits of the
+# external/versions.lock of the embedded project when the project has not
+# locked them, and locked by the project.
+###############################################################################
+
+# The commits locked by the embedded project, for the third parties the
+# project has not locked itself.
+read-embedded-lock = $(if $(wildcard $1),$(eval $(subst :=,?=,$(file <$1))))
+
+define INCLUDE_EXTERNAL_MAKEFILE
+KEPT_TARGETS := $$(TARGETS)
+KEPT_VARS := $$(foreach t,$$(KEPT_TARGETS),$$(filter $$t.%,$$(.VARIABLES)))
+$$(foreach v,$$(KEPT_VARS),$$(eval KEPT.$$v = $$(value $$v)))
+$$(eval $$(call INCLUDE_SUBMAKEFILE,$(1)))
+$$(foreach t,$$(KEPT_TARGETS),$$(foreach v,$$(filter $$t.%,$$(.VARIABLES)),$$(if $$(filter $$v,$$(KEPT_VARS)),$$(eval $$v = $$(value KEPT.$$v)),$$(eval undefine $$v))))
+EMBEDDED_TARGETS += $$(filter-out $$(KEPT_TARGETS),$$(TARGETS))
+$$(foreach t,$$(filter-out $$(KEPT_TARGETS),$$(TARGETS)),$$(eval $$t.WARNINGS ?= none)$$(eval $$t.SYSTEM ?= 1)$$(eval $$t.INSTALL ?= no))
+HERE :=
+endef
+
+FETCHED :=
+EMBEDDED_TARGETS :=
+define FETCH_PASS
+NEW_EXTERNALS := $$(filter-out $$(FETCHED),$$(external-targets))
+$$(foreach t,$$(NEW_EXTERNALS),$$(eval $$(if $$($$t.PATH),$$(call LOCAL_EXTERNAL,$$t),$$(if $$($$t.GIT),$$(call FETCH_EXTERNAL,$$t),$$(call FETCH_ARCHIVE,$$t)))))
+FETCHED += $$(NEW_EXTERNALS)
+$$(foreach t,$$(NEW_EXTERNALS),$$(if $$($$t.MAKEFILES),$$(call read-embedded-lock,$$($$t.DIR)$$(EXTERNAL_LOCK))))
+$$(foreach t,$$(NEW_EXTERNALS),$$(foreach f,$$($$t.MAKEFILES),$$(eval $$(call INCLUDE_EXTERNAL_MAKEFILE,$$($$t.DIR)$$f))))
+TARGETS := $$(call uniq,$$(TARGETS))
+endef
+
 ifneq ($(BUILDING),)
-    $(foreach t,$(EXTERNAL_TARGETS),$(eval $(if $($t.PATH),$(call LOCAL_EXTERNAL,$t),$(if $($t.GIT),$(call FETCH_EXTERNAL,$t),$(call FETCH_ARCHIVE,$t)))))
+    $(foreach pass,1 2 3 4 5,$(eval $(FETCH_PASS)))
+endif
+
+EXTERNAL_TARGETS := $(call uniq,$(external-targets) $(EMBEDDED_TARGETS))
+GIT_TARGETS := $(strip $(foreach t,$(TARGETS),$(if $($t.GIT),$(if $($t.PATH),,$t))))
+URL_TARGETS := $(strip $(foreach t,$(TARGETS),$(if $($t.URL),$(if $($t.PATH)$($t.GIT),,$t))))
+FETCHED_TARGETS := $(GIT_TARGETS) $(URL_TARGETS)
+
+ifneq ($(BUILDING),)
     ifneq ($(GIT_TARGETS),)
         ifneq ($(call read-stamp,$(EXTERNAL_LOCK)),$(LOCK_FILE))
             $(call print-to,Locking,$(PROJECT_NAME),$(EXTERNAL_LOCK))
@@ -221,6 +265,7 @@ endif
 ###############################################################################
 # ExaequOS: epm.py installs the packages its pkg-config does not know (glfw,
 # exa-wayland...), once, in the current directory: EXAEQUOS_PKGS/exapkgs.
+# Not the ones of the tests (gtest...), which are not ExaequOS packages.
 ###############################################################################
 
 #? Where epm.py installs the packages of ExaequOS.
@@ -229,7 +274,7 @@ EXAEQUOS_PKGS ?= $(abspath $(BUILD_DIR)/exaequos)
 ifneq ($(and $(EXAEQUOS),$(BUILDING)),)
     # make 4.3 does not give the exported variables to $(shell).
     PKG_CONFIG := PKG_CONFIG_PATH=$(EXAEQUOS_PKGS)/exapkgs/pkgconfigs$(if $(PKG_CONFIG_PATH),:$(PKG_CONFIG_PATH)) $(PKG_CONFIG)
-    EXAEQUOS_MISSING := $(strip $(foreach p,$(call uniq,$(foreach t,$(TARGETS),$($t.PKG_CONFIG))),$(if $(shell $(PKG_CONFIG) --exists $p && echo 1),,$p)))
+    EXAEQUOS_MISSING := $(strip $(foreach p,$(call uniq,$(foreach t,$(TARGETS),$(if $(filter test,$($t.TYPE)),,$($t.PKG_CONFIG)))),$(if $(shell $(PKG_CONFIG) --exists $p && echo 1),,$p)))
     ifneq ($(EXAEQUOS_MISSING),)
         $(call print-to,Installing ExaequOS packages,$(EXAEQUOS_MISSING),$(EXAEQUOS_PKGS))
         $(info $(shell $(call make-dir,$(EXAEQUOS_PKGS)) && cd $(EXAEQUOS_PKGS) && epm.py install $(EXAEQUOS_MISSING) 2>&1))
