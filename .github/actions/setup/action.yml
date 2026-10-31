@@ -1,0 +1,112 @@
+# SPDX-License-Identifier: GPL-3.0-or-later OR LicenseRef-MyMakefile-Commercial
+# Copyright (c) 2019-2026 Quentin Quadrat
+#
+# This file is part of MyMakefile. See LICENSING.md for details.
+#
+# Prepare a runner of GitHub Actions for a project built with MyMakefile:
+# GNU Make 4, ccache and pkg-config on Linux, macOS and Windows (MSYS2), the
+# packages of the project, and the caches of the third parties and of ccache.
+#
+#   - uses: actions/checkout@v4
+#     with:
+#       submodules: true
+#   - id: mymakefile
+#     uses: ./.makefile/.github/actions/setup
+#     with:
+#       apt: libglfw3-dev libglew-dev
+#       brew: glfw glew
+#       msys2: mingw-w64-x86_64-glfw mingw-w64-x86_64-glew
+#   - run: ${{ steps.mymakefile.outputs.make }} ci
+#
+# On Windows the next steps run in MSYS2: 'shell: msys2 {0}' (for example in
+# 'defaults: run: shell:' of a job of Windows); the output 'shell' tells it.
+
+name: MyMakefile setup
+description: GNU Make 4, ccache, pkg-config, packages and caches for MyMakefile
+
+inputs:
+  apt:
+    description: Packages of Ubuntu to install
+    default: ''
+  brew:
+    description: Packages of Homebrew to install
+    default: ''
+  msys2:
+    description: Packages of MSYS2 (MINGW64) to install
+    default: ''
+  emscripten:
+    description: Install Emscripten (true or false)
+    default: 'false'
+  lock:
+    description: File of the versions of the third parties, key of their cache
+    default: external/versions.lock
+
+outputs:
+  make:
+    description: The command of GNU Make 4 on this runner
+    value: ${{ steps.make.outputs.make }}
+  shell:
+    description: The shell of the next steps
+    value: ${{ steps.make.outputs.shell }}
+
+runs:
+  using: composite
+  steps:
+    - name: Install on Linux
+      if: runner.os == 'Linux'
+      shell: bash
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y make ccache pkg-config ${{ inputs.apt }}
+
+    - name: Install on macOS
+      if: runner.os == 'macOS'
+      shell: bash
+      run: |
+        brew install make ccache pkg-config ${{ inputs.brew }}
+        echo "PKG_CONFIG_PATH=$(brew --prefix)/lib/pkgconfig:$(brew --prefix)/share/pkgconfig" >> "$GITHUB_ENV"
+
+    - name: Install on Windows
+      if: runner.os == 'Windows'
+      uses: msys2/setup-msys2@v2
+      with:
+        msystem: MINGW64
+        update: true
+        install: >-
+          git
+          mingw-w64-x86_64-toolchain
+          mingw-w64-x86_64-make
+          mingw-w64-x86_64-pkg-config
+          mingw-w64-x86_64-ccache
+          ${{ inputs.msys2 }}
+
+    - name: Install Emscripten
+      if: inputs.emscripten == 'true'
+      uses: mymindstorm/setup-emsdk@v14
+
+    - name: Command of make
+      id: make
+      shell: bash
+      run: |
+        case "${{ runner.os }}" in
+          macOS) echo "make=gmake" >> "$GITHUB_OUTPUT"; echo "shell=bash" >> "$GITHUB_OUTPUT" ;;
+          Windows) echo "make=mingw32-make" >> "$GITHUB_OUTPUT"; echo "shell=msys2 {0}" >> "$GITHUB_OUTPUT" ;;
+          *) echo "make=make" >> "$GITHUB_OUTPUT"; echo "shell=bash" >> "$GITHUB_OUTPUT" ;;
+        esac
+        echo "CCACHE_DIR=${{ runner.temp }}/ccache" >> "$GITHUB_ENV"
+        echo "COLORS=1" >> "$GITHUB_ENV"
+
+    - name: Cache of the third parties
+      uses: actions/cache@v4
+      with:
+        path: |
+          ~/.cache/mymakefile
+          ~/AppData/Local/mymakefile
+        key: mymakefile-${{ runner.os }}-${{ hashFiles(inputs.lock) }}
+
+    - name: Cache of ccache
+      uses: actions/cache@v4
+      with:
+        path: ${{ runner.temp }}/ccache
+        key: ccache-${{ runner.os }}-${{ github.sha }}
+        restore-keys: ccache-${{ runner.os }}-

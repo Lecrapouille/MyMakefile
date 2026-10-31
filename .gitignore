@@ -1,5 +1,7 @@
 # Build folders
 doc/build
+build/
+compile_commands.json
 
 # Prerequisites
 *.d

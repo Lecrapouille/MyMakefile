@@ -1,25 +1,27 @@
 #include "foo.hpp"
-#include "project_info.hpp"
+#include "HelloWorld01/project_info.hpp"
+
+namespace info = generated::helloworld01;
 #include <iostream>
 
 int main()
 {
-    std::cout << "Welcome to your project " << project::info::name
-              << " version " << project::info::version::major << '.'
-              << project::info::version::minor << " compiled in "
-              << (project::info::compilation::mode ==
-                          project::info::compilation::debug
+    std::cout << "Welcome to your project " << info::name
+              << " version " << info::version::major << '.'
+              << info::version::minor << " compiled in "
+              << (info::compilation::mode ==
+                          info::compilation::debug
                       ? "debug"
-                      : (project::info::compilation::mode ==
-                             project::info::compilation::release
+                      : (info::compilation::mode ==
+                             info::compilation::release
                          ? "release"
                          : "normal"))
               << " mode " << std::endl
-              << " application " << project::info::application::name
-              << " summary: '" << project::info::application::summary << "'"
+              << " application " << info::application::name
+              << " summary: '" << info::application::summary << "'"
               << std::endl
               << "Your code was git cloned on branch "
-              << project::info::git::branch << " SHA1 "
-              << project::info::git::sha1 << std::endl;
+              << info::git::branch << " SHA1 "
+              << info::git::sha1 << std::endl;
     return foo(1, 2);
 }
