@@ -101,3 +101,30 @@ endef
 ifneq ($(_mm_building),)
     $(foreach t,$(_mm_info_targets),$(eval $(call _mm_info_stamp,$t)))
 endif
+
+###############################################################################
+# Info.plist of the macOS bundles ('t.BUNDLE := 1', 't.ICON := app.icns').
+###############################################################################
+
+define _mm_info_plist
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <key>CFBundleExecutable</key>
+    <string>$($1.NAME)</string>
+    <key>CFBundleIdentifier</key>
+    <string>$(or $($1.BUNDLE_ID),com.$(call _mm_lc,$(PROJECT_NAME)).$($1.NAME))</string>
+    <key>CFBundleInfoDictionaryVersion</key>
+    <string>6.0</string>
+    <key>CFBundleName</key>
+    <string>$($1.NAME)</string>
+    <key>CFBundleShortVersionString</key>
+    <string>$(PROJECT_VERSION)</string>
+    <key>CFBundlePackageType</key>
+    <string>APPL</string>$(if $($1._ICON),
+    <key>CFBundleIconFile</key>
+    <string>$($1.NAME).icns</string>)
+</dict>
+</plist>
+endef

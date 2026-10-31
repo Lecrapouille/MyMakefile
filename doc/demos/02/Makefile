@@ -11,6 +11,6 @@ TARGETS := HelloWorld02
 HelloWorld02.SOURCES := src/main.cpp
 HelloWorld02.DEPENDS := foo bar
 
-TARGET_FILES := src/foo/foo.mk src/bar/bar.mk
+SUBMAKEFILES := src/foo/foo.mk src/bar/bar.mk
 
 include ../../../MyMakefile.mk

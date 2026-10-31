@@ -34,7 +34,16 @@ else ifeq ($(TOOLCHAIN),emscripten)
     $(call _mm_tool,AR,emar)
     TARGET_OS := Emscripten
 else
-    $(error MyMakefile: unknown TOOLCHAIN '$(TOOLCHAIN)': gcc, clang, mingw, emscripten or msvc)
+    $(call _mm_fail,unknown TOOLCHAIN '$(TOOLCHAIN)': gcc$(_mm_comma) clang$(_mm_comma) mingw$(_mm_comma) emscripten or msvc)
+endif
+
+# CPU of the binaries: x86_64, arm64, wasm...
+ifeq ($(TOOLCHAIN),emscripten)
+    TARGET_ARCH := wasm
+else ifneq ($(MINGW_PREFIX),)
+    TARGET_ARCH := $(firstword $(subst -, ,$(MINGW_PREFIX)))
+else
+    TARGET_ARCH := $(HOST_ARCH)
 endif
 
 ###############################################################################

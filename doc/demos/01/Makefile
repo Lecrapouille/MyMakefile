@@ -14,6 +14,6 @@ HelloWorld01.INCLUDES := src
 HelloWorld01.DEFINES := FOO
 HelloWorld01.PROJECT_INFO := 1
 
-TARGET_FILES := tests/tests.mk
+SUBMAKEFILES := tests/tests.mk
 
 include ../../../MyMakefile.mk

@@ -14,6 +14,7 @@
 
 ifeq ($(OS),Windows_NT)
     HOST_OS := Windows
+    HOST_ARCH := $(if $(filter AMD64,$(PROCESSOR_ARCHITEW6432) $(PROCESSOR_ARCHITECTURE)),x86_64,$(if $(filter ARM64,$(PROCESSOR_ARCHITECTURE)),arm64,x86))
     # cmd.exe keeps the quotes of echo, sh removes them.
     ifeq ($(shell echo "q"),"q")
         HOST_SHELL := cmd
@@ -22,6 +23,7 @@ ifeq ($(OS),Windows_NT)
     endif
 else
     HOST_OS := $(shell uname -s)
+    HOST_ARCH := $(shell uname -m)
     HOST_SHELL := sh
 endif
 
@@ -46,7 +48,7 @@ else
     _mm_mkdir = mkdir -p $1
     _mm_rmdir = rm -rf $1
     _mm_rm = rm -f $1
-    _mm_copy = cp -f $1 $2
+    _mm_copy = cp -fP $1 $2
     _mm_copydir = mkdir -p $2 && cp -R $1/. $2
     _mm_exec = $(if $(filter /% ./% ../%,$1),$1,./$1)
 endif

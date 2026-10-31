@@ -57,7 +57,7 @@ mylib.TYPE := library
 mylib.SOURCES := src/**/*.cpp
 mylib.PUBLIC_INCLUDES := include
 
-TARGET_FILES := app/app.mk tests/tests.mk
+SUBMAKEFILES := app/app.mk tests/tests.mk
 
 include .makefile/MyMakefile.mk
 ```
@@ -109,6 +109,8 @@ A target is a name added to `TARGETS`, plus variables prefixed by that name.
 | `DATA`             | Data directory: written in `project_info.hpp` and installed |
 | `ARGS`             | Arguments for `make run-<target>` and `make check` |
 | `INSTALL`          | `no` to keep the target out of `make install` |
+| `CLEAN`            | Files and patterns removed by `make veryclean` |
+| `BUNDLE`, `ICON`, `BUNDLE_ID` | macOS: `1` to build `<name>.app` too, with its `.icns` icon |
 | `GIT`, `VERSION`, `COMMIT` | Third party: see below |
 
 Targets are linked in the right order whatever the order of the `DEPENDS`.
@@ -116,9 +118,9 @@ A dependency cycle or an unknown target stops make with an error.
 
 ### Paths and `HERE`
 
-In a file listed in `TARGET_FILES`, paths are relative to the directory of
+In a file listed in `SUBMAKEFILES`, paths are relative to the directory of
 that file; in the main `Makefile`, to the root of the project. While a file of
-`TARGET_FILES` is read, `HERE` holds its directory, for the flags that need a
+`SUBMAKEFILES` is read, `HERE` holds its directory, for the flags that need a
 path (`--preload-file $(abspath $(HERE)data)`). Use `:=` with `HERE`, since its
 value changes from one file to the next.
 
@@ -146,6 +148,7 @@ imgui.PUBLIC_INCLUDES := .
 | `TOOLCHAIN`        | `gcc` (default), `clang` (default on macOS), `mingw`, `emscripten`, `msvc` |
 | `COVERAGE=1`, `SANITIZER=address` | Instrumentation, for every target |
 | `V=1`              | Show the commands |
+| `COLORS=0`, `COLORS=1` | Colors off, or on even when the output is not a terminal; `NO_COLOR` also turns them off |
 | `BUILD_DIR`        | `build` by default |
 | `PREFIX`, `DESTDIR`| Where `make install` copies the files |
 | `CXX`, `CC`, `AR`, `CXXFLAGS`, `LDFLAGS` | The usual make variables, applied to every target |
@@ -162,12 +165,55 @@ the target files.
 | `<target>` | Builds one target and what it depends on |
 | `run-<target>` | Builds and runs an executable; `ARGS="..."` |
 | `check` | Builds and runs the tests from the root of the project |
+| `coverage` | Builds with coverage, runs the tests and writes the gcovr report in `doc/code-coverage/` |
+| `rebuild` | Builds the current configuration from scratch |
 | `clean-<target>`, `clean`, `distclean` | Remove the build of one target, of this configuration, of every configuration |
-| `install` | Installs executables, libraries, public headers, pkg-config files and data |
+| `veryclean` | Also removes the clones of the third parties, the documentation, the coverage report, the leftovers of the tools (`*.gcda`, `*.orig`, `*~`...), the `CLEAN` files of every target and `CLEAN_FILES` |
+| `install` | Installs executables, bundles, libraries, public headers, pkg-config files and data in `DESTDIR`/`PREFIX` |
+| `doc` | Doxygen documentation in `doc/doxygen/`, with the footer of the license found in `LICENSE` |
+| `format`, `check-format` | clang-format the sources and headers of the project, or fail if one is not formatted |
+| `lint` | cppcheck, target by target with their flags |
 | `compile-commands` | Writes `compile_commands.json` for clangd |
-| `list-targets`, `help` | Print the targets, the goals and the options |
+| `tarball` | Archive of the sources, third parties included, in `build/dist/` |
+| `rpm` | RPM package built with `make install` |
+| `list-targets`, `show-flags`, `help` | Print the targets, their flags, the goals and the options |
 
 A change of flags rebuilds the targets concerned, and only them.
+
+`clean`, `distclean`, `veryclean` and `install` are double-colon rules: a
+project adds its own recipe with `clean::`.
+
+## Continuous integration
+
+MyMakefile gives a CI what it would otherwise script:
+
+| Goal | For |
+| ---- | --- |
+| `ci` | Everything to check in one command: `CI_GOALS` (default `all check`) |
+| `dist` | The artifacts: what `make install` copies, plus `LICENSE`, `README`, `VERSION`, in `build/dist/<project>-<version>-<os>-<arch>/` and its `.tar.gz`. The pkg-config file finds its own prefix, so the archive works where it is unpacked |
+| `ci-info` | `key=value` lines: name, version, os, arch, toolchain, build, dist_dir... |
+| `print-<VAR>` | One variable: `make -s print-PROJECT_VERSION` |
+| `check-format` | Fails on unformatted code |
+
+On GitHub Actions:
+
+```yaml
+- name: Describe the build
+  id: info
+  run: make -s ci-info >> "$GITHUB_OUTPUT"
+- run: make ci
+- run: make dist
+- uses: actions/upload-artifact@v6
+  with:
+    name: ${{ steps.info.outputs.dist_name }}
+    path: ${{ steps.info.outputs.dist_dir }}/
+```
+
+The same commands run with `mingw32-make` on MSYS2, `gmake` on macOS and
+`emmake make` for Emscripten (MyMakefile picks the Emscripten toolchain when
+the compiler is `em++`). Colors are off in CI logs, which are not a terminal;
+`COLORS=1` turns them on for GitHub, which shows them. A package missing from
+pkg-config stops the build of the target needing it with its name.
 
 ## Platforms
 
@@ -179,11 +225,11 @@ A change of flags rebuilds the targets concerned, and only them.
 | Emscripten | Written, not tested yet |
 | Windows, MSVC | Experimental: no header dependency tracking, no DLL |
 
-## Not ported from version 2 yet
+## Not ported from version 2
 
-Doxygen, code coverage report, clang-format, cppcheck, tarballs, RPM and OBS
-packages, macOS bundles, cache of third parties shared between projects, lock
-file of third parties versions.
+Not yet: cache of third parties shared between projects, lock file of their
+versions. Dropped: the OBS package (its script was missing), gprof, Coverity,
+benchmark and size statistics goals, the progress bar.
 
 ## License
 

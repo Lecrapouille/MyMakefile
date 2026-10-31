@@ -18,6 +18,7 @@ $(call _mm_tool,CXX,cl)
 $(call _mm_tool,AR,lib)
 LINK_EXE ?= link
 TARGET_OS := Windows
+TARGET_ARCH := $(HOST_ARCH)
 COMPILER_FAMILY := msvc
 COMPILER_MAJOR :=
 

@@ -14,11 +14,11 @@
 #   mylib.SOURCES := src/**/*.cpp
 #   mylib.PUBLIC_INCLUDES := include
 #
-#   TARGET_FILES := app/app.mk tests/tests.mk
+#   SUBMAKEFILES := app/app.mk tests/tests.mk
 #
 #   include .makefile/MyMakefile.mk
 #
-# Paths written in a file of TARGET_FILES are relative to the directory of
+# Paths written in a file of SUBMAKEFILES are relative to the directory of
 # that file. That directory is also in HERE while the file is read.
 
 MYMAKEFILE := $(patsubst %/,%,$(dir $(lastword $(MAKEFILE_LIST))))
@@ -49,13 +49,22 @@ ifeq ($(filter debug normal release,$(COMPILATION_MODE)),)
 endif
 BUILD_DIR ?= build
 EXTERNAL_DIR ?= external
+DOC_DIR ?= doc
 PREFIX ?= /usr/local
 
 Q := $(if $(V),,@)
 
 include $(MYMAKEFILE)/engine/platform.mk
+include $(MYMAKEFILE)/engine/display.mk
 
-TOOLCHAIN ?= $(if $(filter Darwin,$(HOST_OS)),clang,gcc)
+# emmake, emsdk and the ExaequOS image give em++ as CXX or set these variables.
+TOOLCHAIN ?= $(if $(or $(EMSCRIPTEN),$(EXAEQUOS),$(filter em++%,$(notdir $(CXX)))),emscripten,$(if $(filter Darwin,$(HOST_OS)),clang,gcc))
+
+# 'make coverage' builds with the coverage instrumentation.
+ifneq ($(filter coverage,$(MAKECMDGOALS)),)
+    COVERAGE := 1
+endif
+
 ifeq ($(TOOLCHAIN),msvc)
     include $(MYMAKEFILE)/engine/toolchain-msvc.mk
 else
@@ -65,9 +74,15 @@ endif
 PKG_CONFIG ?= pkg-config
 
 #? Build directory of this configuration: build/linux-gcc-normal,
-#? build/emscripten-release...
+#? build/emscripten-release, build/linux-gcc-debug-coverage...
 _mm_os := $(call _mm_lc,$(TARGET_OS))
-BUILD := $(BUILD_DIR)/$(if $(filter $(_mm_os),$(TOOLCHAIN)),,$(_mm_os)-)$(TOOLCHAIN)-$(COMPILATION_MODE)
+BUILD := $(BUILD_DIR)/$(if $(filter $(_mm_os),$(TOOLCHAIN)),,$(_mm_os)-)$(TOOLCHAIN)-$(COMPILATION_MODE)$(if $(COVERAGE),-coverage)$(if $(SANITIZER),-$(SANITIZER))
+
+# 'make rebuild': the build of this configuration is removed before make
+# looks at what is up to date.
+ifneq ($(filter rebuild,$(MAKECMDGOALS)),)
+    _mm_rebuild := $(shell $(call _mm_rmdir,$(BUILD)))
+endif
 
 ###############################################################################
 # Files declaring targets. Each target records the directory of the file
@@ -81,9 +96,10 @@ include $(1)
 $$(foreach t,$$(filter-out $$(_mm_before),$$(TARGETS)),$$(eval $$t.DIR := $$(HERE)))
 endef
 
-$(foreach f,$(TARGET_FILES),$(eval $(call _mm_include_target_file,$f)))
+$(foreach f,$(SUBMAKEFILES),$(eval $(call _mm_include_target_file,$f)))
 HERE :=
 
 include $(MYMAKEFILE)/engine/targets.mk
 include $(MYMAKEFILE)/engine/info.mk
 include $(MYMAKEFILE)/engine/goals.mk
+include $(MYMAKEFILE)/engine/tools.mk

@@ -14,12 +14,11 @@ _MM_DIRS :=
 
 TARGETS := $(call _mm_uniq,$(TARGETS))
 
-# Something else than cleaning or printing help: allowed to clone, to write
-# the stamps and to call pkg-config.
-_mm_passive_goals := clean distclean clean-% help list-targets
+# Goals which neither compile nor need the third parties: with only them,
+# MyMakefile does not clone, write the stamps or call pkg-config.
+_mm_passive_goals := clean distclean veryclean clean-% help list-targets \
+    print-% ci-info format check-format tarball
 _mm_building := $(if $(MAKECMDGOALS),$(filter-out $(_mm_passive_goals),$(MAKECMDGOALS)),all)
-
-_mm_say = $(if $(Q),$(info [$1] $2 $3))
 
 ###############################################################################
 # Pass 1: defaults, cloning of the external targets, files of each target.
@@ -27,7 +26,7 @@ _mm_say = $(if $(Q),$(info [$1] $2 $3))
 
 define _mm_resolve_target
 ifneq ($$(filter $(1),$$(_MM_TYPES)),)
-    $$(error MyMakefile: a target cannot be named '$(1)')
+    $$(call _mm_fail,a target cannot be named '$(1)')
 endif
 ifdef $(1).GIT
     $(1).DIR := $$(EXTERNAL_DIR)/$(1)/
@@ -39,13 +38,14 @@ $(1).NAME ?= $(1)
 $(1).WARNINGS ?= strict
 $(1).TYPE ?= $$(if $$($(1).SOURCES),executable,header-only)
 ifeq ($$(filter $$($(1).TYPE),$$(_MM_TYPES)),)
-    $$(error MyMakefile: $(1).TYPE is '$$($(1).TYPE)', expected one of: $$(_MM_TYPES))
+    $$(call _mm_fail,$(1).TYPE is '$$($(1).TYPE)'$$(_mm_comma) expected one of: $$(_MM_TYPES))
 endif
 
 $(1)._SRCS := $$(filter $$(_MM_SRC_EXTS),$$(call _mm_glob,$$($(1).SOURCES),$$($(1).DIR)))
 $(1)._PUB_INCS := $$(call _mm_resolve,$$($(1).PUBLIC_INCLUDES),$$($(1).DIR))
 $(1)._PRIV_INCS := $$(call _mm_resolve,$$($(1).INCLUDES),$$($(1).DIR))
 $(1)._DATA := $$(call _mm_resolve,$$($(1).DATA),$$($(1).DIR))
+$(1)._ICON := $$(call _mm_resolve,$$($(1).ICON),$$($(1).DIR))
 $(1)._OBJDIR := $$(BUILD)/obj/$(1)
 $(1)._OBJS := $$(foreach s,$$($(1)._SRCS),$$($(1)._OBJDIR)/$$(basename $$(call _mm_objstem,$$s))$$(OBJ_EXT))
 $(1)._IS_LIB := $$(filter $$($(1).TYPE),$$(_MM_LIB_TYPES))
@@ -55,12 +55,16 @@ $(1)._ARCHIVE := $$(if $$(filter static library,$$($(1).TYPE))$$(if $$(SHARED_SU
 $(1)._SHARED := $$(if $$(SHARED_SUPPORTED),$$(if $$(filter shared library,$$($(1).TYPE)),$$(BUILD)/$$(if $$(filter Windows,$$(TARGET_OS)),bin,lib)/$$(call _mm_tc_shared_name,$$($(1).NAME))))
 $(1)._IMPLIB := $$(if $$(and $$($(1)._SHARED),$$(filter Windows,$$(TARGET_OS))),$$(BUILD)/lib/$$(LIB_PREFIX)$$($(1).NAME).dll.a)
 $(1)._EXE := $$(if $$(filter executable,$$($(1).TYPE)),$$(BUILD)/bin/$$($(1).NAME)$$(or $$($(1).EXT),$$(EXE_EXT)))$$(if $$(filter test,$$($(1).TYPE)),$$(BUILD)/bin/$$($(1).NAME)$$(or $$($(1).EXT),$$(TEST_EXT)))
-$(1)._OUTS := $$($(1)._ARCHIVE) $$($(1)._SHARED) $$($(1)._EXE)
+# macOS application bundle: 't.BUNDLE := 1'.
+$(1)._BUNDLE := $$(if $$(and $$($(1).BUNDLE),$$($(1)._EXE),$$(filter Darwin,$$(TARGET_OS))),$$(BUILD)/bin/$$($(1).NAME).app)
+$(1)._OUTS := $$($(1)._ARCHIVE) $$($(1)._SHARED) $$($(1)._EXE) $$($(1)._BUNDLE)
 # What the targets depending on this one link with: the static library first.
 $(1)._LINKABLE := $$(or $$($(1)._ARCHIVE),$$($(1)._IMPLIB),$$($(1)._SHARED))
 
-ifneq ($$($(1).PROJECT_INFO),)
+ifneq ($$($(1).PROJECT_INFO)$$($(1)._BUNDLE),)
     $(1)._GENDIR := $$(BUILD)/gen/$(1)
+endif
+ifneq ($$($(1).PROJECT_INFO),)
     $(1)._INFO := $$($(1)._GENDIR)/project_info.hpp
 endif
 
@@ -72,13 +76,13 @@ endef
 # sources are expanded.
 define _mm_clone
 ifeq ($$(wildcard $$(EXTERNAL_DIR)/$(1)/.git),)
-    $$(info [$(1)] GIT clone $$($(1).GIT) $$($(1).VERSION)$$($(1).COMMIT))
+    $$(call _mm_say_to,Cloning,$(1),$$(EXTERNAL_DIR)/$(1) $$($(1).VERSION)$$($(1).COMMIT))
     _mm_out := $$(shell git clone --quiet $$(if $$($(1).COMMIT),,--depth 1) $$(if $$($(1).VERSION),--branch $$($(1).VERSION)) $$($(1).GIT) $$(EXTERNAL_DIR)/$(1) 2>&1)
     ifneq ($$($(1).COMMIT),)
         _mm_out += $$(shell git -C $$(EXTERNAL_DIR)/$(1) checkout --quiet $$($(1).COMMIT) 2>&1)
     endif
     ifeq ($$(wildcard $$(EXTERNAL_DIR)/$(1)/.git),)
-        $$(error MyMakefile: cannot clone $$($(1).GIT): $$(_mm_out))
+        $$(call _mm_fail,cannot clone $$($(1).GIT): $$(_mm_out))
     endif
 endif
 endef
@@ -93,7 +97,7 @@ $(foreach t,$(TARGETS),$(eval $(call _mm_resolve_target,$t)))
 # or not, in link order: a library comes after the libraries using it.
 ###############################################################################
 
-_mm_closure = $(foreach d,$($1.DEPENDS),$(if $(filter $d,$2),$(error MyMakefile: dependency cycle: $2 $d))$(if $(filter $d,$(TARGETS)),,$(error MyMakefile: '$(lastword $2)' depends on '$d' which is not in TARGETS))$d $(call _mm_closure,$d,$2 $d))
+_mm_closure = $(foreach d,$($1.DEPENDS),$(if $(filter $d,$2),$(call _mm_fail,dependency cycle: $2 $d))$(if $(filter $d,$(TARGETS)),,$(call _mm_fail,'$(lastword $2)' depends on '$d' which is not in TARGETS))$d $(call _mm_closure,$d,$2 $d))
 
 $(foreach t,$(TARGETS),$(eval $t._DEPS := $(call _mm_uniq_last,$(call _mm_closure,$t,$t))))
 
@@ -101,11 +105,18 @@ $(foreach t,$(TARGETS),$(eval $t._DEPS := $(call _mm_uniq_last,$(call _mm_closur
 # Pass 3: compilation and link flags of each target.
 ###############################################################################
 
-_mm_pkg_cflags = $(if $(and $1,$(_mm_building)),$(shell $(PKG_CONFIG) --cflags $1))
-_mm_pkg_libs = $(if $(and $1,$(_mm_building)),$(shell $(PKG_CONFIG) $(if $(PKG_CONFIG_STATIC),--static) --libs $1))
+_mm_pkg_cflags = $(if $(and $1,$(_mm_building)),$(shell $(PKG_CONFIG) --cflags $1 2>$(_mm_devnull)))
+_mm_pkg_libs = $(if $(and $1,$(_mm_building)),$(shell $(PKG_CONFIG) $(if $(PKG_CONFIG_STATIC),--static) --libs $1 2>$(_mm_devnull)))
+
+# Packages pkg-config does not know, asked once each. A target missing some
+# stops make when it is built, not when another target is.
+_mm_pkg_found = $(if $(filter undefined,$(origin _mm_pkg.$1)),$(eval _mm_pkg.$1 := $(shell $(PKG_CONFIG) --exists $1 && echo 1)))$(_mm_pkg.$1)
+_mm_pkg_missing = $(if $(_mm_building),$(foreach p,$1,$(if $(call _mm_pkg_found,$p),,$p)))
+_mm_check_pkgs = $(if $($1._PKG_MISSING),$(call _mm_fail,$1 needs the packages '$($1._PKG_MISSING)'$(_mm_comma) unknown to $(PKG_CONFIG): install them or set PKG_CONFIG_PATH))
 
 define _mm_flags
 $(1)._PKGS := $$(call _mm_uniq,$$($(1).PKG_CONFIG) $$(foreach d,$$($(1)._DEPS),$$($$d.PKG_CONFIG)))
+$(1)._PKG_MISSING := $$(strip $$(call _mm_pkg_missing,$$($(1)._PKGS)))
 $(1)._CPPFLAGS := \
     $$(addprefix $$(TC_DEF),$$(TC_MODE_DEFINES) $$($(1).DEFINES) $$($(1).PUBLIC_DEFINES) \
         $$(foreach d,$$($(1)._DEPS),$$($$d.PUBLIC_DEFINES))) \
@@ -149,7 +160,8 @@ $(foreach t,$(TARGETS),$(eval $(call _mm_flags,$t)))
 # $1: target, $2: source, $3: object, $4: cxx or c
 define _mm_compile_rule
 $(3): $(2) $$($(1)._CC_STAMP) | $(patsubst %/,%,$(dir $(3))) $$($(1)._INFO)
-	$$(call _mm_say,$(1),$(if $(filter c,$(4)),CC ,CXX),$$<)
+	$$(call _mm_check_pkgs,$(1))
+	$$(call _mm_say_from,Compiling $(if $(filter c,$(4)),C,C++),$(1),$$<)
 	$$(Q)$$(call _mm_tc_compile_$(4),$(1))
 endef
 
@@ -163,14 +175,15 @@ _MM_DIRS += $$(patsubst %/,%,$$(dir $$($(1)._OBJS) $$($(1)._OUTS) $$($(1)._IMPLI
 
 ifneq ($$($(1)._ARCHIVE),)
 $$($(1)._ARCHIVE): $$($(1)._OBJS) $$($(1)._LD_STAMP) | $$(patsubst %/,%,$$(dir $$($(1)._ARCHIVE)))
-	$$(call _mm_say,$(1),AR ,$$@)
+	$$(call _mm_say_to,Static library,$(1),$$@)
 	$$(Q)$$(call _mm_rm,$$@)
 	$$(Q)$$(call _mm_tc_archive,$(1))
 endif
 
 ifneq ($$($(1)._SHARED),)
 $$($(1)._SHARED): $$($(1)._OBJS) $$($(1)._LINKDEPS) $$($(1)._LD_STAMP) | $$(patsubst %/,%,$$(dir $$($(1)._SHARED) $$($(1)._IMPLIB)))
-	$$(call _mm_say,$(1),LD ,$$@)
+	$$(call _mm_check_pkgs,$(1))
+	$$(call _mm_say_to,Shared library,$(1),$$@)
 	$$(Q)$$(call _mm_tc_link_shared,$(1))
 	$$(if $$(_mm_tc_shared_post),$$(Q)$$(call _mm_tc_shared_post,$(1)))
 ifneq ($$($(1)._IMPLIB),)
@@ -180,22 +193,39 @@ endif
 
 ifneq ($$($(1)._EXE),)
 $$($(1)._EXE): $$($(1)._OBJS) $$($(1)._LINKDEPS) $$($(1)._LD_STAMP) | $$(patsubst %/,%,$$(dir $$($(1)._EXE)))
-	$$(call _mm_say,$(1),LD ,$$@)
+	$$(call _mm_check_pkgs,$(1))
+	$$(call _mm_say_to,Linking,$(1),$$@)
 	$$(Q)$$(call _mm_tc_link_exe,$(1))
 
 .PHONY: run-$(1)
 run-$(1): $(1)
+	$$(call _mm_say_simple,Running,$(1))
 	$$(Q)$$(if $$(filter test,$$($(1).TYPE)),$$(TEST_RUNNER),$$(RUNNER)) $$(call _mm_exec,$$($(1)._EXE)) $$($(1).ARGS) $$(ARGS)
+endif
+
+ifneq ($$($(1)._BUNDLE),)
+$$($(1)._GENDIR)/Info.plist: $$($(1)._LD_STAMP) | $$($(1)._GENDIR)
+	$$(file >$$@,$$(call _mm_info_plist,$(1)))
+
+$$($(1)._BUNDLE): $$($(1)._EXE) $$($(1)._GENDIR)/Info.plist $$($(1)._ICON)
+	$$(call _mm_say_to,Bundle,$(1),$$@)
+	$$(Q)$$(call _mm_rmdir,$$@)
+	$$(Q)mkdir -p $$@/Contents/MacOS $$@/Contents/Resources
+	$$(Q)cp -f $$($(1)._EXE) $$@/Contents/MacOS/$$($(1).NAME)
+	$$(Q)cp -f $$($(1)._GENDIR)/Info.plist $$@/Contents/Info.plist
+	$$(if $$($(1)._ICON),$$(Q)cp -f $$($(1)._ICON) $$@/Contents/Resources/$$($(1).NAME).icns)
+	$$(foreach d,$$($(1)._DATA),$$(Q)cp -R $$d/. $$@/Contents/Resources/$$(_mm_newline))
 endif
 
 ifneq ($$($(1)._INFO),)
 $$($(1)._INFO): $$($(1)._GENDIR)/info.txt | $$($(1)._GENDIR)
-	$$(call _mm_say,$(1),GEN,$$@)
+	$$(call _mm_say_to,Generating,$(1),$$@)
 	$$(file >$$@,$$(call _mm_project_info_hpp,$(1)))
 endif
 
 .PHONY: clean-$(1)
 clean-$(1):
+	$$(call _mm_say_simple,Cleaning,$(1))
 	$$(Q)$$(call _mm_rmdir,$$($(1)._OBJDIR))
 	$$(if $$($(1)._GENDIR),$$(Q)$$(call _mm_rmdir,$$($(1)._GENDIR)))
 	$$(if $$(strip $$($(1)._OUTS) $$($(1)._IMPLIB)),$$(Q)$$(call _mm_rm,$$($(1)._OUTS) $$($(1)._IMPLIB)))
