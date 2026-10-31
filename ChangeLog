@@ -1,0 +1,17 @@
+October 2026: version 2.0.0
+        * Restart of the whole project (May 2024): fewer rules, macros and included files than version 1.
+        * Compilation for Linux, macOS (bundles), Windows (MSYS2), Emscripten and ExaequOS (its packages installed with epm.py, no shared libraries).
+        * Shared and static libraries of the same project, internal libraries and third parties told apart; a modified sub-library rebuilds.
+        * Third parties: shell scripts to clone them (with their submodules, updated when already cloned) and to compile them; debug libraries downloaded.
+        * Orchestrator mode: a main Makefile compiling no file, only its sub-projects.
+        * Pre-build and post-build rules, rebuild goal, goals for information (about, project version).
+        * Installation: headers, pkg-config file (STATIC_PKG_LIBS for static packages), data and documentation (optional); RPM packages.
+        * Generated project configuration, named after the target. LIST_MYMAKEFILES.
+        * Doxygen templates, coverage (lcov.info with relative paths), clang-format (copied when the project has none), compile_commands.json.
+        * Only two cleaning goals: clean and veryclean, which removes all the folders of the third parties.
+        * Compilation flags and warnings updated, _FORTIFY_SOURCE fixed, -ffast-math no longer the default.
+        * The progress bar no longer needs the bc command. DEBUG for the shell debugger.
+        * Dual licensing: GPL v3 or commercial.
+
+December 2018: version 1
+        * Initial commit.
