@@ -1,6 +1,6 @@
 #include "HelloWorld00/project_info.hpp"
 
-namespace info = generated::HelloWorld00;
+namespace info = generated::helloworld00;
 #include <iostream>
 
 int main()

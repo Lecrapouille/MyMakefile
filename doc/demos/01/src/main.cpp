@@ -1,7 +1,7 @@
 #include "foo.hpp"
 #include "HelloWorld01/project_info.hpp"
 
-namespace info = generated::HelloWorld01;
+namespace info = generated::helloworld01;
 #include <iostream>
 
 int main()

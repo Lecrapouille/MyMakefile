@@ -139,18 +139,18 @@ build and once installed, since `make install` puts the one of a library in
 ```cpp
 #include "OpenGlassBox-demo/project_info.hpp"
 
-namespace info = generated::OpenGlassBox_demo;
+namespace info = generated::openglassbox_demo;
 std::string const search = info::paths::data;   // split on info::paths::separator
 ```
 
-Its namespace `generated::<name>` (`-` and `.` become `_`) keeps apart the
+Its namespace `generated::<name>` (in lower case, `-` and `.` become `_`) keeps apart the
 headers of an application and of its libraries. It holds `name`,
 `application::{name, summary, log}`, `version::{full, major, minor, patch}`,
 `compilation::{mode, name}`, `git::{branch, sha1}` and `paths::{separator,
 data, tmp, log}`, as `constexpr` values, and macros for C and the
 preprocessor: `OPENGLASSBOX_DEMO_VERSION_MAJOR`... From MyMakefile 2,
 `#include "project_info.hpp"` becomes `#include "<name>/project_info.hpp"`
-and `project::info::` becomes `generated::<name>::`.
+and `project::info::` becomes `generated::<name in lower case>::`.
 
 ### Generated sources
 

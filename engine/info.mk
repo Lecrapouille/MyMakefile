@@ -44,9 +44,9 @@ info-signature = $(PROJECT_NAME) $($1.NAME) $(PROJECT_VERSION) $(COMPILATION_MOD
 # The compilation modes of MyMakefile 2 had three values in C++.
 info-mode = $(if $(filter debug,$(COMPILATION_MODE)),debug,$(if $(filter normal,$(COMPILATION_MODE)),normal,release))
 
-# Identifier of a target in C++ (OpenGlassBox-demo -> OpenGlassBox_demo) and
+# Identifier of a target in C++ (OpenGlassBox-demo -> openglassbox_demo) and
 # for the macros (OPENGLASSBOX_DEMO).
-cxx-identifier = $(subst -,_,$(subst .,_,$(subst /,_,$1)))
+cxx-identifier = $(call lower,$(subst -,_,$(subst .,_,$(subst /,_,$1))))
 
 #? Header of the targets having 't.PROJECT_INFO := 1', included as
 #?   #include "<name>/project_info.hpp"
