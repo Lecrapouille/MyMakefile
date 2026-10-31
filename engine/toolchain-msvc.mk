@@ -76,6 +76,8 @@ tc-warnings-c = $(tc-warnings-cxx)
 
 tc-compile-cxx = $(CXX) /EHsc $($1._CXXFLAGS) /c $< /Fo$@
 tc-compile-c = $(CC) $($1._CFLAGS) /c $< /Fo$@
+tc-compile-asm = $(call fail,assembly sources are not supported with MSVC)
+GDB ?= devenv /debugexe
 tc-archive = $(AR) /nologo /OUT:$@ $($1._ARCHIVE_OBJS)
 tc-link-exe = $(LINK_EXE) /nologo /OUT:$@ $($1._LINK_OBJS) $($1._LDFLAGS) $($1._LIBS)
 tc-shared-name = $1$(SHARED_EXT)

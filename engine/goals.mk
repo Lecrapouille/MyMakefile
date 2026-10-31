@@ -15,9 +15,11 @@ PRODUCT_TARGETS := $(filter-out $(TEST_TARGETS),$(OWN_TARGETS))
 
 .DEFAULT_GOAL := all
 
-#? Build every target, except the tests.
+#? Build every target, except the tests; then run POST_BUILD.
 .PHONY: all
 all: $(PRODUCT_TARGETS)
+	$(POST_BUILD)
+	@$(NOOP)
 
 ###############################################################################
 # Tests
@@ -72,6 +74,7 @@ veryclean:: distclean
 	$(foreach t,$(EXTERNAL_TARGETS),$(if $(wildcard $(EXTERNAL_DIR)/$t/.git),$(call cmd,$(call remove-dir,$(EXTERNAL_DIR)/$t))))
 	$(Q)$(call remove-dir,$(DOXYGEN_DIR))
 	$(Q)$(call remove-dir,$(COVERAGE_DIR))
+	$(Q)$(call remove-dir,$(PROFILE_DIR))
 	$(foreach f,$(target-clean) $(CLEAN_FILES),$(call cmd,$(if $(filter %/,$(wildcard $f/)),$(call remove-dir,$f),$(call remove-files,$f))))
 	$(if $(leftovers),$(call cmd,$(call remove-files,$(leftovers))))
 
@@ -159,6 +162,7 @@ help:
 	$(call help-line,all               ,every target except the tests (default))
 	$(call help-line,<target>          ,one target and what it depends on)
 	$(call help-line,run-<target>      ,build and run an executable$(COMMA) with ARGS="...")
+	$(call help-line,gdb-<target>      ,build it and run it in the debugger (GDB=lldb...))
 	$(call help-line,check             ,build and run the tests)
 	$(call help-line,coverage          ,run the tests and write the coverage report)
 	$(call help-line,rebuild           ,build this configuration from scratch)
@@ -175,7 +179,12 @@ help:
 	$(info Tools:)
 	$(call help-line,doc               ,Doxygen documentation in $(DOXYGEN_DIR))
 	$(call help-line,format            ,clang-format the sources; check-format only checks them)
-	$(call help-line,lint              ,cppcheck)
+	$(call help-line,lint$(COMMA) tidy        ,cppcheck$(COMMA) clang-tidy)
+	$(call help-line,memcheck          ,run the tests in valgrind)
+	$(call help-line,gprof             ,profile GPROF_TARGET$(COMMA) report in $(PROFILE_DIR))
+	$(call help-line,size-analysis     ,sizes of the sections of the binaries)
+	$(call help-line,check-harden      ,hardening of the executables (hardening-check$(COMMA) checksec))
+	$(call help-line,coverity          ,archive of a build under cov-build)
 	$(call help-line,compile-commands  ,write compile_commands.json)
 	$(call help-line,tarball$(COMMA) rpm      ,archive of the sources$(COMMA) RPM package)
 	$(info CI:)
@@ -191,7 +200,8 @@ help:
 	$(info Options: TOOLCHAIN=gcc|clang|mingw|emscripten|msvc V=1 COLORS=0|1 WERROR=1)
 	$(info $(SPACE)        SANITIZER=address,undefined|thread|memory|leak|... COVERAGE=1 GPROF=1)
 	$(info $(SPACE)        LTO=0 HARDENING=0 STRIP=0 NATIVE=1 FAST_MATH=1 PGO=generate|use CCACHE=0)
-	$(info $(SPACE)        BACKWARD=0 DBG_MACRO=0 EXTERNAL_CACHE= BUILD_DIR=build PREFIX=/usr/local)
+	$(info $(SPACE)        BACKWARD=0 DBG_MACRO=0 EXTERNAL_CACHE= BUILD_DIR=build JOBS=$(JOBS))
+	$(info $(SPACE)        PREFIX=/usr/local INSTALL_VERSIONED=1 FORCE_LOWER_CASE=1 EXPORT_MACRO=API_LINKAGE)
 	$(info )
 	$(info Targets: $(TARGETS))
 	@$(NOOP)

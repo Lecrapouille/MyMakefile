@@ -9,10 +9,17 @@
 # The variables of a target 't' written by the user are 't.SOMETHING'; the
 # ones computed here are 't._SOMETHING'.
 
-TARGET_TYPES := executable test static shared library objects header-only
+TARGET_TYPES := executable test static shared library objects header-only cmake
 LIBRARY_TYPES := static shared library
 COMPILED_TYPES := executable test static shared library objects
-SOURCE_EXTS := %.c %.cc %.cpp %.cxx %.c++
+C_EXTS := %.c
+CXX_EXTS := %.cc %.cpp %.cxx %.c++
+ASM_EXTS := %.s %.S
+SOURCE_EXTS := $(C_EXTS) $(CXX_EXTS) $(ASM_EXTS)
+source-kind = $(if $(filter $(CXX_EXTS),$1),cxx,$(if $(filter $(ASM_EXTS),$1),asm,c))
+SOURCE_KIND_NAME.cxx := C++
+SOURCE_KIND_NAME.c := C
+SOURCE_KIND_NAME.asm := assembly
 HEADER_EXTS := %.h %.hh %.hpp %.hxx %.ipp %.tpp %.inl %.incl
 BUILD_DIRS :=
 
@@ -21,6 +28,7 @@ TARGET_ATTRIBUTES := TYPE SOURCES INCLUDES PUBLIC_INCLUDES DEFINES \
     PUBLIC_DEFINES DEPENDS PKG_CONFIG CXXFLAGS CFLAGS LDFLAGS LIBS RPATH \
     WARNINGS NAME DESCRIPTION PROJECT_INFO DATA ARGS INSTALL CLEAN \
     PUBLIC_HEADERS PRIVATE_HEADERS MERGE BUNDLE ICON BUNDLE_ID EXT SYSTEM \
+    ASFLAGS NODELETE POST_BUILD CMAKE_ARGS LIBRARIES \
     GIT VERSION COMMIT PATH DIR LOCKED LOCKED_REF
 
 # The object file of a source: the tree of the sources is kept below the
@@ -112,48 +120,32 @@ closure = $(foreach d,$($1.DEPENDS),$(if $(filter $d,$2),$(call fail,dependency 
 $(foreach t,$(TARGETS),$(eval $t._DEPS := $(call uniq-last,$(call closure,$t,$t))))
 
 ###############################################################################
-# Pass 3: compilation flags.
+# Third parties built by their CMake ('t.TYPE := cmake'): configured, built
+# and installed in their own prefix; 't.LIBRARIES' names what to link (z for
+# libz.a, or file names), 't.PUBLIC_INCLUDES' is relative to the prefix
+# (include by default), 't.CMAKE_ARGS' are given to the configuration.
 ###############################################################################
 
-pkg-cflags = $(if $(and $1,$(BUILDING)),$(shell $(PKG_CONFIG) --cflags $1 2>$(DEVNULL)))
-pkg-libs = $(if $(and $1,$(BUILDING)),$(shell $(PKG_CONFIG) $(if $(PKG_CONFIG_STATIC),--static) --libs $1 2>$(DEVNULL)))
+CMAKE ?= cmake
+CMAKE_TARGETS := $(strip $(foreach t,$(TARGETS),$(if $(filter cmake,$($t.TYPE)),$t)))
+CMAKE_BUILD_TYPE.debug := Debug
+CMAKE_BUILD_TYPE.normal := RelWithDebInfo
+CMAKE_BUILD_TYPE.release := Release
+CMAKE_BUILD_TYPE.release-with-debug := RelWithDebInfo
+CMAKE_BUILD_TYPE.size := MinSizeRel
+CMAKE_BUILD_TYPE.fast := Release
 
-# Packages pkg-config does not know, asked once each. A target missing some
-# stops make when it is built, not when another target is.
-pkg-found = $(if $(filter undefined,$(origin PKG_FOUND.$1)),$(eval PKG_FOUND.$1 := $(shell $(PKG_CONFIG) --exists $1 && echo 1)))$(PKG_FOUND.$1)
-pkg-missing = $(if $(BUILDING),$(foreach p,$1,$(if $(call pkg-found,$p),,$p)))
-check-packages = $(if $($1._PKG_MISSING),$(call fail,$1 needs the packages '$($1._PKG_MISSING)'$(COMMA) unknown to $(PKG_CONFIG): install them or set PKG_CONFIG_PATH))
+cmake-configure = $(if $(filter emscripten,$(TOOLCHAIN)),emcmake )$(CMAKE) --no-warn-unused-cli -S $($1.DIR) -B $($1._OBJDIR)/build \
+    -DCMAKE_INSTALL_PREFIX=$(abspath $($1._PREFIX)) $(call cmake-options,$1)
+cmake-options = -DCMAKE_BUILD_TYPE=$(CMAKE_BUILD_TYPE.$(COMPILATION_MODE)) -DCMAKE_INSTALL_LIBDIR=lib \
+    -DCMAKE_POSITION_INDEPENDENT_CODE=ON -DBUILD_SHARED_LIBS=OFF \
+    $(if $(filter emscripten,$(TOOLCHAIN)),,-DCMAKE_C_COMPILER=$(CC) -DCMAKE_CXX_COMPILER=$(CXX)) \
+    $(if $(COMPILER_LAUNCHER),-DCMAKE_C_COMPILER_LAUNCHER=$(COMPILER_LAUNCHER) -DCMAKE_CXX_COMPILER_LAUNCHER=$(COMPILER_LAUNCHER)) \
+    $(if $(and $(filter mingw,$(TOOLCHAIN)),$(MINGW_PREFIX)),-DCMAKE_SYSTEM_NAME=Windows) \
+    $($1.CMAKE_ARGS)
 
-define COMPILE_FLAGS
-$(1)._IS_OWN := $$(if $$(filter $(1),$$(EXTERNAL_TARGETS)),,1)
-$(1)._PKGS := $$(call uniq,$$($(1).PKG_CONFIG) $$(foreach d,$$($(1)._DEPS),$$($$d.PKG_CONFIG)))
-$(1)._PKG_MISSING := $$(strip $$(call pkg-missing,$$($(1)._PKGS)))
-$(1)._CPPFLAGS := $$(TC_UNDEFINES) \
-    $$(addprefix $$(TC_DEF),$$(TC_MODE_DEFINES) $$($(1).DEFINES) $$($(1).PUBLIC_DEFINES) \
-        $$(foreach d,$$($(1)._DEPS),$$($$d.PUBLIC_DEFINES))) \
-    $$(addprefix $$(TC_INC),$$($(1)._PRIV_INCS) $$($(1)._PUB_INCS) $$($(1)._GENDIR)) \
-    $$(foreach d,$$($(1)._DEPS),$$(addprefix $$(if $$($$d.SYSTEM),$$(TC_SYSINC),$$(TC_INC)),$$($$d._PUB_INCS))) \
-    $$(call pkg-cflags,$$($(1)._PKGS))
-# Position independent code for the libraries, executables for the others.
-$(1)._TYPE_FLAGS := $$(if $$(filter $$($(1).TYPE),$$(LIBRARY_TYPES) objects),$$(PIC_FLAGS),$$(TC_EXE_FLAGS))
-$(1)._WERROR := $$(if $$(and $$($(1)._IS_OWN),$$(filter 1 yes,$$(WERROR))),$$(TC_WERROR))
-$(1)._CXXFLAGS := $$(strip $$(call tc-std,$$(CXX_STANDARD)) $$(TC_MODE_FLAGS) \
-    $$(call tc-warnings-cxx,$$($(1).WARNINGS)) $$($(1)._WERROR) $$($(1)._TYPE_FLAGS) \
-    $$($(1)._CPPFLAGS) $$($(1).CXXFLAGS) $$(CXXFLAGS))
-$(1)._CFLAGS := $$(strip $$(if $$(C_STANDARD),$$(call tc-std,$$(C_STANDARD))) $$(TC_MODE_FLAGS) \
-    $$(call tc-warnings-c,$$($(1).WARNINGS)) $$($(1)._WERROR) $$($(1)._TYPE_FLAGS) \
-    $$($(1)._CPPFLAGS) $$($(1).CFLAGS) $$(CFLAGS))
-# The compiler is part of it: a new compiler rebuilds everything.
-$(1)._CC_SIG := $$(strip $$(COMPILER_FAMILY) $$(COMPILER_VERSION) $$(TARGET_ARCH) | $$($(1)._CXXFLAGS) | $$($(1)._CFLAGS))
-endef
-
-$(foreach t,$(TARGETS),$(eval $(call COMPILE_FLAGS,$t)))
-
-###############################################################################
-# Pass 4: a third party is compiled once per configuration in the cache. Its
-# object directory there is the one whose compilation flags are the same.
-###############################################################################
-
+# The build directory of a third party in the cache: the one whose
+# compilation flags are the same.
 cache-match = $(firstword $(foreach d,$(patsubst %/compile-flags.txt,%,$(wildcard $1-*/compile-flags.txt)),$(if $(call same,$(call read-stamp,$d/compile-flags.txt),$2),$d)))
 cache-new = $1-$(words $(wildcard $1-*/compile-flags.txt) x)
 
@@ -169,14 +161,89 @@ $(1)._CC_STAMP := $$($(1)._OBJDIR)/compile-flags.txt
 $(1)._LD_STAMP := $$($(1)._OBJDIR)/link-flags.txt
 endef
 
+define CMAKE_FLAGS
+$(1)._IS_OWN :=
+$(1)._CC_SIG := $$(strip cmake $$(COMPILER_FAMILY) $$(COMPILER_VERSION) $$(TARGET_ARCH) $$(TOOLCHAIN) | $$(call cmake-options,$(1)))
+endef
+
+define CMAKE_OUTPUTS
+$(1)._PREFIX := $$($(1)._OBJDIR)/prefix
+$(1)._PUB_INCS := $$(addprefix $$($(1)._PREFIX)/,$$(or $$($(1).PUBLIC_INCLUDES),include))
+$(1)._CMAKE_DONE := $$($(1)._OBJDIR)/cmake-installed.txt
+$(1)._LINKABLE := $$(foreach l,$$($(1).LIBRARIES),$$($(1)._PREFIX)/lib/$$(if $$(findstring .,$$l),$$l,$$(LIB_PREFIX)$$l$$(STATIC_EXT)))
+$(1)._OUTS := $$($(1)._CMAKE_DONE)
+endef
+
+###############################################################################
+# Pass 3: compilation flags.
+###############################################################################
+
+pkg-cflags = $(if $(and $1,$(BUILDING)),$(shell $(PKG_CONFIG) --cflags $1 2>$(DEVNULL)))
+pkg-libs = $(if $(and $1,$(BUILDING)),$(shell $(PKG_CONFIG) $(if $(PKG_CONFIG_STATIC),--static) --libs $1 2>$(DEVNULL)))
+
+# Packages pkg-config does not know, asked once each. A target missing some
+# stops make when it is built, not when another target is.
+pkg-found = $(if $(filter undefined,$(origin PKG_FOUND.$1)),$(eval PKG_FOUND.$1 := $(shell $(PKG_CONFIG) --exists $1 && echo 1)))$(PKG_FOUND.$1)
+pkg-missing = $(if $(BUILDING),$(foreach p,$1,$(if $(call pkg-found,$p),,$p)))
+check-packages = $(if $($1._PKG_MISSING),$(call fail,$1 needs the packages '$($1._PKG_MISSING)'$(COMMA) unknown to $(PKG_CONFIG): install them or set PKG_CONFIG_PATH))
+
+# A macro holding parentheses is quoted for the shell: "-DAPI=__declspec(dllexport)"
+define-flags = $(foreach d,$1,$(if $(findstring $(OPEN_PAREN),$d),"$(TC_DEF)$d",$(TC_DEF)$d))
+
+#? Macro of MyMakefile 2 for the symbols exported by a DLL: __declspec(dllexport)
+#? while building a library for Windows, empty otherwise. EXPORT_MACRO= to
+#? do without.
+EXPORT_MACRO ?= API_LINKAGE
+export-define = $(if $(and $(EXPORT_MACRO),$($1._IS_OWN)),$(EXPORT_MACRO)=$(if $(and $($1._SHARED),$(filter Windows,$(TARGET_OS))),__declspec(dllexport)))
+
+define COMPILE_FLAGS
+$(1)._IS_OWN := $$(if $$(filter $(1),$$(EXTERNAL_TARGETS)),,1)
+$(1)._PKGS := $$(call uniq,$$($(1).PKG_CONFIG) $$(foreach d,$$($(1)._DEPS),$$($$d.PKG_CONFIG)))
+$(1)._PKG_MISSING := $$(strip $$(call pkg-missing,$$($(1)._PKGS)))
+$(1)._CPPFLAGS := $$(TC_UNDEFINES) \
+    $$(call define-flags,$$(TC_MODE_DEFINES) $$(call export-define,$(1)) $$($(1).DEFINES) $$($(1).PUBLIC_DEFINES) \
+        $$(foreach d,$$($(1)._DEPS),$$($$d.PUBLIC_DEFINES))) \
+    $$(addprefix $$(TC_INC),$$($(1)._PRIV_INCS) $$($(1)._PUB_INCS) $$($(1)._GENDIR)) \
+    $$(foreach d,$$($(1)._DEPS),$$(addprefix $$(if $$($$d.SYSTEM),$$(TC_SYSINC),$$(TC_INC)),$$($$d._PUB_INCS))) \
+    $$(call pkg-cflags,$$($(1)._PKGS))
+# Position independent code for the libraries, executables for the others.
+$(1)._TYPE_FLAGS := $$(if $$(filter $$($(1).TYPE),$$(LIBRARY_TYPES) objects),$$(PIC_FLAGS),$$(TC_EXE_FLAGS))
+$(1)._WERROR := $$(if $$(and $$($(1)._IS_OWN),$$(filter 1 yes,$$(WERROR))),$$(TC_WERROR))
+$(1)._CXXFLAGS := $$(strip $$(call tc-std,$$(CXX_STANDARD)) $$(TC_MODE_FLAGS) \
+    $$(call tc-warnings-cxx,$$($(1).WARNINGS)) $$($(1)._WERROR) $$($(1)._TYPE_FLAGS) \
+    $$($(1)._CPPFLAGS) $$($(1).CXXFLAGS) $$(CXXFLAGS))
+$(1)._CFLAGS := $$(strip $$(if $$(C_STANDARD),$$(call tc-std,$$(C_STANDARD))) $$(TC_MODE_FLAGS) \
+    $$(call tc-warnings-c,$$($(1).WARNINGS)) $$($(1)._WERROR) $$($(1)._TYPE_FLAGS) \
+    $$($(1)._CPPFLAGS) $$($(1).CFLAGS) $$(CFLAGS))
+$(1)._ASFLAGS := $$(strip $$(TC_MODE_FLAGS) $$($(1)._TYPE_FLAGS) $$($(1)._CPPFLAGS) \
+    $$($(1).ASFLAGS) $$(ASFLAGS))
+# The compiler is part of it: a new compiler rebuilds everything.
+$(1)._CC_SIG := $$(strip $$(COMPILER_FAMILY) $$(COMPILER_VERSION) $$(TARGET_ARCH) | $$($(1)._CXXFLAGS) | $$($(1)._CFLAGS) | $$($(1)._ASFLAGS))
+endef
+
+# A CMake target is configured with its own flags only: the targets using it
+# need the place of its headers, known once its build directory is.
+$(foreach t,$(CMAKE_TARGETS),$(eval $(call CMAKE_FLAGS,$t)))
 ifneq ($(and $(EXTERNAL_CACHE),$(BUILDING)),)
-    $(foreach t,$(GIT_TARGETS),$(if $($t._SRCS),$(eval $(call CACHED_BUILD,$t))))
+    $(foreach t,$(filter $(GIT_TARGETS),$(CMAKE_TARGETS)),$(eval $(call CACHED_BUILD,$t)))
+endif
+$(foreach t,$(CMAKE_TARGETS),$(eval $(call CMAKE_OUTPUTS,$t)))
+$(foreach t,$(filter-out $(CMAKE_TARGETS),$(TARGETS)),$(eval $(call COMPILE_FLAGS,$t)))
+
+###############################################################################
+# Pass 4: a third party is compiled once per configuration in the cache (see
+# CACHED_BUILD); the CMake ones got their directory before pass 3.
+###############################################################################
+
+
+ifneq ($(and $(EXTERNAL_CACHE),$(BUILDING)),)
+    $(foreach t,$(filter-out $(CMAKE_TARGETS),$(GIT_TARGETS)),$(if $($t._SRCS),$(eval $(call CACHED_BUILD,$t))))
 endif
 
 # What a target builds, and what the targets depending on it link with: the
 # static library first, the objects themselves for an 'objects' target.
-$(foreach t,$(TARGETS),$(eval $t._OUTS := $(strip $($t._ARCHIVE) $($t._SHARED) $($t._EXE) $($t._BUNDLE) $($t._PC))))
-$(foreach t,$(TARGETS),$(eval $t._LINKABLE := $(if $(filter objects,$($t.TYPE)),$($t._OBJS),$(or $($t._ARCHIVE),$($t._IMPLIB),$($t._SHARED)))))
+$(foreach t,$(filter-out $(CMAKE_TARGETS),$(TARGETS)),$(eval $t._OUTS := $(strip $($t._ARCHIVE) $($t._SHARED) $($t._EXE) $($t._BUNDLE) $($t._PC))))
+$(foreach t,$(filter-out $(CMAKE_TARGETS),$(TARGETS)),$(eval $t._LINKABLE := $(if $(filter objects,$($t.TYPE)),$($t._OBJS),$(or $($t._ARCHIVE),$($t._IMPLIB),$($t._SHARED)))))
 
 ###############################################################################
 # Pass 5: link flags. 't.MERGE := imgui path/libfoo.a' puts the objects of
@@ -192,12 +259,13 @@ $(1)._ARCHIVE_OBJS := $$($(1)._OBJS) $$(foreach d,$$($(1)._MERGE_TARGETS),$$($$d
 $(1)._LINK_OBJS := $$($(1)._OBJS)
 $(1)._MERGED_BY_DEPS := $$(foreach d,$$($(1)._DEPS),$$($$d._MERGE_TARGETS))
 $(1)._LINKDEPS := $$(foreach d,$$(filter-out $$($(1)._MERGED_BY_DEPS),$$($(1)._DEPS)),$$($$d._LINKABLE))
-$(1)._LINKER := $$(if $$(filter-out %.c,$$($(1)._SRCS) $$(foreach d,$$($(1)._DEPS),$$($$d._SRCS))),$$(CXX),$$(CC))
+$(1)._LINKER := $$(if $$(filter $$(CXX_EXTS),$$($(1)._SRCS) $$(foreach d,$$($(1)._DEPS),$$($$d._SRCS)))$$(filter $$(CMAKE_TARGETS),$$($(1)._DEPS)),$$(CXX),$$(CC))
 $(1)._SHARED_DEPS := $$(foreach d,$$($(1)._DEPS),$$(if $$(filter $$($$d._LINKABLE),$$($$d._SHARED)),$$($$d._SHARED)))
 $(1)._RPATHS := $$(if $$(filter Windows Emscripten,$$(TARGET_OS)),,$$(abspath $$(sort $$(dir $$($(1)._SHARED_DEPS)))) $$(subst :, ,$$(RPATH) $$($(1).RPATH)))
 $(1)._LDFLAGS := $$(strip $$(TC_MODE_LDFLAGS) \
     $$(if $$($(1)._IS_EXE),$$(TC_EXE_LDFLAGS)) \
     $$(if $$($(1)._IS_EXE)$$($(1)._SHARED),$$(TC_HARDEN_LDFLAGS) $$(TC_STRIP_LDFLAGS)) \
+    $$(if $$(and $$($(1).NODELETE),$$($(1)._SHARED),$$(IS_ELF)),-Wl$$(COMMA)-z$$(COMMA)nodelete) \
     $$(addprefix -Wl$$(COMMA)-rpath$$(COMMA),$$($(1)._RPATHS)) \
     $$($(1).LDFLAGS) $$(LDFLAGS))
 $(1)._LIBS := $$(strip $$($(1)._LINKDEPS) $$($(1)._MERGE_ARCHIVES) $$($(1).LIBS) \
@@ -221,13 +289,23 @@ $(foreach t,$(TARGETS),$(eval $(call LINK_FLAGS,$t)))
 # Pass 6: rules.
 ###############################################################################
 
-# $1: target, $2: source, $3: object, $4: cxx or c
+# $1: target, $2: source, $3: object, $4: cxx, c or asm. Before compiling:
+# PRE_BUILD, and the third parties built by CMake whose headers are needed.
 define COMPILE_RULE
-$(3): $(2) $$($(1)._CC_STAMP) | $(patsubst %/,%,$(dir $(3))) $$($(1)._INFO)
+$(3): $(2) $$($(1)._CC_STAMP) | $(patsubst %/,%,$(dir $(3))) $$($(1)._INFO) pre-build $$(foreach d,$$($(1)._DEPS),$$($$d._CMAKE_DONE))
 	$$(call check-packages,$(1))
-	$$(call print-from,Compiling $(if $(filter c,$(4)),C,C++),$(1),$$<)
+	$$(call print-from,Compiling $$(SOURCE_KIND_NAME.$(4)),$(1),$$<)
 	$$(Q)$$(call tc-compile-$(4),$(1))
 endef
+
+#? Commands run before compiling anything, and after building 'all'. Each
+#? target can also have its own 't.POST_BUILD', run after it is linked.
+PRE_BUILD ?=
+POST_BUILD ?=
+.PHONY: pre-build
+pre-build:
+	$(PRE_BUILD)
+	@$(NOOP)
 
 # Objects of the static libraries given to 't.MERGE'.
 extract-archive = $(call cmd,$(call remove-dir,$2))$(call cmd,$(call make-dir,$2))$(call cmd,cd $2 && $(AR) x $(abspath $1))
@@ -236,7 +314,7 @@ define TARGET_RULES
 .PHONY: $(1)
 $(1): $$($(1)._OUTS)
 
-$$(foreach s,$$($(1)._SRCS),$$(eval $$(call COMPILE_RULE,$(1),$$s,$$(call object-of,$(1),$$s),$$(if $$(filter %.c,$$s),c,cxx))))
+$$(foreach s,$$($(1)._SRCS),$$(eval $$(call COMPILE_RULE,$(1),$$s,$$(call object-of,$(1),$$s),$$(call source-kind,$$s))))
 -include $$(wildcard $$($(1)._OBJS:%$$(OBJ_EXT)=%.d))
 BUILD_DIRS += $$(patsubst %/,%,$$(dir $$($(1)._OBJS) $$($(1)._OUTS) $$($(1)._IMPLIB))) $$($(1)._GENDIR)
 
@@ -246,6 +324,7 @@ $$($(1)._ARCHIVE): $$($(1)._OBJS) $$(foreach d,$$($(1)._MERGE_TARGETS),$$($$d._O
 	$$(Q)$$(call remove-files,$$@)
 	$$(foreach a,$$($(1)._MERGE_ARCHIVES),$$(call extract-archive,$$a,$$($(1)._OBJDIR)/merged/$$(basename $$(notdir $$a))))
 	$$(Q)$$(call tc-archive,$(1))
+	$$(if $$($(1)._SHARED)$$($(1)._EXE),,$$($(1).POST_BUILD))
 endif
 
 ifneq ($$($(1)._SHARED),)
@@ -254,6 +333,7 @@ $$($(1)._SHARED): $$($(1)._OBJS) $$($(1)._LINKDEPS) $$($(1)._LD_STAMP) | $$(pats
 	$$(call print-to,Shared library,$(1),$$@)
 	$$(Q)$$(call tc-link-shared,$(1))
 	$$(if $$(tc-shared-post),$$(Q)$$(call tc-shared-post,$(1)))
+	$$($(1).POST_BUILD)
 ifneq ($$($(1)._IMPLIB),)
 $$($(1)._IMPLIB): $$($(1)._SHARED) ;
 endif
@@ -270,11 +350,26 @@ $$($(1)._EXE): $$($(1)._OBJS) $$($(1)._LINKDEPS) $$($(1)._LD_STAMP) | $$(patsubs
 	$$(call check-packages,$(1))
 	$$(call print-to,Linking,$(1),$$@)
 	$$(Q)$$(call tc-link-exe,$(1))
+	$$($(1).POST_BUILD)
 
-.PHONY: run-$(1)
+.PHONY: run-$(1) gdb-$(1)
 run-$(1): $(1)
 	$$(call print-simple,Running,$(1))
 	$$(Q)$$(call run-target,$(1),$$(ARGS))
+
+gdb-$(1): $(1)
+	$$(Q)$$(GDB) --args $$(call run-path,$$($(1)._EXE)) $$($(1).ARGS) $$(ARGS)
+endif
+
+ifneq ($$($(1)._CMAKE_DONE),)
+$$($(1)._CMAKE_DONE): $$($(1)._CC_STAMP)
+	$$(call print-to,Building with CMake,$(1),$$($(1)._PREFIX))
+	$$(Q)$$(call cmake-configure,$(1)) $$(if $$(Q),>$$(DEVNULL))
+	+$$(Q)$$(CMAKE) --build $$($(1)._OBJDIR)/build $$(if $$(Q),>$$(DEVNULL))
+	$$(Q)$$(CMAKE) --install $$($(1)._OBJDIR)/build $$(if $$(Q),>$$(DEVNULL))
+	$$(Q)$$(call touch-file,$$@)
+
+$$($(1)._LINKABLE): $$($(1)._CMAKE_DONE) ;
 endif
 
 ifneq ($$($(1)._BUNDLE),)

@@ -72,9 +72,12 @@ endif
 ifeq ($(filter $(COMPILATION_MODES),$(COMPILATION_MODE)),)
     $(call fail,COMPILATION_MODE is '$(COMPILATION_MODE)'$(COMMA) expected one of: $(COMPILATION_MODES))
 endif
-# 'make coverage' builds with the coverage instrumentation.
+# 'make coverage' and 'make gprof' build with their instrumentation.
 ifneq ($(filter coverage,$(MAKECMDGOALS)),)
     COVERAGE := 1
+endif
+ifneq ($(filter gprof,$(MAKECMDGOALS)),)
+    GPROF := 1
 endif
 
 ###############################################################################
@@ -85,15 +88,18 @@ BUILD_DIR ?= build
 EXTERNAL_DIR ?= external
 DOC_DIR ?= doc
 
-#? Installation, as in MyMakefile 2. For headers in a directory of their own
-#? version: INCLUDEDIR = $(PREFIX)/include/$(PROJECT_NAME)/$(PROJECT_VERSION)
+#? Installation, as in MyMakefile 2. INSTALL_VERSIONED=1 keeps the versions
+#? side by side, as MyMakefile 2 did: include/<project>/<version>,
+#? share/<project>/<version>, bin/<name>-<version> and <name>-<version>.pc,
+#? with links without the version.
+INSTALL_VERSIONED ?=
 PREFIX ?= /usr/local
 BINDIR ?= $(PREFIX)/bin
 LIBDIR ?= $(PREFIX)/lib
-INCLUDEDIR ?= $(PREFIX)/include
+INCLUDEDIR ?= $(PREFIX)/include$(if $(INSTALL_VERSIONED),/$(INSTALL_NAME)/$(PROJECT_VERSION))
 PKGLIBDIR ?= $(LIBDIR)/pkgconfig
 DATADIR ?= $(PREFIX)/share
-PROJECT_DATADIR ?= $(DATADIR)/$(INSTALL_NAME)
+PROJECT_DATADIR ?= $(DATADIR)/$(INSTALL_NAME)$(if $(INSTALL_VERSIONED),/$(PROJECT_VERSION))
 DOCDIR ?= $(DATADIR)/doc/$(INSTALL_NAME)
 
 Q := $(if $(V),,@)

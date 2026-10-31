@@ -92,7 +92,7 @@ coverage: $(TEST_TARGETS)
 ###############################################################################
 
 CLANG_FORMAT ?= clang-format
-FORMAT_EXTS := $(SOURCE_EXTS) $(HEADER_EXTS)
+FORMAT_EXTS := $(C_EXTS) $(CXX_EXTS) $(HEADER_EXTS)
 FORMAT_INCLUDE_DIRS := $(sort $(foreach t,$(OWN_TARGETS),$($t._PUB_INCS) $($t._PRIV_INCS)))
 FORMAT_SOURCE_DIRS := $(sort $(foreach t,$(OWN_TARGETS),$(patsubst %/,%,$(dir $($t._SRCS)))))
 
@@ -203,3 +203,83 @@ rpm: | $(RPM_DIR)/SPECS
 	$(call print-to,RPM package,$(PROJECT_NAME),$(RPM_DIR)/RPMS)
 	$(file >$(RPM_SPEC_FILE),$(RPM_SPEC))
 	$(Q)MAKEFLAGS= $(RPMBUILD) --quiet --define "_topdir $(RPM_TOP)" -bb $(RPM_SPEC_FILE) --nodeps
+
+###############################################################################
+# clang-tidy, with the flags of compile_commands.json.
+###############################################################################
+
+CLANG_TIDY ?= clang-tidy
+#? Options of clang-tidy: add --warnings-as-errors='*' for a CI.
+CLANG_TIDY_FLAGS ?= --quiet
+
+#? Run clang-tidy on the C and C++ sources of the project.
+.PHONY: tidy
+tidy: compile-commands
+	$(foreach t,$(LINT_TARGETS),$(call cmd,$(call echo-simple,Analysing,$t))$(call cmd,$(CLANG_TIDY) -p . $(CLANG_TIDY_FLAGS) $(filter $(C_EXTS) $(CXX_EXTS),$($t._SRCS))))
+
+###############################################################################
+# valgrind on the tests.
+###############################################################################
+
+VALGRIND_TOOL ?= valgrind
+VALGRIND_FLAGS ?= --error-exitcode=1 --leak-check=full --errors-for-leak-kinds=definite --track-origins=yes
+
+#? Run the tests in valgrind: fails on a memory error or a leak.
+.PHONY: memcheck
+memcheck: $(TEST_TARGETS)
+	$(foreach t,$(TEST_TARGETS),$(call cmd,$(call echo-simple,Memcheck,$t))$(call cmd,$(VALGRIND_TOOL) $(VALGRIND_FLAGS) $(call run-path,$($t._EXE)) $($t.ARGS)))
+
+###############################################################################
+# Profiling with gprof, as in MyMakefile 2: builds with GPROF=1, runs
+# GPROF_TARGET with ARGS and writes the report in PROFILE_DIR.
+###############################################################################
+
+GPROF_TOOL ?= gprof
+PROFILE_DIR ?= $(DOC_DIR)/profiling
+#? The executable profiled: the first one of the project.
+GPROF_TARGET ?= $(firstword $(foreach t,$(PRODUCT_TARGETS) $(TEST_TARGETS),$(if $($t._EXE),$t)))
+
+.PHONY: gprof
+gprof: $(GPROF_TARGET)
+	$(call cmd,$(call echo-simple,Profiling,$(GPROF_TARGET)))
+	$(Q)$(call run-target,$(GPROF_TARGET),$(ARGS))
+	$(Q)$(call make-dir,$(PROFILE_DIR))
+	$(Q)$(GPROF_TOOL) $($(GPROF_TARGET)._EXE) gmon.out > $(PROFILE_DIR)/$(GPROF_TARGET).txt
+	$(Q)$(call remove-files,gmon.out)
+	$(call cmd,$(call echo-simple,Report,$(PROFILE_DIR)/$(GPROF_TARGET).txt))
+
+###############################################################################
+# Sizes of the binaries, and the hardening of the executables.
+###############################################################################
+
+SIZE ?= $(if $(filter mingw,$(TOOLCHAIN)),$(MINGW_PREFIX))size
+#? hardening-check (Debian devscripts) or checksec.
+HARDENING_CHECK ?= $(or $(call which,hardening-check),$(call which,checksec))
+OWN_BINARIES = $(foreach t,$(OWN_TARGETS),$(filter-out %.pc %.app,$($t._EXE) $($t._ARCHIVE) $($t._SHARED)))
+
+#? Print the sizes of the sections of the executables and libraries.
+.PHONY: size-analysis
+size-analysis: all
+	$(Q)$(SIZE) $(OWN_BINARIES)
+
+#? Check the hardening of the executables (PIE, RELRO, stack protector...).
+.PHONY: check-harden
+check-harden: all
+	$(if $(HARDENING_CHECK),,$(call fail,check-harden needs hardening-check (devscripts) or checksec))
+	$(foreach t,$(OWN_TARGETS),$(if $($t._EXE),$(call cmd,$(HARDENING_CHECK) $(if $(filter %checksec,$(HARDENING_CHECK)),--file=)$($t._EXE))))
+
+###############################################################################
+# Coverity Scan: the build of the project under cov-build, archived to be
+# uploaded on scan.coverity.com.
+###############################################################################
+
+COV_BUILD ?= cov-build
+COVERITY_ARCHIVE ?= $(BUILD_DIR)/dist/$(INSTALL_NAME)-coverity.tgz
+
+.PHONY: coverity
+coverity:
+	$(call print-to,Coverity,$(PROJECT_NAME),$(COVERITY_ARCHIVE))
+	$(Q)$(call remove-dir,$(BUILD_DIR)/cov-int)
+	$(Q)$(call make-dir,$(dir $(COVERITY_ARCHIVE)))
+	+$(Q)$(COV_BUILD) --dir $(BUILD_DIR)/cov-int $(MAKE) rebuild
+	$(Q)tar -czf $(COVERITY_ARCHIVE) -C $(BUILD_DIR) cov-int

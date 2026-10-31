@@ -100,11 +100,24 @@ exe-files = $(if $(filter Emscripten,$(TARGET_OS)),$(basename $($1._EXE)).*,$($1
 shared-files = $(if $(filter Windows,$(TARGET_OS)),$($1._SHARED),$(dir $($1._SHARED))$(LIB_PREFIX)$($1.NAME)$(SHARED_EXT)*)
 shared-dir = $(if $(filter Windows,$(TARGET_OS)),$(BINDIR),$(LIBDIR))
 
+# Versioned names of INSTALL_VERSIONED: OpenGlassBox-demo-0.2.0, linked from
+# OpenGlassBox-demo. Not for the files of Emscripten.
+VERSIONED_EXES := $(if $(and $(INSTALL_VERSIONED),$(filter-out Emscripten,$(TARGET_OS))),1)
+versioned-exe = $($1.NAME)-$(PROJECT_VERSION)$(EXE_EXT)
+versioned-pc = $($1.NAME)-$(PROJECT_VERSION).pc
+
+stage-exe = $(if $(VERSIONED_EXES),\
+    $(call cmd,$(call copy-files,$($1._EXE),$2/$(call versioned-exe,$1)))$(call cmd,$(call link-file,$(call versioned-exe,$1),$2/$(notdir $($1._EXE)))),\
+    $(call cmd,$(call copy-files,$(call exe-files,$1),$2/)))
+stage-pc = $(if $(INSTALL_VERSIONED),\
+    $(call cmd,$(call copy-files,$(call installed-pc,$1),$2/$(call versioned-pc,$1)))$(call cmd,$(call link-file,$(call versioned-pc,$1),$2/$($1.NAME).pc)),\
+    $(call cmd,$(call copy-files,$(call installed-pc,$1),$2/)))
+
 stage = \
-    $(if $($1._EXE),$(call cmd,$(call make-dir,$(call stage-path,$(BINDIR),$2)))$(call cmd,$(call copy-files,$(call exe-files,$1),$(call stage-path,$(BINDIR),$2)/))) \
+    $(if $($1._EXE),$(call cmd,$(call make-dir,$(call stage-path,$(BINDIR),$2)))$(call stage-exe,$1,$(call stage-path,$(BINDIR),$2))) \
     $(if $($1._BUNDLE),$(call cmd,$(call copy-dir,$($1._BUNDLE),$(call stage-path,$(BINDIR),$2)/$(notdir $($1._BUNDLE))))) \
     $(if $($1._IS_LIB),$(call cmd,$(call make-dir,$(call stage-path,$(LIBDIR),$2))) \
-        $(call cmd,$(call make-dir,$(call stage-path,$(PKGLIBDIR),$2)))$(call cmd,$(call copy-files,$(call installed-pc,$1),$(call stage-path,$(PKGLIBDIR),$2)/))) \
+        $(call cmd,$(call make-dir,$(call stage-path,$(PKGLIBDIR),$2)))$(call stage-pc,$1,$(call stage-path,$(PKGLIBDIR),$2))) \
     $(if $($1._ARCHIVE),$(call cmd,$(call copy-files,$($1._ARCHIVE),$(call stage-path,$(LIBDIR),$2)/))) \
     $(if $($1._IMPLIB),$(call cmd,$(call copy-files,$($1._IMPLIB),$(call stage-path,$(LIBDIR),$2)/))) \
     $(if $($1._SHARED),$(call cmd,$(call make-dir,$(call stage-path,$(shared-dir),$2)))$(call cmd,$(call copy-files,$(call shared-files,$1),$(call stage-path,$(shared-dir),$2)/))) \
@@ -114,21 +127,50 @@ stage = \
 # A third party used by a library is neither installed nor merged in it.
 warn-externals = $(foreach t,$(INSTALLED_LIBS),$(if $(call pc-externals,$t),$(call print-warning,$t uses the third parties '$(call pc-externals,$t)' which are not installed: add them to $t.MERGE)))
 
-#? Install the project in $(DESTDIR)$(PREFIX).
+###############################################################################
+# ExaequOS, as MyMakefile 2 did: each application in
+# EXAEQUOS_DIR/<name>/exa/ with its .js, .wasm and an exa.html page.
+###############################################################################
+
+EXAEQUOS_DIR ?= media/localhost
+EXAEQUOS_APPS := $(if $(EXAEQUOS),$(strip $(foreach t,$(INSTALLED_TARGETS),$(if $(filter executable,$($t.TYPE)),$t))))
+
+define EXAEQUOS_HTML
+<!doctype html>
+<html lang="en-us">
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+  <title>$($1.NAME)</title>
+  <style>
+    html, body { margin: 0; padding: 0; border: none; width: 100%; height: 100%; }
+  </style>
+</head>
+<body>
+  <script async type="text/javascript" src="$($1.NAME).js"></script>
+</body>
+</html>
+endef
+
+exaequos-html = $(STAGE_DIR)/$($1.NAME)-exa.html
+$(foreach t,$(EXAEQUOS_APPS),$(eval $(call exaequos-html,$t): $$($t._LD_STAMP) | $$(STAGE_DIR) ; $$(file >$$@,$$(call EXAEQUOS_HTML,$t))))
+stage-exaequos = $(call cmd,$(call make-dir,$(EXAEQUOS_DIR)/$($1.NAME)/exa))$(call cmd,$(call copy-files,$(wildcard $(basename $($1._EXE)).js $(basename $($1._EXE)).wasm $(basename $($1._EXE)).data),$(EXAEQUOS_DIR)/$($1.NAME)/exa/))$(call cmd,$(call copy-files,$(call exaequos-html,$1),$(EXAEQUOS_DIR)/$($1.NAME)/exa/exa.html))
+
+#? Install the project in $(DESTDIR)$(PREFIX) (ExaequOS: in EXAEQUOS_DIR).
 .PHONY: install
-install:: all $(INSTALLED_PCS)
-	$(call print-to,Installing,$(PROJECT_NAME),$(DESTDIR)$(PREFIX))
+install:: all $(INSTALLED_PCS) $(foreach t,$(EXAEQUOS_APPS),$(call exaequos-html,$t))
+	$(call print-to,Installing,$(PROJECT_NAME),$(if $(EXAEQUOS),$(EXAEQUOS_DIR),$(DESTDIR)$(PREFIX)))
 	$(warn-externals)
-	$(foreach t,$(INSTALLED_TARGETS),$(call stage,$t,$(DESTDIR)$(PREFIX)))
-	$(if $(DIST_FILES),$(call cmd,$(call make-dir,$(DESTDIR)$(DOCDIR)))$(call cmd,$(call copy-files,$(DIST_FILES),$(DESTDIR)$(DOCDIR)/)))
+	$(if $(EXAEQUOS),$(foreach t,$(EXAEQUOS_APPS),$(call stage-exaequos,$t)),$(foreach t,$(INSTALLED_TARGETS),$(call stage,$t,$(DESTDIR)$(PREFIX))))
+	$(if $(and $(DIST_FILES),$(if $(EXAEQUOS),,1)),$(call cmd,$(call make-dir,$(DESTDIR)$(DOCDIR)))$(call cmd,$(call copy-files,$(DIST_FILES),$(DESTDIR)$(DOCDIR)/)))
 
 # Files and directories 'make install' writes.
 installed-files = $(foreach t,$(INSTALLED_TARGETS),\
-    $(if $($t._EXE),$(BINDIR)/$(notdir $(call exe-files,$t))) \
+    $(if $($t._EXE),$(BINDIR)/$(notdir $(call exe-files,$t)) $(if $(VERSIONED_EXES),$(BINDIR)/$(call versioned-exe,$t))) \
     $(if $($t._ARCHIVE),$(LIBDIR)/$(notdir $($t._ARCHIVE))) \
     $(if $($t._IMPLIB),$(LIBDIR)/$(notdir $($t._IMPLIB))) \
     $(if $($t._SHARED),$(shared-dir)/$(notdir $(call shared-files,$t))) \
-    $(if $($t._IS_LIB),$(PKGLIBDIR)/$($t.NAME).pc $(addprefix $(INCLUDEDIR)/,$(call header-dests,$t))))
+    $(if $($t._IS_LIB),$(PKGLIBDIR)/$($t.NAME).pc $(if $(INSTALL_VERSIONED),$(PKGLIBDIR)/$(call versioned-pc,$t)) $(addprefix $(INCLUDEDIR)/,$(call header-dests,$t))))
 installed-dirs = $(if $(strip $(foreach t,$(INSTALLED_TARGETS),$($t._DATA))),$(PROJECT_DATADIR)) $(if $(DIST_FILES),$(DOCDIR)) $(foreach t,$(INSTALLED_TARGETS),$(if $($t._BUNDLE),$(BINDIR)/$(notdir $($t._BUNDLE))))
 
 #? Remove what 'make install' installed.

@@ -93,18 +93,20 @@ A target is a name added to `TARGETS`, plus variables prefixed by that name.
 
 | Variable           | Meaning |
 | ------------------ | ------- |
-| `TYPE`             | `executable` (default with sources), `test`, `static`, `shared`, `library` (static and shared), `objects` (linked as objects in the targets using it), `header-only` (default without sources) |
-| `SOURCES`          | Files and patterns: `src/*.cpp`, `src/**/*.cpp` (recursive) |
+| `TYPE`             | `executable` (default with sources), `test`, `static`, `shared`, `library` (static and shared), `objects` (linked as objects in the targets using it), `header-only` (default without sources), `cmake` (a third party built by its CMake: see below) |
+| `SOURCES`          | Files and patterns: `src/*.cpp`, `src/**/*.cpp` (recursive). C, C++ and assembly (`.s`, `.S`) |
 | `INCLUDES`         | Include directories for this target only |
 | `PUBLIC_INCLUDES`  | Include directories for this target and for the targets depending on it |
 | `DEFINES`          | Macros for this target only, without `-D`: `FOO BAR=1` |
 | `PUBLIC_DEFINES`   | Macros for this target and for the targets depending on it |
 | `DEPENDS`          | Targets this one uses: their public includes and macros, and their libraries |
 | `PKG_CONFIG`       | pkg-config packages: their flags go to this target and to the targets depending on it |
-| `CXXFLAGS`, `CFLAGS`, `LDFLAGS` | Additional flags for this target only |
+| `CXXFLAGS`, `CFLAGS`, `ASFLAGS`, `LDFLAGS` | Additional flags for this target only |
 | `LIBS`             | Libraries at the end of the link line, e.g. `-lpthread`; also for the targets depending on it |
 | `WARNINGS`         | `strict` (default), `paranoid` (also `-Weffc++`, or `-Weverything` with clang), `default` (`-Wall -Wextra`) or `none` |
 | `RPATH`            | Run time search paths of the libraries, separated by `:` |
+| `NODELETE`         | `1`: the shared library is never unloaded (`-z nodelete`) |
+| `POST_BUILD`       | Commands run after the target is built |
 | `MERGE`            | Static libraries (targets or `.a` files) whose objects are put in this static library, as `extract-objs-from-static-libs` did |
 | `PUBLIC_HEADERS`, `PRIVATE_HEADERS` | Headers installed besides those of `PUBLIC_INCLUDES`, and headers not installed: see [Installation](#installation) |
 | `NAME`             | Name of the file built, if not the name of the target |
@@ -151,6 +153,20 @@ not raise warnings in your code.
   `EXTERNAL_CACHE=` (empty) clones them in `external/` of the project instead.
 - **Local copy.** `imgui.PATH := ../imgui` uses a directory of yours, never
   fetched.
+- **Built by their own CMake.** `TYPE := cmake`: configured, built and
+  installed in its own prefix, in the cache too, before the targets using it
+  are compiled. `LIBRARIES` names what to link (`z` for `libz.a`),
+  `PUBLIC_INCLUDES` is relative to the prefix (`include` by default),
+  `CMAKE_ARGS` are given to the configuration.
+
+```makefile
+TARGETS += zlib
+zlib.GIT := https://github.com/madler/zlib.git
+zlib.VERSION := v1.3.1
+zlib.TYPE := cmake
+zlib.CMAKE_ARGS := -DZLIB_BUILD_EXAMPLES=OFF
+zlib.LIBRARIES := z
+```
 
 ```makefile
 TARGETS += imgui
@@ -178,6 +194,9 @@ Linux when `libdw` is installed; `BACKWARD=0` to do without) and every target
 | `NATIVE=1`, `FAST_MATH=1`, `VECTORIZE_REPORT=1` | Options of MyMakefile 2 |
 | `LTO=0`, `HARDENING=0`, `STRIP=0`, `CCACHE=0` | Turn off what is on by default |
 | `WERROR=1`         | Warnings are errors, for the targets of the project (not the third parties) |
+| `JOBS=4`           | Jobs run at the same time: all the cores by default (GNU Make runs one without `-j`) |
+| `EXPORT_MACRO`     | `API_LINKAGE` (as in MyMakefile 2): `__declspec(dllexport)` while building a DLL, empty otherwise |
+| `PRE_BUILD`, `POST_BUILD` | Commands run before compiling, and after `all` |
 | `V=1`              | Show the commands |
 | `COLORS=0`, `COLORS=1` | Colors off, or on even when the output is not a terminal; `NO_COLOR` also turns them off |
 | `BUILD_DIR`        | `build` by default |
@@ -223,6 +242,12 @@ the target files.
 | `tarball` | Archive of the sources, third parties included, in `build/dist/` |
 | `rpm` | RPM package built with `make install` |
 | `update-externals`, `cache-info`, `cache-clean` | Third parties: see above |
+| `gdb-<target>` | Builds and runs an executable in the debugger (`GDB=lldb`) |
+| `tidy` | clang-tidy with `compile_commands.json` |
+| `memcheck` | Runs the tests in valgrind: fails on a memory error or a leak |
+| `gprof` | Builds with `GPROF=1`, runs `GPROF_TARGET` and writes the report in `doc/profiling/` |
+| `size-analysis`, `check-harden` | Sizes of the binaries; hardening of the executables (hardening-check or checksec) |
+| `coverity` | Archive of a build under `cov-build`, for Coverity Scan |
 | `list-targets`, `show-flags`, `help` | Print the targets, their flags, the goals and the options |
 
 A change of flags, or of compiler, rebuilds the targets concerned, and only
@@ -260,8 +285,11 @@ prefix from its own place, so that an archive of `make dist` works where it is
 unpacked. A third party used by an installed library is not installed: put it
 in the library with `MERGE`, as MyMakefile 2 did, or make warns.
 
-To keep each version of the headers apart, as MyMakefile 2 did:
-`INCLUDEDIR = $(PREFIX)/include/$(PROJECT_NAME)/$(PROJECT_VERSION)`.
+`INSTALL_VERSIONED=1` keeps the versions side by side, as MyMakefile 2 did:
+`include/<project>/<version>/`, `share/<project>/<version>/`,
+`bin/<name>-<version>` and `<name>-<version>.pc`, with links without the
+version. With `EXAEQUOS`, `make install` puts each application in
+`media/localhost/<name>/exa/` with its `exa.html`, as MyMakefile 2 did.
 
 ## Continuous integration
 
@@ -310,9 +338,15 @@ pkg-config stops the build of the target needing it with its name.
 
 ## Not ported from version 2
 
-The OBS package (its script was missing), the goals around gprof, Coverity,
-benchmarks and size statistics (`GPROF=1` remains), the progress bar,
-`API_LINKAGE` (MinGW exports the symbols of a DLL by itself).
+The OBS package (its script was missing), the benchmark goal (`make
+run-<target>` under `time`), the progress bar (see below), `make run --
+args` (`make run-<target> ARGS="..."`).
+
+The percentage of MyMakefile 2 was the number of objects compiled over the
+number of objects of the target: wrong as soon as the build is incremental,
+and computed with `expr`, a process per file. make cannot know, before
+running, how many objects are out of date, so the messages give the target
+and the file instead.
 
 ## Writing MyMakefile
 

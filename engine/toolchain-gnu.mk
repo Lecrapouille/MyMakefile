@@ -94,6 +94,7 @@ TC_INC := -I
 TC_SYSINC := -isystem$(SPACE)
 TC_DEF := -D
 TC_WERROR := -Werror
+GDB ?= $(if $(filter Darwin,$(HOST_OS)),lldb,gdb)
 OBJ_EXT := .o
 LIB_PREFIX := lib
 STATIC_EXT := .a
@@ -366,6 +367,8 @@ tc-warnings-c = $(call tc-warnings,$1,$(WARN_C))
 
 tc-compile-cxx = $(COMPILER_LAUNCHER) $(CXX) $($1._CXXFLAGS) -MMD -MP -c $< -o $@
 tc-compile-c = $(COMPILER_LAUNCHER) $(CC) $($1._CFLAGS) -MMD -MP -c $< -o $@
+# Only .S files go through the preprocessor, which writes the dependencies.
+tc-compile-asm = $(CC) $($1._ASFLAGS) $(if $(filter %.S,$<),-MMD -MP) -c $< -o $@
 tc-archive = $(AR) crs $@ $($1._ARCHIVE_OBJS)
 tc-link-exe = $($1._LINKER) -o $@ $($1._LINK_OBJS) $($1._LDFLAGS) $($1._LIBS)
 
