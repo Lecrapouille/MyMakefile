@@ -122,6 +122,8 @@ PKG_CONFIG ?= pkg-config
 #? Build directory of this configuration: build/linux-gcc-normal,
 #? build/emscripten-release, build/linux-gcc-debug-coverage...
 OS_NAME := $(call lower,$(TARGET_OS))
+#? Generated headers: GEN_DIR/<target>/project_info.hpp
+GEN_DIR = $(BUILD)/gen
 BUILD := $(BUILD_DIR)/$(if $(filter $(OS_NAME),$(TOOLCHAIN)),,$(OS_NAME)-)$(TOOLCHAIN)-$(COMPILATION_MODE)$(if $(COVERAGE),-coverage)$(if $(SANITIZERS),-$(subst $(SPACE),-,$(SANITIZERS)))$(if $(filter 1 yes,$(GPROF)),-gprof)
 
 ###############################################################################
@@ -130,7 +132,7 @@ BUILD := $(BUILD_DIR)/$(if $(filter $(OS_NAME),$(TOOLCHAIN)),,$(OS_NAME)-)$(TOOL
 ###############################################################################
 
 PASSIVE_GOALS := clean distclean veryclean clean-% help list-targets print-% \
-    ci-info format check-format tarball uninstall cache-clean
+    ci-info format check-format tarball uninstall uninstall-dry-run cache-clean
 BUILDING := $(if $(MAKECMDGOALS),$(filter-out $(PASSIVE_GOALS),$(MAKECMDGOALS)),all)
 
 # 'make rebuild': the build of this configuration is removed before make

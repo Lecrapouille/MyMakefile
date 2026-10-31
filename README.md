@@ -107,17 +107,19 @@ A target is a name added to `TARGETS`, plus variables prefixed by that name.
 | `RPATH`            | Run time search paths of the libraries, separated by `:` |
 | `NODELETE`         | `1`: the shared library is never unloaded (`-z nodelete`) |
 | `POST_BUILD`       | Commands run after the target is built |
+| `GENERATED_SOURCES`, `GENERATED_HEADERS` | Files made by a rule of the project, in `$(GEN_DIR)`: see below |
+| `LIBRARIES`        | Without sources: libraries built elsewhere (`lib/libfoo.a`), relative to the directory of the target. With `TYPE := cmake`: the libraries CMake builds |
 | `MERGE`            | Static libraries (targets or `.a` files) whose objects are put in this static library, as `extract-objs-from-static-libs` did |
 | `PUBLIC_HEADERS`, `PRIVATE_HEADERS` | Headers installed besides those of `PUBLIC_INCLUDES`, and headers not installed: see [Installation](#installation) |
 | `NAME`             | Name of the file built, if not the name of the target |
 | `DESCRIPTION`      | One line about the target |
-| `PROJECT_INFO`     | `1` to generate `project_info.hpp` (version, git commit, data paths) |
+| `PROJECT_INFO`     | `1` to generate `<name>/project_info.hpp`: see below |
 | `DATA`             | Data directory: written in `project_info.hpp` and installed |
 | `ARGS`             | Arguments for `make run-<target>` and `make check` |
 | `INSTALL`          | `no` to keep the target out of `make install` |
 | `CLEAN`            | Files and patterns removed by `make veryclean` |
 | `BUNDLE`, `ICON`, `BUNDLE_ID` | macOS: `1` to build `<name>.app` too, with its `.icns` icon |
-| `GIT`, `VERSION`, `COMMIT`, `PATH` | Third party: see below |
+| `GIT`, `VERSION`, `COMMIT`, `PATH`, `URL`, `SHA256`, `SUBDIR` | Third party: see below |
 
 Targets are linked in the right order whatever the order of the `DEPENDS`.
 MyMakefile stops with a message on: a dependency cycle, an unknown target, a
@@ -125,6 +127,46 @@ dependency on an executable, a source file or pattern matching nothing, a
 library without sources, a name starting with `lib`, a missing
 `PROJECT_NAME` or `PROJECT_VERSION`. It warns about variables of a target it
 does not know (`app.SOURCE := ...`: a typo).
+
+### project_info.hpp
+
+With `t.PROJECT_INFO := 1`, MyMakefile writes `$(GEN_DIR)/<name>/project_info.hpp`
+(`GEN_DIR` is `build/<configuration>/gen`, an include directory of the target
+and of the targets using it). It is included with the same line from the
+build and once installed, since `make install` puts the one of a library in
+`$(INCLUDEDIR)/<name>/`:
+
+```cpp
+#include "OpenGlassBox-demo/project_info.hpp"
+
+namespace info = generated::OpenGlassBox_demo;
+std::string const search = info::paths::data;   // split on info::paths::separator
+```
+
+Its namespace `generated::<name>` (`-` and `.` become `_`) keeps apart the
+headers of an application and of its libraries. It holds `name`,
+`application::{name, summary, log}`, `version::{full, major, minor, patch}`,
+`compilation::{mode, name}`, `git::{branch, sha1}` and `paths::{separator,
+data, tmp, log}`, as `constexpr` values, and macros for C and the
+preprocessor: `OPENGLASSBOX_DEMO_VERSION_MAJOR`... From MyMakefile 2,
+`#include "project_info.hpp"` becomes `#include "<name>/project_info.hpp"`
+and `project::info::` becomes `generated::<name>::`.
+
+### Generated sources
+
+A rule of the project makes them; MyMakefile compiles the sources, waits for
+the headers before compiling the targets using them, and does not report
+them missing:
+
+```makefile
+app.GENERATED_SOURCES := shaders.cpp      # $(GEN_DIR)/shaders.cpp
+app.GENERATED_HEADERS := shaders.hpp      # $(GEN_DIR)/shaders.hpp
+
+include .makefile/MyMakefile.mk
+
+$(GEN_DIR)/shaders.hpp $(GEN_DIR)/shaders.cpp &: $(wildcard shaders/*.glsl)
+	./tools/embed-shaders $^ $(GEN_DIR)/shaders
+```
 
 ### Paths and `HERE`
 
@@ -153,6 +195,19 @@ not raise warnings in your code.
   `EXTERNAL_CACHE=` (empty) clones them in `external/` of the project instead.
 - **Local copy.** `imgui.PATH := ../imgui` uses a directory of yours, never
   fetched.
+- **Archives.** `t.URL` downloads an archive (`.tar.gz`, `.tar.xz`, `.zip`)
+  with curl, once in the cache; `t.SHA256` refuses it if it is not the
+  expected one; `t.SUBDIR` is its directory to use. With `LIBRARIES`, it can
+  hold binaries:
+
+```makefile
+TARGETS += mujoco
+mujoco.URL := https://github.com/google-deepmind/mujoco/releases/download/3.3.0/mujoco-3.3.0-linux-x86_64.tar.gz
+mujoco.SHA256 := <sha256>
+mujoco.SUBDIR := mujoco-3.3.0
+mujoco.PUBLIC_INCLUDES := include
+mujoco.LIBRARIES := lib/libmujoco.so      # its directory goes in the rpath
+```
 - **Built by their own CMake.** `TYPE := cmake`: configured, built and
   installed in its own prefix, in the cache too, before the targets using it
   are compiled. `LIBRARIES` names what to link (`z` for `libz.a`),
@@ -234,7 +289,7 @@ the target files.
 | `rebuild` | Builds the current configuration from scratch |
 | `clean-<target>`, `clean`, `distclean` | Remove the build of one target, of this configuration, of every configuration |
 | `veryclean` | Also removes the clones of the third parties, the documentation, the coverage report, the leftovers of the tools (`*.gcda`, `*.orig`, `*~`...), the `CLEAN` files of every target and `CLEAN_FILES` |
-| `install`, `uninstall` | See [Installation](#installation) |
+| `install`, `uninstall`, `uninstall-dry-run` | See [Installation](#installation) |
 | `doc` | Doxygen documentation in `doc/doxygen/`, with the footer of the license found in `LICENSE` |
 | `format`, `check-format` | clang-format the sources and headers of the project, or fail if one is not formatted |
 | `lint` | cppcheck, target by target with their flags |
@@ -263,7 +318,20 @@ rules: a project adds its own recipe with `clean::`.
 executables and bundles, the libraries (with the links of the shared ones),
 their headers and pkg-config file, the `DATA` of the targets in
 `share/<project>/`, and the license and readme in `share/doc/<project>/`.
-`make uninstall` removes them. It works with sh and with cmd.exe.
+It works with sh and with cmd.exe. On Windows with MSYS2, the DLLs of MSYS2
+an executable needs are copied beside it (`COPY_RUNTIME_DLLS=0` to do
+without), unless it is linked with `-static`.
+
+`make uninstall` removes only what exists among what `make install` writes.
+Since a wrong variable must not remove the files of the user, it:
+
+- prints the list and asks `Remove these files? [y/N]` (`YES=1` to not ask;
+  without a terminal, as in a CI, the answer is no);
+- only prints it with `DRY_RUN=1` or `make uninstall-dry-run`;
+- refuses a relative `PREFIX`, `/` or `$HOME`, a path outside of the
+  installation directories or being one of them, and a directory removed with
+  its content whose name is not the one of the project;
+- removes the directories of the headers only when they are empty.
 
 The headers of a library are those of its `PUBLIC_INCLUDES` (a directory of
 headers, A), plus its `PUBLIC_HEADERS` (files or patterns anywhere, B), less
@@ -292,6 +360,24 @@ version. With `EXAEQUOS`, `make install` puts each application in
 `media/localhost/<name>/exa/` with its `exa.html`, as MyMakefile 2 did.
 
 ## Continuous integration
+
+The action `.github/actions/setup` of MyMakefile prepares a runner of
+GitHub: GNU Make 4, ccache and pkg-config on Linux, macOS and Windows
+(MSYS2), the packages of the project, Emscripten if asked, the caches of the
+third parties and of ccache, and the command of make of the runner:
+
+```yaml
+- uses: actions/checkout@v4
+  with:
+    submodules: true
+- id: mymakefile
+  uses: ./.makefile/.github/actions/setup
+  with:
+    apt: libglfw3-dev libglew-dev
+    brew: glfw glew
+    msys2: mingw-w64-x86_64-glfw mingw-w64-x86_64-glew
+- run: ${{ steps.mymakefile.outputs.make }} ci
+```
 
 MyMakefile gives a CI what it would otherwise script:
 

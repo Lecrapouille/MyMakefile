@@ -28,11 +28,11 @@ INSTALLED_LIBS := $(strip $(foreach t,$(INSTALLED_TARGETS),$(if $($t._IS_LIB),$t
 
 header-files = $(filter-out $(call glob,$($1.PRIVATE_HEADERS),$($1.DIR)),\
     $(filter $(HEADER_EXTS),$(foreach d,$($1._PUB_INCS),$(call rwildcard,$d,*)) \
-    $(call glob,$($1.PUBLIC_HEADERS),$($1.DIR))))
+    $(call glob,$($1.PUBLIC_HEADERS),$($1.DIR)))) $($1._INFO)
 
-deepest-first = $(foreach n,9 8 7 6 5 4 3 2 1,$(foreach d,$1,$(if $(filter $n,$(words $(subst /, ,$d))),$d)))
+deepest-first = $(foreach n,$(call reverse,$(wordlist 1,40,$(NUMBERS))),$(foreach d,$1,$(if $(filter $n,$(words $(subst /, ,$d))),$d)))
 header-dest = $(or $(firstword $(foreach d,$(call deepest-first,$(filter-out .,$2)),$(if $(filter $d/%,$1),$(patsubst $d/%,%,$1)))),$(if $(filter .,$2),$1,$(notdir $1)))
-include-dirs = $($1._PUB_INCS) $($1._PRIV_INCS)
+include-dirs = $($1._PUB_INCS) $($1._PRIV_INCS) $(if $($1._INFO),$(GEN_DIR))
 header-dests = $(foreach h,$(call header-files,$1),$(call header-dest,$h,$(call include-dirs,$1)))
 
 # Copy the headers of $1 into the directory $2, one copy per directory.
@@ -106,7 +106,14 @@ VERSIONED_EXES := $(if $(and $(INSTALL_VERSIONED),$(filter-out Emscripten,$(TARG
 versioned-exe = $($1.NAME)-$(PROJECT_VERSION)$(EXE_EXT)
 versioned-pc = $($1.NAME)-$(PROJECT_VERSION).pc
 
-stage-exe = $(if $(VERSIONED_EXES),\
+#? Windows with MSYS2: the DLLs of MSYS2 an executable needs (libstdc++,
+#? glfw3.dll...) are copied beside it, unless it is linked with -static.
+#? COPY_RUNTIME_DLLS=0 to do without.
+COPY_RUNTIME_DLLS ?= 1
+runtime-dlls = $(if $(and $(filter Windows,$(TARGET_OS)),$(MSYSTEM_PREFIX),$(filter 1 yes,$(COPY_RUNTIME_DLLS))),$(sort $(filter $(MSYSTEM_PREFIX)/%.dll,$(subst \,/,$(shell ldd $1 2>$(DEVNULL))))))
+stage-dlls = $(if $(call runtime-dlls,$($1._EXE)),$(call cmd,$(call copy-files,$(call runtime-dlls,$($1._EXE)),$2/)))
+
+stage-exe = $(call stage-dlls,$1,$2)$(if $(VERSIONED_EXES),\
     $(call cmd,$(call copy-files,$($1._EXE),$2/$(call versioned-exe,$1)))$(call cmd,$(call link-file,$(call versioned-exe,$1),$2/$(notdir $($1._EXE)))),\
     $(call cmd,$(call copy-files,$(call exe-files,$1),$2/)))
 stage-pc = $(if $(INSTALL_VERSIONED),\
@@ -158,7 +165,7 @@ stage-exaequos = $(call cmd,$(call make-dir,$(EXAEQUOS_DIR)/$($1.NAME)/exa))$(ca
 
 #? Install the project in $(DESTDIR)$(PREFIX) (ExaequOS: in EXAEQUOS_DIR).
 .PHONY: install
-install:: all $(INSTALLED_PCS) $(foreach t,$(EXAEQUOS_APPS),$(call exaequos-html,$t))
+install:: all $(INSTALLED_PCS) $(foreach t,$(INSTALLED_LIBS),$($t._INFO)) $(foreach t,$(EXAEQUOS_APPS),$(call exaequos-html,$t))
 	$(call print-to,Installing,$(PROJECT_NAME),$(if $(EXAEQUOS),$(EXAEQUOS_DIR),$(DESTDIR)$(PREFIX)))
 	$(warn-externals)
 	$(if $(EXAEQUOS),$(foreach t,$(EXAEQUOS_APPS),$(call stage-exaequos,$t)),$(foreach t,$(INSTALLED_TARGETS),$(call stage,$t,$(DESTDIR)$(PREFIX))))
@@ -173,12 +180,62 @@ installed-files = $(foreach t,$(INSTALLED_TARGETS),\
     $(if $($t._IS_LIB),$(PKGLIBDIR)/$($t.NAME).pc $(if $(INSTALL_VERSIONED),$(PKGLIBDIR)/$(call versioned-pc,$t)) $(addprefix $(INCLUDEDIR)/,$(call header-dests,$t))))
 installed-dirs = $(if $(strip $(foreach t,$(INSTALLED_TARGETS),$($t._DATA))),$(PROJECT_DATADIR)) $(if $(DIST_FILES),$(DOCDIR)) $(foreach t,$(INSTALLED_TARGETS),$(if $($t._BUNDLE),$(BINDIR)/$(notdir $($t._BUNDLE))))
 
-#? Remove what 'make install' installed.
+# 'make uninstall' removes files: a wrong variable must not remove the files
+# of the user. It removes only what exists among what 'make install' writes,
+# checks each path, prints the list and asks before (YES=1 to not ask,
+# DRY_RUN=1 or 'make uninstall-dry-run' to only print the list).
+INSTALL_ROOTS = $(sort $(foreach d,$(BINDIR) $(LIBDIR) $(INCLUDEDIR) $(PKGLIBDIR) $(DATADIR) $(DOCDIR) $(PROJECT_DATADIR),$(DESTDIR)$d))
+UNINSTALL_FILES = $(sort $(wildcard $(addprefix $(DESTDIR),$(installed-files))))
+UNINSTALL_DIRS = $(sort $(patsubst %/,%,$(wildcard $(addsuffix /,$(addprefix $(DESTDIR),$(installed-dirs))))))
+# Directories of the headers, removed when they are empty, deepest first.
+UNINSTALL_EMPTY_DIRS = $(call deepest-first,$(filter-out $(INSTALL_ROOTS),$(sort $(patsubst %/,%,$(dir $(filter $(DESTDIR)$(INCLUDEDIR)/%,$(UNINSTALL_FILES)))))))
+
+# Is $1 strictly below one of the installation directories?
+below-roots = $(strip $(foreach r,$(INSTALL_ROOTS),$(filter $r/%,$1)))
+unsafe-paths = $(strip $(foreach p,$1,$(if $(call below-roots,$p),,$p)))
+# A directory removed with all its content must hold the name of the project.
+unsafe-dirs = $(strip $(foreach d,$1,$(if $(or $(findstring $(INSTALL_NAME),$(subst $(PREFIX),,$d)),$(filter %.app,$d)),,$d)))
+
+check-uninstall = \
+    $(if $(call is-absolute,$(PREFIX)),,$(call fail,uninstall: PREFIX '$(PREFIX)' is not an absolute path))\
+    $(if $(filter / $(HOME) $(HOME)/,$(PREFIX) $(abspath $(DESTDIR)$(PREFIX))),$(call fail,uninstall: refused for PREFIX '$(DESTDIR)$(PREFIX)'))\
+    $(if $(call unsafe-paths,$(UNINSTALL_FILES) $(UNINSTALL_DIRS)),$(call fail,uninstall: refused$(COMMA) outside of the installation directories: $(call unsafe-paths,$(UNINSTALL_FILES) $(UNINSTALL_DIRS))))\
+    $(if $(call unsafe-dirs,$(UNINSTALL_DIRS)),$(call fail,uninstall: refused$(COMMA) directories not named after $(INSTALL_NAME): $(call unsafe-dirs,$(UNINSTALL_DIRS))))
+
+ifeq ($(HOST_SHELL),cmd)
+    ask-confirmation = choice /c ny /m "$1" & if not errorlevel 2 exit 1
+    remove-empty-dir = rd "$(call win-path,$1)" 2>nul & rem
+else
+    ask-confirmation = printf '%s [y/N] ' '$1' && read answer && case "$$answer" in y|Y|yes) ;; *) echo Cancelled; exit 1;; esac
+    remove-empty-dir = rmdir $1 2>/dev/null || true
+endif
+
+print-uninstall = $(info $(foreach f,$(UNINSTALL_FILES),$(NEWLINE)  $f)$(foreach d,$(UNINSTALL_DIRS),$(NEWLINE)  $d/ (and its content)))
+
+#? Print what 'make uninstall' would remove.
+.PHONY: uninstall-dry-run
+uninstall-dry-run:
+	$(check-uninstall)
+	$(call print-simple,Would remove,$(PROJECT_NAME),$(SPACE)($(words $(UNINSTALL_FILES)) files$(COMMA) $(words $(UNINSTALL_DIRS)) directories))
+	$(print-uninstall)
+	@$(NOOP)
+
+#? Remove what 'make install' installed, after showing the list and asking.
 .PHONY: uninstall
+ifneq ($(filter 1 yes,$(DRY_RUN)),)
+uninstall:: uninstall-dry-run
+else
 uninstall::
-	$(call print-simple,Uninstalling,$(PROJECT_NAME),$(SPACE)$(DESTDIR)$(PREFIX))
-	$(Q)$(call remove-files,$(addprefix $(DESTDIR),$(strip $(installed-files))))
-	$(foreach d,$(installed-dirs),$(call cmd,$(call remove-dir,$(DESTDIR)$d)))
+	$(check-uninstall)
+	$(if $(UNINSTALL_FILES)$(UNINSTALL_DIRS),,$(call print-ok,Nothing of $(PROJECT_NAME) is installed in $(DESTDIR)$(PREFIX)))
+	$(if $(UNINSTALL_FILES)$(UNINSTALL_DIRS),$(call print-simple,Uninstalling,$(PROJECT_NAME),$(SPACE)($(words $(UNINSTALL_FILES)) files$(COMMA) $(words $(UNINSTALL_DIRS)) directories)))
+	$(if $(UNINSTALL_FILES)$(UNINSTALL_DIRS),$(print-uninstall))
+	$(if $(and $(UNINSTALL_FILES)$(UNINSTALL_DIRS),$(if $(filter 1 yes,$(YES)),,1)),@$(call ask-confirmation,Remove these files?))
+	$(if $(UNINSTALL_FILES),$(Q)$(call remove-files,$(UNINSTALL_FILES)))
+	$(foreach d,$(UNINSTALL_DIRS),$(call cmd,$(call remove-dir,$d)))
+	$(foreach d,$(UNINSTALL_EMPTY_DIRS),$(call cmd,$(call remove-empty-dir,$d)))
+	@$(NOOP)
+endif
 
 ###############################################################################
 # Archive of what the project delivers, for the artifacts of a CI.
@@ -197,7 +254,7 @@ $(STAGE_DIR)/VERSION: | $(STAGE_DIR)
 #? Gather in DIST_DIR and DIST_ARCHIVE what 'make install' installs (in the
 #? same tree, without PREFIX), DIST_FILES and VERSION.
 .PHONY: dist
-dist: all $(INSTALLED_PCS) $(STAGE_DIR)/VERSION
+dist: all $(INSTALLED_PCS) $(STAGE_DIR)/VERSION $(foreach t,$(INSTALLED_LIBS),$($t._INFO))
 	$(call print-to,Packaging,$(PROJECT_NAME),$(DIST_ARCHIVE))
 	$(warn-externals)
 	$(Q)$(call remove-dir,$(DIST_DIR))

@@ -28,7 +28,8 @@ TARGET_ATTRIBUTES := TYPE SOURCES INCLUDES PUBLIC_INCLUDES DEFINES \
     PUBLIC_DEFINES DEPENDS PKG_CONFIG CXXFLAGS CFLAGS LDFLAGS LIBS RPATH \
     WARNINGS NAME DESCRIPTION PROJECT_INFO DATA ARGS INSTALL CLEAN \
     PUBLIC_HEADERS PRIVATE_HEADERS MERGE BUNDLE ICON BUNDLE_ID EXT SYSTEM \
-    ASFLAGS NODELETE POST_BUILD CMAKE_ARGS LIBRARIES \
+    ASFLAGS NODELETE POST_BUILD CMAKE_ARGS LIBRARIES URL SHA256 SUBDIR \
+    GENERATED_SOURCES GENERATED_HEADERS \
     GIT VERSION COMMIT PATH DIR LOCKED LOCKED_REF
 
 # The object file of a source: the tree of the sources is kept below the
@@ -40,6 +41,12 @@ object-of = $($1._OBJDIR)/$(basename $(call object-stem,$(if $(filter $1,$(EXTER
 # Sources given to a target but not found: a pattern matching nothing, or a
 # file which does not exist.
 missing-sources = $(foreach p,$1,$(if $(wildcard $(call glob,$p,$2)),,$p))
+
+# Files made by a rule of the project, in GEN_DIR (an include directory of
+# the targets using them) unless they are absolute:
+#   app.GENERATED_HEADERS := shaders.hpp      # $(GEN_DIR)/shaders.hpp
+#   $(GEN_DIR)/shaders.hpp: shaders/*.glsl ; ...
+generated-path = $(call normalize,$(foreach p,$1,$(if $(call is-absolute,$p),$p,$(GEN_DIR)/$p)))
 
 # String equality.
 same = $(and $(findstring x$1x,x$2x),$(findstring x$2x,x$1x))
@@ -69,7 +76,9 @@ ifneq ($$(filter-out $$(addprefix $(1).,$$(TARGET_ATTRIBUTES)) $(1)._%,$$(filter
     $$(call print-warning,unknown variables $$(filter-out $$(addprefix $(1).,$$(TARGET_ATTRIBUTES)) $(1)._%,$$(filter $(1).%,$$(.VARIABLES))): a typo? Known: $$(TARGET_ATTRIBUTES))
 endif
 
-$(1)._SRCS := $$(filter $$(SOURCE_EXTS),$$(call glob,$$($(1).SOURCES),$$($(1).DIR)))
+$(1)._GEN_SRCS := $$(filter $$(SOURCE_EXTS),$$(call generated-path,$$($(1).GENERATED_SOURCES),$$($(1).DIR)))
+$(1)._GEN_HDRS := $$(call generated-path,$$($(1).GENERATED_HEADERS),$$($(1).DIR))
+$(1)._SRCS := $$(filter $$(SOURCE_EXTS),$$(call glob,$$($(1).SOURCES),$$($(1).DIR))) $$($(1)._GEN_SRCS)
 ifneq ($$(BUILDING),)
     ifneq ($$(strip $$(call missing-sources,$$($(1).SOURCES),$$($(1).DIR))),)
         $$(call fail,$(1).SOURCES: no file for '$$(strip $$(call missing-sources,$$($(1).SOURCES),$$($(1).DIR)))' in $$(or $$($(1).DIR),the root of the project))
@@ -98,11 +107,11 @@ $(1)._BUNDLE := $$(if $$(and $$($(1).BUNDLE),$$($(1)._EXE),$$(filter Darwin,$$(T
 # pkg-config file of the build tree: PKG_CONFIG_PATH=build/.../lib/pkgconfig
 $(1)._PC := $$(if $$(and $$($(1)._IS_LIB),$$(filter-out $(1),$$(EXTERNAL_TARGETS))),$$($(1)._LIBDIR)/pkgconfig/$$($(1).NAME).pc)
 
-ifneq ($$($(1).PROJECT_INFO)$$($(1)._BUNDLE),)
-    $(1)._GENDIR := $$(BUILD)/gen/$(1)
-endif
+# project_info.hpp, included as "<name>/project_info.hpp" from the build
+# (GEN_DIR is an include directory) and once installed.
 ifneq ($$($(1).PROJECT_INFO),)
-    $(1)._INFO := $$($(1)._GENDIR)/project_info.hpp
+    $(1)._INFO := $$(GEN_DIR)/$$($(1).NAME)/project_info.hpp
+    $(1)._INFO_STAMP := $$($(1)._OBJDIR)/info.txt
 endif
 $(1)._CC_STAMP := $$($(1)._OBJDIR)/compile-flags.txt
 $(1)._LD_STAMP := $$($(1)._OBJDIR)/link-flags.txt
@@ -198,12 +207,16 @@ export-define = $(if $(and $(EXPORT_MACRO),$($1._IS_OWN)),$(EXPORT_MACRO)=$(if $
 
 define COMPILE_FLAGS
 $(1)._IS_OWN := $$(if $$(filter $(1),$$(EXTERNAL_TARGETS)),,1)
+# The project_info.hpp of the target and of the libraries it uses.
+$(1)._INFO_ORDER := $$(strip $$($(1)._INFO) $$(foreach d,$$($(1)._DEPS),$$($$d._INFO)))
+# Generated headers of the target and of its libraries: made before compiling.
+$(1)._GEN_ORDER := $$(strip $$($(1)._GEN_HDRS) $$(foreach d,$$($(1)._DEPS),$$($$d._GEN_HDRS)))
 $(1)._PKGS := $$(call uniq,$$($(1).PKG_CONFIG) $$(foreach d,$$($(1)._DEPS),$$($$d.PKG_CONFIG)))
 $(1)._PKG_MISSING := $$(strip $$(call pkg-missing,$$($(1)._PKGS)))
 $(1)._CPPFLAGS := $$(TC_UNDEFINES) \
     $$(call define-flags,$$(TC_MODE_DEFINES) $$(call export-define,$(1)) $$($(1).DEFINES) $$($(1).PUBLIC_DEFINES) \
         $$(foreach d,$$($(1)._DEPS),$$($$d.PUBLIC_DEFINES))) \
-    $$(addprefix $$(TC_INC),$$($(1)._PRIV_INCS) $$($(1)._PUB_INCS) $$($(1)._GENDIR)) \
+    $$(addprefix $$(TC_INC),$$($(1)._PRIV_INCS) $$($(1)._PUB_INCS) $$(if $$($(1)._INFO_ORDER)$$($(1)._GEN_ORDER),$$(GEN_DIR))) \
     $$(foreach d,$$($(1)._DEPS),$$(addprefix $$(if $$($$d.SYSTEM),$$(TC_SYSINC),$$(TC_INC)),$$($$d._PUB_INCS))) \
     $$(call pkg-cflags,$$($(1)._PKGS))
 # Position independent code for the libraries, executables for the others.
@@ -225,7 +238,7 @@ endef
 # need the place of its headers, known once its build directory is.
 $(foreach t,$(CMAKE_TARGETS),$(eval $(call CMAKE_FLAGS,$t)))
 ifneq ($(and $(EXTERNAL_CACHE),$(BUILDING)),)
-    $(foreach t,$(filter $(GIT_TARGETS),$(CMAKE_TARGETS)),$(eval $(call CACHED_BUILD,$t)))
+    $(foreach t,$(filter $(FETCHED_TARGETS),$(CMAKE_TARGETS)),$(eval $(call CACHED_BUILD,$t)))
 endif
 $(foreach t,$(CMAKE_TARGETS),$(eval $(call CMAKE_OUTPUTS,$t)))
 $(foreach t,$(filter-out $(CMAKE_TARGETS),$(TARGETS)),$(eval $(call COMPILE_FLAGS,$t)))
@@ -237,13 +250,15 @@ $(foreach t,$(filter-out $(CMAKE_TARGETS),$(TARGETS)),$(eval $(call COMPILE_FLAG
 
 
 ifneq ($(and $(EXTERNAL_CACHE),$(BUILDING)),)
-    $(foreach t,$(filter-out $(CMAKE_TARGETS),$(GIT_TARGETS)),$(if $($t._SRCS),$(eval $(call CACHED_BUILD,$t))))
+    $(foreach t,$(filter-out $(CMAKE_TARGETS),$(FETCHED_TARGETS)),$(if $($t._SRCS),$(eval $(call CACHED_BUILD,$t))))
 endif
 
 # What a target builds, and what the targets depending on it link with: the
 # static library first, the objects themselves for an 'objects' target.
 $(foreach t,$(filter-out $(CMAKE_TARGETS),$(TARGETS)),$(eval $t._OUTS := $(strip $($t._ARCHIVE) $($t._SHARED) $($t._EXE) $($t._BUNDLE) $($t._PC))))
-$(foreach t,$(filter-out $(CMAKE_TARGETS),$(TARGETS)),$(eval $t._LINKABLE := $(if $(filter objects,$($t.TYPE)),$($t._OBJS),$(or $($t._ARCHIVE),$($t._IMPLIB),$($t._SHARED)))))
+# A target without sources may give libraries built elsewhere: LIBRARIES,
+# relative to its directory (the binaries of an archive).
+$(foreach t,$(filter-out $(CMAKE_TARGETS),$(TARGETS)),$(eval $t._LINKABLE := $(if $(filter objects,$($t.TYPE)),$($t._OBJS),$(if $(filter header-only,$($t.TYPE)),$(call resolve,$($t.LIBRARIES),$($t.DIR)),$(or $($t._ARCHIVE),$($t._IMPLIB),$($t._SHARED))))))
 
 ###############################################################################
 # Pass 5: link flags. 't.MERGE := imgui path/libfoo.a' puts the objects of
@@ -260,7 +275,7 @@ $(1)._LINK_OBJS := $$($(1)._OBJS)
 $(1)._MERGED_BY_DEPS := $$(foreach d,$$($(1)._DEPS),$$($$d._MERGE_TARGETS))
 $(1)._LINKDEPS := $$(foreach d,$$(filter-out $$($(1)._MERGED_BY_DEPS),$$($(1)._DEPS)),$$($$d._LINKABLE))
 $(1)._LINKER := $$(if $$(filter $$(CXX_EXTS),$$($(1)._SRCS) $$(foreach d,$$($(1)._DEPS),$$($$d._SRCS)))$$(filter $$(CMAKE_TARGETS),$$($(1)._DEPS)),$$(CXX),$$(CC))
-$(1)._SHARED_DEPS := $$(foreach d,$$($(1)._DEPS),$$(if $$(filter $$($$d._LINKABLE),$$($$d._SHARED)),$$($$d._SHARED)))
+$(1)._SHARED_DEPS := $$(foreach d,$$($(1)._DEPS),$$(foreach l,$$($$d._LINKABLE),$$(if $$(findstring $$(SHARED_EXT),$$(notdir $$l)),$$l)))
 $(1)._RPATHS := $$(if $$(filter Windows Emscripten,$$(TARGET_OS)),,$$(abspath $$(sort $$(dir $$($(1)._SHARED_DEPS)))) $$(subst :, ,$$(RPATH) $$($(1).RPATH)))
 $(1)._LDFLAGS := $$(strip $$(TC_MODE_LDFLAGS) \
     $$(if $$($(1)._IS_EXE),$$(TC_EXE_LDFLAGS)) \
@@ -292,7 +307,7 @@ $(foreach t,$(TARGETS),$(eval $(call LINK_FLAGS,$t)))
 # $1: target, $2: source, $3: object, $4: cxx, c or asm. Before compiling:
 # PRE_BUILD, and the third parties built by CMake whose headers are needed.
 define COMPILE_RULE
-$(3): $(2) $$($(1)._CC_STAMP) | $(patsubst %/,%,$(dir $(3))) $$($(1)._INFO) pre-build $$(foreach d,$$($(1)._DEPS),$$($$d._CMAKE_DONE))
+$(3): $(2) $$($(1)._CC_STAMP) | $(patsubst %/,%,$(dir $(3))) $$($(1)._INFO_ORDER) $$($(1)._GEN_ORDER) pre-build $$(foreach d,$$($(1)._DEPS),$$($$d._CMAKE_DONE))
 	$$(call check-packages,$(1))
 	$$(call print-from,Compiling $$(SOURCE_KIND_NAME.$(4)),$(1),$$<)
 	$$(Q)$$(call tc-compile-$(4),$(1))
@@ -316,7 +331,7 @@ $(1): $$($(1)._OUTS)
 
 $$(foreach s,$$($(1)._SRCS),$$(eval $$(call COMPILE_RULE,$(1),$$s,$$(call object-of,$(1),$$s),$$(call source-kind,$$s))))
 -include $$(wildcard $$($(1)._OBJS:%$$(OBJ_EXT)=%.d))
-BUILD_DIRS += $$(patsubst %/,%,$$(dir $$($(1)._OBJS) $$($(1)._OUTS) $$($(1)._IMPLIB))) $$($(1)._GENDIR)
+BUILD_DIRS += $$(patsubst %/,%,$$(dir $$($(1)._OBJS) $$($(1)._OUTS) $$($(1)._IMPLIB) $$($(1)._INFO))) $$(if $$($(1)._BUNDLE),$$($(1)._OBJDIR))
 
 ifneq ($$($(1)._ARCHIVE),)
 $$($(1)._ARCHIVE): $$($(1)._OBJS) $$(foreach d,$$($(1)._MERGE_TARGETS),$$($$d._OBJS)) $$($(1)._MERGE_ARCHIVES) $$($(1)._LD_STAMP) | $$(patsubst %/,%,$$(dir $$($(1)._ARCHIVE)))
@@ -373,21 +388,21 @@ $$($(1)._LINKABLE): $$($(1)._CMAKE_DONE) ;
 endif
 
 ifneq ($$($(1)._BUNDLE),)
-$$($(1)._GENDIR)/Info.plist: $$($(1)._LD_STAMP) | $$($(1)._GENDIR)
+$$($(1)._OBJDIR)/Info.plist: $$($(1)._LD_STAMP) | $$($(1)._OBJDIR)
 	$$(file >$$@,$$(call INFO_PLIST,$(1)))
 
-$$($(1)._BUNDLE): $$($(1)._EXE) $$($(1)._GENDIR)/Info.plist $$($(1)._ICON)
+$$($(1)._BUNDLE): $$($(1)._EXE) $$($(1)._OBJDIR)/Info.plist $$($(1)._ICON)
 	$$(call print-to,Bundle,$(1),$$@)
 	$$(Q)$$(call remove-dir,$$@)
 	$$(Q)mkdir -p $$@/Contents/MacOS $$@/Contents/Resources
 	$$(Q)cp -f $$($(1)._EXE) $$@/Contents/MacOS/$$($(1).NAME)
-	$$(Q)cp -f $$($(1)._GENDIR)/Info.plist $$@/Contents/Info.plist
+	$$(Q)cp -f $$($(1)._OBJDIR)/Info.plist $$@/Contents/Info.plist
 	$$(if $$($(1)._ICON),$$(Q)cp -f $$($(1)._ICON) $$@/Contents/Resources/$$($(1).NAME).icns)
 	$$(foreach d,$$($(1)._DATA),$$(call cmd,cp -R $$d/. $$@/Contents/Resources/))
 endif
 
 ifneq ($$($(1)._INFO),)
-$$($(1)._INFO): $$($(1)._GENDIR)/info.txt | $$($(1)._GENDIR)
+$$($(1)._INFO): $$($(1)._INFO_STAMP) | $$(patsubst %/,%,$$(dir $$($(1)._INFO)))
 	$$(call print-to,Generating,$(1),$$@)
 	$$(file >$$@,$$(call PROJECT_INFO_HPP,$(1)))
 endif
@@ -396,7 +411,7 @@ endif
 clean-$(1):
 	$$(call print-simple,Cleaning,$(1))
 	$$(Q)$$(call remove-dir,$$($(1)._OBJDIR))
-	$$(if $$($(1)._GENDIR),$$(Q)$$(call remove-dir,$$($(1)._GENDIR)))
+	$$(if $$($(1)._INFO),$$(Q)$$(call remove-files,$$($(1)._INFO)))
 	$$(if $$(strip $$($(1)._OUTS) $$($(1)._IMPLIB)),$$(Q)$$(call remove-files,$$(filter-out %.app,$$($(1)._OUTS)) $$($(1)._IMPLIB)))
 	$$(if $$($(1)._BUNDLE),$$(Q)$$(call remove-dir,$$($(1)._BUNDLE)))
 endef

@@ -16,6 +16,9 @@
 #   configuration (see CACHED_BUILD in targets.mk). EXTERNAL_CACHE= (empty)
 #   clones in EXTERNAL_DIR of the project instead, as MyMakefile 2 did.
 # - 't.PATH := ../imgui' uses a local copy instead, never fetched.
+# - 't.URL := https://.../mujoco-3.3.0-linux-x86_64.tar.gz' downloads and
+#   unpacks an archive (sources or binaries), once in the cache. 't.SHA256'
+#   checks it, 't.SUBDIR' is the directory of the archive to use.
 
 #? Where the sources and the builds of the third parties are shared.
 ifeq ($(HOST_OS),Windows)
@@ -46,7 +49,7 @@ DBG_MACRO ?= auto
 
 # The targets of the project which will be executables.
 is-executable = $(filter executable test,$(or $($1.TYPE),$(if $($1.SOURCES),executable)))
-OWN_SOURCE_TARGETS := $(strip $(foreach t,$(TARGETS),$(if $($t.GIT)$($t.PATH),,$(if $($t.SOURCES),$t))))
+OWN_SOURCE_TARGETS := $(strip $(foreach t,$(TARGETS),$(if $($t.GIT)$($t.PATH)$($t.URL),,$(if $($t.SOURCES),$t))))
 OWN_EXECUTABLES := $(strip $(foreach t,$(OWN_SOURCE_TARGETS),$(if $(call is-executable,$t),$t)))
 
 ifeq ($(COMPILATION_MODE),debug)
@@ -83,8 +86,10 @@ ifneq ($(USE_DBG_MACRO),)
     $(foreach t,$(OWN_SOURCE_TARGETS),$(eval $t.DEPENDS += dbg-macro))
 endif
 
-EXTERNAL_TARGETS := $(strip $(foreach t,$(TARGETS),$(if $($t.GIT)$($t.PATH),$t)))
+EXTERNAL_TARGETS := $(strip $(foreach t,$(TARGETS),$(if $($t.GIT)$($t.PATH)$($t.URL),$t)))
 GIT_TARGETS := $(strip $(foreach t,$(TARGETS),$(if $($t.GIT),$(if $($t.PATH),,$t))))
+URL_TARGETS := $(strip $(foreach t,$(TARGETS),$(if $($t.URL),$(if $($t.PATH)$($t.GIT),,$t))))
+FETCHED_TARGETS := $(GIT_TARGETS) $(URL_TARGETS)
 
 ###############################################################################
 # Resolution of the versions into commits.
@@ -143,6 +148,47 @@ endif
 $(1).DIR := $$($(1)._SRCDIR)/
 endef
 
+# Archives: downloaded with curl (Linux, macOS, Windows 10), checked with the
+# sha256 tool found, unpacked with tar (unzip for a .zip, but on Windows
+# where tar reads them).
+SHA256_TOOL := $(if $(call which,sha256sum),sha256sum,$(if $(call which,shasum),shasum -a 256,$(if $(filter Windows,$(HOST_OS)),certutil -hashfile)))
+sha256-of = $(call lower,$(shell $(SHA256_TOOL) $1 $(if $(findstring certutil,$(SHA256_TOOL)),SHA256) 2>$(DEVNULL)))
+archive-key = $(patsubst %.tar,%,$(basename $(notdir $1)))
+extract-archive-into = $(if $(and $(filter %.zip,$1),$(filter-out Windows,$(HOST_OS))),unzip -q -o $1 -d $2,tar -xf $1 -C $2)
+
+define FETCH_ARCHIVE
+$(1)._SHA := $$(call archive-key,$$($(1).URL))
+ifneq ($$(EXTERNAL_CACHE),)
+    $(1)._SRCDIR := $$(EXTERNAL_CACHE)/sources/$(1)/$$($(1)._SHA)
+    $(1)._DOWNLOAD := $$(EXTERNAL_CACHE)/downloads/$$(notdir $$($(1).URL))
+else
+    $(1)._SRCDIR := $$(EXTERNAL_DIR)/$(1)
+    $(1)._DOWNLOAD := $$(EXTERNAL_DIR)/$$(notdir $$($(1).URL))
+endif
+ifeq ($$(wildcard $$($(1)._SRCDIR)/.mymakefile-ok),)
+    $$(call print-to,Downloading,$(1),$$($(1)._SRCDIR))
+    FETCH_LOG := $$(shell $$(call make-dir,$$(patsubst %/,%,$$(dir $$($(1)._DOWNLOAD)))))
+    FETCH_LOG := $$(shell curl -fsSL -o $$($(1)._DOWNLOAD) $$($(1).URL) 2>&1)
+    ifeq ($$(wildcard $$($(1)._DOWNLOAD)),)
+        $$(call fail,cannot download $$($(1).URL): $$(FETCH_LOG))
+    endif
+    ifneq ($$($(1).SHA256),)
+        ifeq ($$(filter $$(call lower,$$($(1).SHA256)),$$(call sha256-of,$$($(1)._DOWNLOAD))),)
+            FETCH_LOG := $$(shell $$(call remove-files,$$($(1)._DOWNLOAD)))
+            $$(call fail,$$($(1).URL) has not the SHA256 $$($(1).SHA256): download refused)
+        endif
+    endif
+    FETCH_LOG := $$(shell $$(call remove-dir,$$($(1)._SRCDIR)))
+    FETCH_LOG := $$(shell $$(call make-dir,$$($(1)._SRCDIR)))
+    FETCH_LOG := $$(shell $$(call extract-archive-into,$$($(1)._DOWNLOAD),$$($(1)._SRCDIR)) 2>&1)
+    ifeq ($$(wildcard $$($(1)._SRCDIR)/*),)
+        $$(call fail,cannot unpack $$($(1)._DOWNLOAD): $$(FETCH_LOG))
+    endif
+    $$(file >$$($(1)._SRCDIR)/.mymakefile-ok,$$($(1).URL))
+endif
+$(1).DIR := $$($(1)._SRCDIR)/$$(if $$($(1).SUBDIR),$$($(1).SUBDIR)/)
+endef
+
 # A local copy: its paths are relative to the file declaring it.
 define LOCAL_EXTERNAL
 $(1).DIR := $$(call resolve,$$($(1).PATH),$$($(1).DIR))/
@@ -163,7 +209,7 @@ $(subst $(SPACE)$(NEWLINE),$(NEWLINE),$(foreach t,$(sort $(GIT_TARGETS) $(LOCKED
 endef
 
 ifneq ($(BUILDING),)
-    $(foreach t,$(EXTERNAL_TARGETS),$(eval $(if $($t.PATH),$(call LOCAL_EXTERNAL,$t),$(call FETCH_EXTERNAL,$t))))
+    $(foreach t,$(EXTERNAL_TARGETS),$(eval $(if $($t.PATH),$(call LOCAL_EXTERNAL,$t),$(if $($t.GIT),$(call FETCH_EXTERNAL,$t),$(call FETCH_ARCHIVE,$t)))))
     ifneq ($(GIT_TARGETS),)
         ifneq ($(call read-stamp,$(EXTERNAL_LOCK)),$(LOCK_FILE))
             $(call print-to,Locking,$(PROJECT_NAME),$(EXTERNAL_LOCK))
