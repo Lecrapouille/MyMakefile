@@ -1,30 +1,31 @@
 # Demos
 
+Each demo is a small project using `../../../MyMakefile.mk`. Run `make` in its
+directory; the build goes to `build/linux-gcc-<mode>/` (on Linux with gcc).
+
 ## Demo 00
 
-Ultra basic Makefile compiling a standalone application.
+A single application, with the generated `project_info.hpp`.
 
 ```bash
-make
-./../../build/HelloWorld00
+make run-HelloWorld00
 ```
 
 ## Demo 01
 
-Basic project with unit tests
+An application, and its unit tests declared in `tests/tests.mk`.
 
 ```bash
-make
-./../../build/HelloWorld01
-
-make tests
+make run-HelloWorld01
+make check
 ```
 
 ## Demo 02
 
-Complex project creating 2 libraries and a standalone application.
+An application linked against two libraries, each declared next to its
+sources: `src/foo/foo.mk` (static) and `src/bar/bar.mk` (static and shared).
 
 ```bash
-make
-./../../build/HelloWorld02
+make run-HelloWorld02
+make list-targets
 ```

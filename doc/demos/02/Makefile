@@ -1,36 +1,16 @@
-###################################################
-# Location of the project directory and Makefiles
+# SPDX-License-Identifier: GPL-3.0-or-later OR LicenseRef-MyMakefile-Commercial
+# Copyright (c) 2019-2026 Quentin Quadrat
 #
-P := .
-M := ../../..
-BUILD := ../../build
+# Demo 02: an application linked against two libraries, each declared in the
+# directory of its sources.
 
-###################################################
-# Project definition
-#
 PROJECT_NAME := TutorialMyMakefile
 PROJECT_VERSION := 0.1.0
-TARGET_NAME := HelloWorld02
-TARGET_DESCRIPTION := Hello Word
-COMPILATION_MODE := release
 
-include $(M)/project/Makefile
+TARGETS := HelloWorld02
+HelloWorld02.SOURCES := src/main.cpp
+HelloWorld02.DEPENDS := foo bar
 
-###################################################
-# Internal libs to compile in the correct order
-#
-LIB_FOO := $(call internal-lib,foo)
-LIB_BAR := $(call internal-lib,bar)
-INTERNAL_LIBS := $(LIB_FOO) $(LIB_BAR)
-DIRS_WITH_MAKEFILE := $(P)/src/bar $(P)/src/foo
+TARGET_FILES := src/foo/foo.mk src/bar/bar.mk
 
-###################################################
-# Compile the project
-#
-INCLUDES := include
-SRC_FILES := src/main.cpp
-
-###################################################
-# Generic Makefile rules
-#
-include $(M)/rules/Makefile
+include ../../../MyMakefile.mk

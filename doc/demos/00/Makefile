@@ -1,24 +1,13 @@
-###################################################
-# Location of the project directory and Makefiles
+# SPDX-License-Identifier: GPL-3.0-or-later OR LicenseRef-MyMakefile-Commercial
+# Copyright (c) 2019-2026 Quentin Quadrat
 #
-P := .
-M := ../../..
+# Demo 00: a single application.
 
-###################################################
-# Project definition
-#
-PROJECT_NAME := TutorialMyMakefile
+PROJECT_NAME := HelloWorld00
 PROJECT_VERSION := 0.1.0
-TARGET_NAME := HelloWorld00
-TARGET_DESCRIPTION := Hello Word
-COMPILATION_MODE := release
-BUILD := ../../build
 
-include $(M)/project/Makefile
+TARGETS := HelloWorld00
+HelloWorld00.SOURCES := src/*.cpp
+HelloWorld00.PROJECT_INFO := 1
 
-###################################################
-# Compile the project
-#
-SRC_FILES += src/main.cpp
-
-include $(M)/rules/Makefile
+include ../../../MyMakefile.mk
