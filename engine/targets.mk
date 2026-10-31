@@ -284,7 +284,11 @@ $(1)._MERGED_BY_DEPS := $$(foreach d,$$($(1)._DEPS),$$($$d._MERGED))
 $(1)._LINKDEPS := $$(foreach d,$$(filter-out $$($(1)._MERGED_BY_DEPS),$$($(1)._DEPS)),$$($$d._LINKABLE))
 $(1)._LINKER := $$(if $$(filter $$(CXX_EXTS),$$($(1)._SRCS) $$(foreach d,$$($(1)._DEPS),$$($$d._SRCS)))$$(filter $$(CMAKE_TARGETS),$$($(1)._DEPS)),$$(CXX),$$(CC))
 $(1)._SHARED_DEPS := $$(foreach d,$$($(1)._DEPS),$$(foreach l,$$($$d._LINKABLE),$$(if $$(findstring $$(SHARED_EXT),$$(notdir $$l)),$$l)))
-$(1)._RPATHS := $$(if $$(filter Windows Emscripten,$$(TARGET_OS)),,$$(abspath $$(sort $$(dir $$($(1)._SHARED_DEPS)))) $$(subst :, ,$$(RPATH) $$($(1).RPATH)))
+# The folders of the shared libraries it links: of the project, and of the
+# pkg-config packages (an installed library named @rpath/libfoo.dylib on
+# macOS is found only so).
+$(1)._RPATHS := $$(if $$(filter Windows Emscripten,$$(TARGET_OS)),,$$(call uniq,$$(abspath $$(sort $$(dir $$($(1)._SHARED_DEPS)))) \
+    $$(patsubst -L%,%,$$(filter -L%,$$(call pkg-libs,$$($(1)._PKGS)))) $$(subst :, ,$$(RPATH) $$($(1).RPATH))))
 $(1)._LDFLAGS := $$(strip $$(TC_MODE_LDFLAGS) \
     $$(if $$($(1)._IS_EXE),$$(TC_EXE_LDFLAGS)) \
     $$(if $$($(1)._IS_EXE)$$($(1)._SHARED),$$(TC_HARDEN_LDFLAGS) $$(TC_STRIP_LDFLAGS)) \
