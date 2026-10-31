@@ -1,3 +1,17 @@
+October 2026: version 3.0.0
+        * Rewrite of the engine: all the targets in a single make graph, no recursive make, no bash script. Requires GNU Make 4.2.
+        * Targets declared with namespaced variables (t.TYPE, t.SOURCES...), in the Makefile or in .mk files next to their sources (SUBMAKEFILES), depending on each other by name. PUBLIC_INCLUDES, PUBLIC_DEFINES, PKG_CONFIG and LIBS propagate.
+        * Toolchains gcc, clang, mingw, emscripten (picked with emmake, EMSCRIPTEN or EXAEQUOS) and msvc (experimental). Recipes run with sh or cmd.exe.
+        * One build folder per configuration, one object folder per target; a change of flags or of compiler rebuilds the targets concerned. ccache when installed.
+        * Third parties: GIT targets locked in external/versions.lock (update-externals), sources and builds shared by all the projects in ~/.cache/mymakefile. t.PATH for a local copy, t.URL for archives, TYPE := cmake for CMake projects.
+        * Target types executable, test, library, static, shared, objects; t.MERGE, t.RPATH, t.LIBRARIES, assembly sources, generated sources and headers, PRE_BUILD and POST_BUILD hooks.
+        * Flags, warnings, hardening, modes and sanitizers of version 2. Checks with messages: missing pkg-config packages, unknown variables, cycles, sources not found.
+        * project_info.hpp in the namespace generated::<name>, included as "<name>/project_info.hpp".
+        * Installation: headers at their include path, pkg-config files (also in the build tree), INSTALL_VERSIONED, ExaequOS; uninstall removes only what install wrote and asks first.
+        * Goals: doc, coverage, format, check-format, lint, tidy, memcheck, gdb-<target>, tarball, rpm, dist, rebuild, veryclean, size-analysis, check-harden, coverity, macOS bundles.
+        * CI: ci, ci-info for $GITHUB_OUTPUT, the action .github/actions/setup; MSYS2 copies the DLLs beside the executables.
+        * Colored messages, off when the output is not a terminal (COLORS, NO_COLOR).
+
 October 2026: version 2.0.0
         * Restart of the whole project (May 2024): fewer rules, macros and included files than version 1.
         * Compilation for Linux, macOS (bundles), Windows (MSYS2), Emscripten and ExaequOS (its packages installed with epm.py, no shared libraries).
