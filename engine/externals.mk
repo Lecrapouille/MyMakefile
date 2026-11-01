@@ -132,7 +132,7 @@ else
     $(1)._FETCHED := $$(filter $$($(1)._SHA),$$(call git-head,$$($(1)._SRCDIR)))
 endif
 ifeq ($$($(1)._FETCHED),)
-    $$(call print-to,Fetching,$(1),$$($(1)._SRCDIR) $$(call git-ref,$(1)))
+    $$(call print-to,Fetching,$(1),$$($(1)._SRCDIR),$$(call git-ref,$(1)))
     FETCH_LOG := $$(shell $$(call remove-dir,$$($(1)._SRCDIR)))
     FETCH_LOG := $$(shell $$(call git-fetch,$(1),$$($(1)._SRCDIR),$$($(1)._SHA)) 2>&1)
     ifneq ($$(call git-head,$$($(1)._SRCDIR)),$$($(1)._SHA))

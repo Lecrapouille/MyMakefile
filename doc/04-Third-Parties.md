@@ -35,7 +35,7 @@ imgui.PKG_CONFIG := glfw3
 
 ```sh
 $ make
-*** Fetching: imgui => /home/me/.cache/mymakefile/sources/imgui/d682dc41f58b98c9343ffbaa7d94f07e9024b3ca docking
+*** Fetching: imgui => /home/me/.cache/mymakefile/sources/imgui/d682dc41f58b98c9343ffbaa7d94f07e9024b3ca [docking]
 *** Locking: MyProject => external/versions.lock
 ...
 *** Static library: imgui => /home/me/.cache/mymakefile/builds/imgui/d682dc41f58b98c9343ffbaa7d94f07e9024b3ca/linux-gcc-normal-1/libimgui.a

@@ -57,10 +57,11 @@ endif
 # recipe they come out when the recipe starts, before its first command.
 ###############################################################################
 
-# $1: action, $2: target, $3: file read (print-from) or written (print-to)
+# $1: action, $2: target, $3: file read (print-from) or written (print-to),
+# $4: what print-to adds in the color of the text, between brackets
 print-simple = $(info $(PURPLE)*** $1: $(CYAN)$2$(COLOR_DEFAULT)$3)
 print-from = $(info $(PURPLE)*** $1: $(CYAN)$2$(COLOR_DEFAULT) <= $(YELLOW)$3$(COLOR_DEFAULT))
-print-to = $(info $(PURPLE)*** $1: $(CYAN)$2$(COLOR_DEFAULT) => $(YELLOW)$3$(COLOR_DEFAULT))
+print-to = $(info $(PURPLE)*** $1: $(CYAN)$2$(COLOR_DEFAULT) => $(YELLOW)$3$(COLOR_DEFAULT)$(if $4, [$4]))
 print-ok = $(info $(GREEN)*** $1$(COLOR_DEFAULT))
 print-info = $(info $(COLOR_INFO)!!! $1 !!!$(COLOR_DEFAULT))
 print-warning = $(info $(COLOR_WARNING)!!! $1 !!!$(COLOR_DEFAULT))
