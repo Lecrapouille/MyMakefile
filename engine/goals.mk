@@ -88,7 +88,9 @@ rebuild: all
 
 json-escape = $(subst ",\",$(subst \,\\,$1))
 compile-entry = {"directory": "$(CURDIR)", "file": "$2", "output": "$3", "command": "$(call json-escape,$(if $(filter %.c,$2),$(CC) $($1._CFLAGS),$(CXX) $($1._CXXFLAGS)) -c $2 -o $3)"}
-compile-entries = $(foreach t,$(TARGETS),$(foreach s,$($t._SRCS),$(call compile-entry,$t,$s,$(call object-of,$t,$s))))
+# Only the targets with sources: an empty one would leave two spaces between
+# the entries, which would then miss their comma.
+compile-entries = $(foreach t,$(foreach t,$(TARGETS),$(if $($t._SRCS),$t)),$(foreach s,$($t._SRCS),$(call compile-entry,$t,$s,$(call object-of,$t,$s))))
 
 #? Write compile_commands.json for clangd.
 .PHONY: compile-commands

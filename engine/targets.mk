@@ -78,7 +78,7 @@ endif
 
 $(1)._GEN_SRCS := $$(filter $$(SOURCE_EXTS),$$(call generated-path,$$($(1).GENERATED_SOURCES),$$($(1).DIR)))
 $(1)._GEN_HDRS := $$(call generated-path,$$($(1).GENERATED_HEADERS),$$($(1).DIR))
-$(1)._SRCS := $$(filter $$(SOURCE_EXTS),$$(call glob,$$($(1).SOURCES),$$($(1).DIR))) $$($(1)._GEN_SRCS)
+$(1)._SRCS := $$(strip $$(filter $$(SOURCE_EXTS),$$(call glob,$$($(1).SOURCES),$$($(1).DIR))) $$($(1)._GEN_SRCS))
 ifneq ($$(BUILDING),)
     ifneq ($$(strip $$(call missing-sources,$$($(1).SOURCES),$$($(1).DIR))),)
         $$(call fail,$(1).SOURCES: no file for '$$(strip $$(call missing-sources,$$($(1).SOURCES),$$($(1).DIR)))' in $$(or $$($(1).DIR),the root of the project))
