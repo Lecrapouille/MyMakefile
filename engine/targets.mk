@@ -321,7 +321,7 @@ $(foreach t,$(TARGETS),$(eval $(call LINK_FLAGS,$t)))
 define COMPILE_RULE
 $(3): $(2) $$($(1)._CC_STAMP) | $(patsubst %/,%,$(dir $(3))) $$($(1)._INFO_ORDER) $$($(1)._GEN_ORDER) pre-build $$(foreach d,$$($(1)._DEPS),$$($$d._CMAKE_DONE))
 	$$(call check-packages,$(1))
-	$$(call print-from,Compiling $$(SOURCE_KIND_NAME.$(4)),$(1),$$<)
+	$$(call print-compile,Compiling $$(SOURCE_KIND_NAME.$(4)),$(1),$$<)
 	$$(Q)$$(call tc-compile-$(4),$(1))
 endef
 

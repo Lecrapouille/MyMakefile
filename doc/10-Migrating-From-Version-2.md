@@ -136,7 +136,6 @@ MyDemo.PKG_CONFIG := glfw3
 |-----------|-----------------|
 | The OBS package | Its script was missing |
 | `make benchmark` | `make run-<target>` under `time` |
-| The percentage of progress | It was the number of objects compiled over the number of objects of the target: wrong as soon as the build is incremental, and computed with a process per file. make cannot know before running how many objects are out of date, so the messages give the target and the file instead |
 | `make build-stats`, `make show-paths`, `make check-deps` | `make list-targets`, `make show-flags`, the checks of pkg-config packages |
 
 ---

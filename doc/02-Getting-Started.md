@@ -47,7 +47,7 @@ include ../../../MyMakefile.mk
 ```sh
 $ make run-HelloWorld00
 *** Generating: HelloWorld00 => build/linux-gcc-normal/gen/HelloWorld00/project_info.hpp
-*** Compiling C++: HelloWorld00 <= src/main.cpp
+[100%] Compiling C++: HelloWorld00 <= src/main.cpp
 *** Linking: HelloWorld00 => build/linux-gcc-normal/bin/HelloWorld00
 *** Running: HelloWorld00
 Welcome to your project HelloWorld00 version 0.1 compiled in normal mode
@@ -101,8 +101,8 @@ A `test` target is not built by `make`, only by `make check`, which builds and r
 
 ```sh
 $ make check
-*** Compiling C++: UnitTest-HelloWorld01 <= src/foo.cpp
-*** Compiling C++: UnitTest-HelloWorld01 <= tests/unit-tests.cpp
+[ 50%] Compiling C++: UnitTest-HelloWorld01 <= src/foo.cpp
+[100%] Compiling C++: UnitTest-HelloWorld01 <= tests/unit-tests.cpp
 *** Linking: UnitTest-HelloWorld01 => build/linux-gcc-release/bin/UnitTest-HelloWorld01
 *** Testing: UnitTest-HelloWorld01
 foo 1 + 1 = 2
@@ -146,9 +146,9 @@ bar.PUBLIC_INCLUDES := ../../include
 
 ```sh
 $ make
-*** Compiling C++: HelloWorld02 <= src/main.cpp
-*** Compiling C++: foo <= src/foo/foo.cpp
-*** Compiling C++: bar <= src/bar/bar.cpp
+[ 33%] Compiling C++: HelloWorld02 <= src/main.cpp
+[ 66%] Compiling C++: foo <= src/foo/foo.cpp
+[100%] Compiling C++: bar <= src/bar/bar.cpp
 *** Static library: foo => build/linux-gcc-normal/lib/libfoo.a
 *** Static library: bar => build/linux-gcc-normal/lib/libbar.a
 *** Shared library: bar => build/linux-gcc-normal/lib/libbar.so.0.1.0

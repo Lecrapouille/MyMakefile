@@ -120,6 +120,7 @@ Set before the `include` of MyMakefile.
 |--------|--------|
 | `V=1` | Show the commands |
 | `COLORS=0`, `COLORS=1`, `NO_COLOR` | Colors off, on even without a terminal, off |
+| `PROGRESS=0` | No percentage before the compiled files |
 
 ### 3.3 Installation
 
