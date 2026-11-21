@@ -140,8 +140,9 @@ lint:
 	$(foreach t,$(LINT_TARGETS),$(call cmd,$(call echo-simple,Analysing,$t))$(call cmd,$(CPPCHECK) $(CPPCHECK_FLAGS) $(call lint-flags,$t) $($t._SRCS)))
 
 ###############################################################################
-# Archive of the sources: the project with its third parties of EXTERNAL_DIR,
-# without git, builds and generated documentation. As in MyMakefile 2, an
+# Archive of the sources: the project with its third parties of EXTERNAL_DIR
+# (the links to the cache are followed), without git, builds and generated
+# documentation. As in MyMakefile 2, an
 # existing archive is kept: the new one gets the next free name.
 ###############################################################################
 
@@ -156,7 +157,7 @@ PROJECT_DIRNAME := $(notdir $(CURDIR))
 tarball:
 	$(call print-to,Archiving,$(PROJECT_NAME),$(TARBALL))
 	$(Q)$(call make-dir,$(dir $(TARBALL)))
-	$(Q)tar -czf $(TARBALL) --exclude=.git \
+	$(Q)tar -czhf $(TARBALL) --exclude=.git \
 	    $(addprefix --exclude=$(PROJECT_DIRNAME)/,$(BUILD_DIR) $(DOXYGEN_DIR) $(COVERAGE_DIR) compile_commands.json .cache $(TARBALL_EXCLUDE)) \
 	    -C .. $(PROJECT_DIRNAME)
 

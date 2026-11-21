@@ -90,6 +90,7 @@ Set before the `include` of MyMakefile.
 | `BUILD_DIR`, `EXTERNAL_DIR`, `DOC_DIR` | `build`, `external`, `doc` | Folders of the project |
 | `EXTERNAL_LOCK` | `external/versions.lock` | Commits of the third parties |
 | `EXTERNAL_CACHE`, `MYMAKEFILE_CACHE` | `~/.cache/mymakefile` | Cache of the third parties; empty: in `EXTERNAL_DIR` |
+| `EXTERNAL_LINKS` | `1` (`0` on Windows) | Links `EXTERNAL_DIR/<t>` to the sources in the cache |
 | `PKG_CONFIG_STATIC` | | `1`: static flags of the packages |
 | `EXPORT_MACRO` | `API_LINKAGE` | Macro of the exported symbols of a DLL |
 
@@ -196,7 +197,7 @@ After the `include`, for the `.mk` files and the rules of the project:
 | `size-analysis`, `check-harden` | Sizes of the binaries, hardening of the executables | [6](06-Goals.md) |
 | `coverity` | Archive for Coverity Scan | [6](06-Goals.md) |
 | `clean-<target>`, `clean`, `distclean`, `veryclean` | Clean | [6](06-Goals.md) |
-| `update-externals`, `cache-info`, `cache-clean` | Third parties | [4](04-Third-Parties.md) |
+| `update-externals`, `cache-info`, `cache-clean`, `local-<target>` | Third parties | [4](04-Third-Parties.md) |
 | `ci`, `ci-info`, `print-<VAR>` | Continuous integration | [9](09-Continuous-Integration.md) |
 | `help`, `list-targets`, `show-flags` | Information | [6](06-Goals.md) |
 

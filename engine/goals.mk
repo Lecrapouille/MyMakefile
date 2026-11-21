@@ -58,20 +58,29 @@ distclean::
 # patches, editors.
 VERYCLEAN_PATTERNS ?= %.gcda %.gcno %.gcov gmon.out perf.data% %.prof \
     %.orig %.rej %~
-leftovers = $(strip $(foreach f,$(filter-out ./$(BUILD_DIR)/%,$(call rwildcard,.,*)),$(if $(filter $(VERYCLEAN_PATTERNS),$(notdir $f)),$f)))
+# Neither in the builds nor in EXTERNAL_DIR: its links lead to the cache, its
+# working copies are the user's.
+leftover-roots = $(filter-out ./$(BUILD_DIR) ./$(EXTERNAL_DIR),$(wildcard ./*))
+leftovers = $(strip $(foreach f,$(filter-out ./$(BUILD_DIR)/% ./$(EXTERNAL_DIR)/%,$(leftover-roots) $(foreach d,$(leftover-roots),$(call rwildcard,$d,*))),$(if $(filter $(VERYCLEAN_PATTERNS),$(notdir $f)),$f)))
+
+# What veryclean does with each entry of EXTERNAL_DIR: a link to the cache or
+# an unmodified clone of MyMakefile is removed; a modified clone or a working
+# copy is kept.
+clean-external = $(foreach e,$(call external-state,$1),$(if $(filter link,$e),$(call cmd,rm -f $1),$(if $(filter clone,$e),$(call cmd,$(call remove-dir,$1)),$(if $(filter modified,$e),$(call print-warning,$1 is not deleted: it was modified after MyMakefile downloaded it),$(call print-simple,Keeping,$1, (your own copy: MyMakefile did not download it))))))
 
 # What the targets of the SUBMAKEFILES ask to remove: 't.CLEAN', relative to
 # the directory of the file declaring them.
 target-clean = $(foreach t,$(TARGETS),$(call glob,$($t.CLEAN),$($t.DIR)))
 
 #? Remove everything that can be generated again: the builds, the clones of
-#? the third parties in EXTERNAL_DIR (not the shared cache: cache-clean), the
+#? the third parties in EXTERNAL_DIR and the links to the cache (not the
+#? shared cache: cache-clean; never a working copy nor a modified clone), the
 #? documentation, the coverage report, the leftovers of the tools, and the
 #? files given by 't.CLEAN' and CLEAN_FILES.
 .PHONY: veryclean
 veryclean:: distclean
 	$(call print-simple,Cleaning,$(PROJECT_NAME),$(SPACE)everything)
-	$(foreach t,$(EXTERNAL_TARGETS),$(if $(wildcard $(EXTERNAL_DIR)/$t/.git),$(call cmd,$(call remove-dir,$(EXTERNAL_DIR)/$t))))
+	$(foreach d,$(wildcard $(EXTERNAL_DIR)/*),$(call clean-external,$d))
 	$(Q)$(call remove-dir,$(DOXYGEN_DIR))
 	$(Q)$(call remove-dir,$(COVERAGE_DIR))
 	$(Q)$(call remove-dir,$(PROFILE_DIR))
@@ -177,6 +186,7 @@ help:
 	$(info Third parties:)
 	$(call help-line,update-externals  ,move them to the last commit of their VERSION)
 	$(call help-line,cache-info        ,where they are in the cache)
+	$(call help-line,local-<target>    ,a working copy of a third party in $(EXTERNAL_DIR)$(COMMA) to modify it)
 	$(call help-line,cache-clean       ,remove the cache shared by all the projects)
 	$(info Tools:)
 	$(call help-line,doc               ,Doxygen documentation in $(DOXYGEN_DIR))

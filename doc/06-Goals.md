@@ -73,7 +73,7 @@ For a crash, build in debug mode: the stack is printed by backward-cpp ([chapter
 | `clean-<target>` | The build of one target |
 | `clean` | The build of the current configuration |
 | `distclean` | The builds of every configuration (`build/`) and `compile_commands.json` |
-| `veryclean` | Also the clones of the third parties in `external/`, the documentation, the coverage report, the leftovers of the tools (`*.gcda`, `*.orig`, `*~`...), the `t.CLEAN` files of every target and `CLEAN_FILES` |
+| `veryclean` | Also the clones and the links of the third parties in `external/` (never a working copy nor a modified clone, [chapter 4](04-Third-Parties.md)), the documentation, the coverage report, the leftovers of the tools (`*.gcda`, `*.orig`, `*~`...), the `t.CLEAN` files of every target and `CLEAN_FILES` |
 | `cache-clean` | The cache of the third parties, shared by all your projects |
 
 `clean`, `distclean` and `veryclean` are double-colon rules: a project adds its own recipe with `clean::` ([chapter 3](03-Targets.md)).
@@ -88,6 +88,7 @@ For a crash, build in debug mode: the stack is printed by backward-cpp ([chapter
 | `print-<VAR>` | One variable: `make -s print-PROJECT_VERSION` |
 | `ci-info` | `key=value` lines for a CI ([chapter 9](09-Continuous-Integration.md)) |
 | `cache-info` | Where each third party is in the cache |
+| `local-<target>` | A working copy of a third party in `external/`, to modify it |
 
 `help`, `list-targets`, `print-<VAR>` and `ci-info`, like the cleaning goals, neither fetch the third parties nor call pkg-config: they answer at once, even on a fresh clone.
 

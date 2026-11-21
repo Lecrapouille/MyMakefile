@@ -81,11 +81,38 @@ The sources of a third party are fetched once per commit, and compiled once per 
 
 The number after the configuration tells apart the sets of flags: a project building Dear ImGui with other flags gets `linux-gcc-normal-2`.
 
-Two projects using the same commit of Dear ImGui compile it once. A third party in the cache is never modified: fix it upstream, or use a local copy (§4).
+Two projects using the same commit of Dear ImGui compile it once. A third party in the cache is never modified: its files are read-only. To modify it, make a working copy (below), or use a local copy (§4).
+
+`external/imgui` is a symbolic link to its sources in the cache, so that you see them from the project (`EXTERNAL_LINKS=0` to do without; there is none on Windows). Ignore these links in git, but not the lock file:
+
+```gitignore
+external/*
+!external/versions.lock
+```
+
+### Working copies
+
+`make local-imgui` replaces the link by a full clone of Dear ImGui (a copy, for an archive), at its locked commit. A directory of `external/` named after a third party, which MyMakefile did not make, is a **working copy**: it is used instead of the cache, as `PATH` would be, without touching the `Makefile`, and it is never fetched again nor removed by MyMakefile. Delete it to come back to the cache.
+
+```sh
+$ make local-imgui
+*** Working copy: imgui => external/imgui [d682dc41f58b98c9343ffbaa7d94f07e9024b3ca]
+$ cd external/imgui && git switch -c my-fix     # then modify, commit, push
+```
+
+| In `external/` | `make` | `make veryclean` |
+|----------------|--------|------------------|
+| link to the cache | made again on a new commit | removed (not the cache) |
+| clone of MyMakefile (`EXTERNAL_CACHE=`) | fetched again on a new commit | removed |
+| that clone, modified (files, commits) | stops instead of replacing it | **kept**, with a warning |
+| working copy | used, never fetched | **kept** |
+
+A clone made by MyMakefile holds `.git/mymakefile-ok`: delete it to turn the clone into a working copy. A clone made by MyMakefile 2 has none, so it is now a working copy.
 
 | Goal or variable | Does |
 |------------------|------|
-| `make cache-info` | Prints where each third party is |
+| `make cache-info` | Prints where each third party is, and what `external/<t>` is |
+| `make local-<t>` | Makes `external/<t>` a working copy |
 | `make cache-clean` | Removes the cache, for all the projects |
 | `EXTERNAL_CACHE=` (empty) | Clones the third parties in `external/` of the project instead, as MyMakefile 2 did. Needed when the code includes a third party by its folder (`"imgui/imgui.h"`, with `imgui.PUBLIC_INCLUDES := ..`) |
 

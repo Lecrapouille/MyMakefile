@@ -132,6 +132,11 @@ else
     $(1)._FETCHED := $$(filter $$($(1)._SHA),$$(call git-head,$$($(1)._SRCDIR)))
 endif
 ifeq ($$($(1)._FETCHED),)
+    ifeq ($$(EXTERNAL_CACHE),)
+        ifneq ($$(call is-modified,$$($(1)._SRCDIR)),)
+            $$(call fail,$$($(1)._SRCDIR) has been modified: it is not replaced by $$($(1)._SHA). Save your work and delete it$$(COMMA) or delete its .git/mymakefile-ok to use it as a working copy)
+        endif
+    endif
     $$(call print-to,Fetching,$(1),$$($(1)._SRCDIR),$$(call git-ref,$(1)))
     FETCH_LOG := $$(shell $$(call remove-dir,$$($(1)._SRCDIR)))
     FETCH_LOG := $$(shell $$(call git-fetch,$(1),$$($(1)._SRCDIR),$$($(1)._SHA)) 2>&1)
@@ -146,6 +151,7 @@ ifeq ($$($(1)._FETCHED),)
     $$(file >$$($(1)._SRCDIR)/.git/mymakefile-ok,$$($(1)._SHA))
 endif
 $(1).DIR := $$($(1)._SRCDIR)/
+LINK_LOG := $$(call link-external,$(1),$$($(1).DIR))
 endef
 
 # Archives: downloaded with curl (Linux, macOS, Windows 10), checked with the
@@ -187,6 +193,7 @@ ifeq ($$(wildcard $$($(1)._SRCDIR)/.mymakefile-ok),)
     $$(file >$$($(1)._SRCDIR)/.mymakefile-ok,$$($(1).URL))
 endif
 $(1).DIR := $$($(1)._SRCDIR)/$$(if $$($(1).SUBDIR),$$($(1).SUBDIR)/)
+LINK_LOG := $$(call link-external,$(1),$$($(1).DIR))
 endef
 
 # A local copy: its paths are relative to the file declaring it.
@@ -194,6 +201,62 @@ define LOCAL_EXTERNAL
 $(1).DIR := $$(call resolve,$$($(1).PATH),$$($(1).DIR))/
 $(1)._SHA := local
 endef
+
+###############################################################################
+# EXTERNAL_DIR/<t> of the project, beside versions.lock:
+# - with the cache, a symbolic link to the sources of t in the cache, to see
+#   them from the project (EXTERNAL_LINKS=0 to do without; not on Windows).
+#   The files of the cache are read-only: they are shared by the projects.
+# - a directory MyMakefile did not create (no mymakefile-ok marker): a
+#   working copy of t, used as 't.PATH' would be, never fetched nor removed.
+#   'make local-<t>' makes one, at the locked commit, to modify the library.
+# - without the cache, the clone of t made by MyMakefile, as in MyMakefile 2.
+###############################################################################
+
+EXTERNAL_LINKS ?= $(if $(filter Windows,$(HOST_OS)),0,1)
+use-links = $(and $(EXTERNAL_CACHE),$(filter-out 0 no off,$(EXTERNAL_LINKS)),$(filter sh,$(HOST_SHELL)))
+
+external-path = $(EXTERNAL_DIR)/$1
+is-link = $(if $(filter sh,$(HOST_SHELL)),$(shell test -L $1 && echo 1))
+# The marker written by MyMakefile in its clones and its unpacked archives.
+managed-marker = $(firstword $(wildcard $1/.git/mymakefile-ok $1/.mymakefile-ok))
+is-working-copy = $(if $(wildcard $1/.),$(if $(call is-link,$1),,$(if $(call managed-marker,$1),,1)))
+
+# A clone of MyMakefile modified by the user: files changed, or another
+# commit (the marker holds the fetched one). An archive: files newer than it.
+git-dirty = $(strip $(shell git -C $1 status --porcelain 2>$(DEVNULL)))
+clone-moved = $(if $(filter $(strip $(file <$1/.git/mymakefile-ok)),$(call git-head,$1)),,1)
+archive-touched = $(if $(filter sh,$(HOST_SHELL)),$(shell find $1 -type f -newer $1/.mymakefile-ok 2>$(DEVNULL) | head -n 1))
+is-modified = $(if $(wildcard $1/.git/mymakefile-ok),$(or $(call git-dirty,$1),$(call clone-moved,$1)),$(if $(wildcard $1/.mymakefile-ok),$(call archive-touched,$1)))
+
+# What EXTERNAL_DIR/<t> is: link, working-copy, modified, clone or nothing.
+external-state = $(strip $(if $(call is-link,$1),link,$(if $(wildcard $1/.),$(if $(call managed-marker,$1),$(if $(call is-modified,$1),modified,clone),working-copy))))
+
+# A working copy found in EXTERNAL_DIR replaces the fetch.
+# What the user should know of a working copy: its changes not committed,
+# and a commit other than the one of versions.lock.
+wc-head = $(if $(wildcard $1/.git),$(call git-head,$1))
+wc-notes = $(if $(call wc-head,$1),$(if $(call git-dirty,$1),$(NEWLINE)    - it holds changes not committed (see 'git -C $1 status').)$(if $(and $2,$(filter-out $2,$(call wc-head,$1))),$(NEWLINE)    - it is not at the version written in $(EXTERNAL_LOCK)$(COMMA)$(NEWLINE)      but at $(call wc-head,$1) instead of $2.))
+define wc-message
+$(if $3,$(COLOR_WARNING),$(COLOR_INFO))!!! $1: your own copy $2 is used !!!$(COLOR_DEFAULT)
+    MyMakefile did not download this folder, so it takes it as a copy you
+    modify: it never updates it nor deletes it, not even with veryclean.
+    To use the shared version again, save your work and delete the folder.$3
+endef
+
+define WORKING_COPY
+$$(info $$(call wc-message,$(1),$$(call external-path,$(1)),$$(call wc-notes,$$(call external-path,$(1)),$$(call locked-sha,$(1)))))
+$(1).PATH := $$(call external-path,$(1))
+$(1).DIR := $$(call external-path,$(1))/
+$(1)._SHA := local
+endef
+
+# The link EXTERNAL_DIR/<t> to the sources in the cache, made again when it
+# points elsewhere (another commit). A directory there is never replaced.
+link-external = $(if $(use-links),$(shell d=$(call external-path,$1); s=$(abspath $2); \
+    if [ -d $$d ] && [ ! -L $$d ]; then exit 0; fi; \
+    if [ "`readlink $$d`" != "$$s" ]; then mkdir -p $(EXTERNAL_DIR) && ln -sfn $$s $$d && \
+    find $$s -path '*/.git' -prune -o -type f -perm -u+w -exec chmod a-w {} + ; fi))
 
 # The third parties of other configurations (backward-cpp exists in debug
 # only) keep their line.
@@ -238,7 +301,7 @@ FETCHED :=
 EMBEDDED_TARGETS :=
 define FETCH_PASS
 NEW_EXTERNALS := $$(filter-out $$(FETCHED),$$(external-targets))
-$$(foreach t,$$(NEW_EXTERNALS),$$(eval $$(if $$($$t.PATH),$$(call LOCAL_EXTERNAL,$$t),$$(if $$($$t.GIT),$$(call FETCH_EXTERNAL,$$t),$$(call FETCH_ARCHIVE,$$t)))))
+$$(foreach t,$$(NEW_EXTERNALS),$$(eval $$(if $$($$t.PATH),$$(call LOCAL_EXTERNAL,$$t),$$(if $$(call is-working-copy,$$(call external-path,$$t)),$$(call WORKING_COPY,$$t),$$(if $$($$t.GIT),$$(call FETCH_EXTERNAL,$$t),$$(call FETCH_ARCHIVE,$$t))))))
 FETCHED += $$(NEW_EXTERNALS)
 $$(foreach t,$$(NEW_EXTERNALS),$$(if $$($$t.MAKEFILES),$$(call read-embedded-lock,$$($$t.DIR)$$(EXTERNAL_LOCK))))
 $$(foreach t,$$(NEW_EXTERNALS),$$(foreach f,$$($$t.MAKEFILES),$$(eval $$(call INCLUDE_EXTERNAL_MAKEFILE,$$($$t.DIR)$$f))))
@@ -293,8 +356,33 @@ update-externals:
 .PHONY: cache-info
 cache-info:
 	$(info Cache: $(or $(EXTERNAL_CACHE),none: the third parties are in $(EXTERNAL_DIR)))
-	$(foreach t,$(EXTERNAL_TARGETS),$(info $(CYAN)$t$(COLOR_DEFAULT) $($t._SHA)$(NEWLINE)  sources $($t.DIR)$(if $($t._OBJS),$(NEWLINE)  build   $($t._OBJDIR))))
+	$(foreach t,$(EXTERNAL_TARGETS),$(info $(CYAN)$t$(COLOR_DEFAULT) $($t._SHA)$(NEWLINE)  sources $($t.DIR)$(if $(call external-state,$(call external-path,$t)),$(NEWLINE)  $(call external-path,$t): $(call external-state,$(call external-path,$t)))$(if $($t._OBJS),$(NEWLINE)  build   $($t._OBJDIR))))
 	@$(NOOP)
+
+# 'make local-<t>': EXTERNAL_DIR/<t> becomes a working copy of t, at its
+# locked commit: a full clone of its repository (a copy of the archive),
+# replacing the link to the cache, or the unmodified clone of MyMakefile.
+# Delete it to come back to the cache.
+local-copy = $(if $($1.GIT),git clone -q $($1.GIT) $2 && git -C $2 -c advice.detachedHead=false checkout -q $($1._SHA)$(call git-submodules,$1,$2),$(call copy-dir,$(patsubst %/,%,$($1.DIR)),$2)$(if $(filter sh,$(HOST_SHELL)), && chmod -R u+w $2))
+
+define LOCAL_GOAL
+.PHONY: local-$(1)
+local-$(1): WC_STATE = $$(call external-state,$$(call external-path,$(1)))
+local-$(1):
+	$$(if $$(filter working-copy,$$(WC_STATE)),$$(call fail,$$(call external-path,$(1)) is already a working copy of $(1)))
+	$$(if $$(filter modified,$$(WC_STATE)),$$(call fail,$$(call external-path,$(1)) has been modified: delete its .git/mymakefile-ok to keep it as a working copy))
+	$$(call print-to,Working copy,$(1),$$(call external-path,$(1)),$$($(1)._SHA))
+	$$(Q)$$(call make-dir,$$(EXTERNAL_DIR))
+	$$(if $$(filter link,$$(WC_STATE)),$$(Q)rm -f $$(call external-path,$(1)))
+	$$(if $$(filter clone,$$(WC_STATE)),$$(Q)$$(call remove-dir,$$(call external-path,$(1))))
+	$$(Q)$$(call local-copy,$(1),$$(call external-path,$(1)))
+	$$(if $$($(1).GIT),$$(call print-ok,$$(call external-path,$(1)) is detached at $$($(1)._SHA): 'git switch -c <branch>' before committing))
+	@$$(NOOP)
+endef
+
+ifneq ($(BUILDING),)
+    $(foreach t,$(FETCHED_TARGETS) $(foreach t,$(EXTERNAL_TARGETS),$(if $(filter $(call external-path,$t),$($t.PATH)),$t)),$(eval $(call LOCAL_GOAL,$t)))
+endif
 
 #? Remove the cache of the third parties, shared by all the projects.
 .PHONY: cache-clean
