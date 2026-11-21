@@ -68,7 +68,7 @@ Written `t.VARIABLE` for a target `t`. Paths are relative to the file declaring 
 | `PATH` | A local folder, never fetched | [4](04-Third-Parties.md) |
 | `URL`, `SHA256`, `SUBDIR` | An archive, its checksum, its folder to use | [4](04-Third-Parties.md) |
 | `CMAKE_ARGS` | Arguments of the configuration of a `cmake` target | [4](04-Third-Parties.md) |
-| `DIR`, `LOCKED`, `LOCKED_REF` | Written by MyMakefile: the folder of the sources, the locked commit and its reference | |
+| `DIR`, `LOCKED_VERSION`, `LOCKED_COMMIT` | Written by MyMakefile: the folder of the sources, the version asked when it was locked and its commit | |
 
 ## 2. Variables of a project
 

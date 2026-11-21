@@ -92,9 +92,12 @@ external-targets = $(strip $(foreach t,$(TARGETS),$(if $($t.GIT)$($t.PATH)$($t.U
 # Resolution of the versions into commits.
 ###############################################################################
 
-# The lock file is a makefile: 'imgui.LOCKED := <sha1>'.
+# The lock file is a makefile: 'imgui.LOCKED_VERSION := docking' and
+# 'imgui.LOCKED_COMMIT := <sha1>'. Its old names, LOCKED_REF and LOCKED, are
+# still read: the file is then written again with the new ones.
+read-lock = $(subst .LOCKED :=,.LOCKED_COMMIT :=,$(subst .LOCKED_REF :=,.LOCKED_VERSION :=,$(file <$1)))
 ifneq ($(wildcard $(EXTERNAL_LOCK)),)
-    $(eval $(file <$(EXTERNAL_LOCK)))
+    $(eval $(call read-lock,$(EXTERNAL_LOCK)))
 endif
 
 # What to fetch: COMMIT, else the branch or tag VERSION, else the default
@@ -109,7 +112,7 @@ ls-remote-words = $(subst $(SPACE)HEAD,@HEAD,$(subst $(SPACE)refs/,@refs/,$(stri
 remote-sha = $(firstword $(subst @, ,$(firstword $(filter %^{},$(call ls-remote-words,$1)) $(call ls-remote-words,$1))))
 
 # The commit of an external: given, locked, or asked to the repository.
-locked-sha = $(if $(and $(filter $(call git-ref,$1),$($1.LOCKED_REF)),$(if $(UPDATE_EXTERNALS),,1)),$(strip $($1.LOCKED)))
+locked-sha = $(if $(and $(filter $(call git-ref,$1),$($1.LOCKED_VERSION)),$(if $(UPDATE_EXTERNALS),,1)),$(strip $($1.LOCKED_COMMIT)))
 resolve-sha = $(or $($1.COMMIT),$(call locked-sha,$1),$(call remote-sha,$(call ls-remote,$1,$(call git-ref,$1))))
 
 # Fetch only the commit; a server refusing it gets a full clone.
@@ -260,15 +263,20 @@ link-external = $(if $(use-links),$(shell d=$(call external-path,$1); s=$(abspat
 
 # The third parties of other configurations (backward-cpp exists in debug
 # only) keep their line.
-LOCKED_TARGETS := $(patsubst %.LOCKED,%,$(filter %.LOCKED,$(.VARIABLES)))
-lock-ref = $(strip $(if $(filter $1,$(GIT_TARGETS)),$(call git-ref,$1),$($1.LOCKED_REF)))
-lock-sha = $(strip $(if $(filter $1,$(GIT_TARGETS)),$($1._SHA),$($1.LOCKED)))
+LOCKED_TARGETS := $(patsubst %.LOCKED_COMMIT,%,$(filter %.LOCKED_COMMIT,$(.VARIABLES)))
+lock-version = $(strip $(if $(filter $1,$(GIT_TARGETS)),$(call git-ref,$1),$($1.LOCKED_VERSION)))
+lock-commit = $(strip $(if $(filter $1,$(GIT_TARGETS)),$($1._SHA),$($1.LOCKED_COMMIT)))
 
 define LOCK_FILE
 # Commits of the third parties of $(PROJECT_NAME), written by MyMakefile:
 # commit this file. 'make update-externals' moves them to the last commit of
 # their VERSION.
-$(subst $(SPACE)$(NEWLINE),$(NEWLINE),$(foreach t,$(sort $(GIT_TARGETS) $(LOCKED_TARGETS)),$(NEWLINE)$t.LOCKED_REF := $(call lock-ref,$t)$(NEWLINE)$t.LOCKED := $(call lock-sha,$t)))
+#
+# <target>.LOCKED_VERSION: the branch or the tag asked by <target>.VERSION
+#   when the third party was locked (HEAD: its default branch). When
+#   <target>.VERSION changes, the third party is locked again.
+# <target>.LOCKED_COMMIT: the commit this version had then, the one fetched.
+$(subst $(SPACE)$(NEWLINE),$(NEWLINE),$(foreach t,$(sort $(GIT_TARGETS) $(LOCKED_TARGETS)),$(NEWLINE)$t.LOCKED_VERSION := $(call lock-version,$t)$(NEWLINE)$t.LOCKED_COMMIT := $(call lock-commit,$t)))
 endef
 
 ###############################################################################
@@ -284,7 +292,7 @@ endef
 
 # The commits locked by the embedded project, for the third parties the
 # project has not locked itself.
-read-embedded-lock = $(if $(wildcard $1),$(eval $(subst :=,?=,$(file <$1))))
+read-embedded-lock = $(if $(wildcard $1),$(eval $(subst :=,?=,$(call read-lock,$1))))
 
 define INCLUDE_EXTERNAL_MAKEFILE
 KEPT_TARGETS := $$(TARGETS)

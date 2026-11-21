@@ -49,11 +49,16 @@ A branch moves: built today and in a month, `docking` is not the same code. So M
 # Commits of the third parties of MyProject, written by MyMakefile:
 # commit this file. 'make update-externals' moves them to the last commit of
 # their VERSION.
+#
+# <target>.LOCKED_VERSION: the branch or the tag asked by <target>.VERSION
+#   when the third party was locked (HEAD: its default branch). When
+#   <target>.VERSION changes, the third party is locked again.
+# <target>.LOCKED_COMMIT: the commit this version had then, the one fetched.
 
-imgui.LOCKED_REF := docking
-imgui.LOCKED := d682dc41f58b98c9343ffbaa7d94f07e9024b3ca
-implot.LOCKED_REF := HEAD
-implot.LOCKED := 72de27832d1e6299bcc930ce01073d899d420392
+imgui.LOCKED_VERSION := docking
+imgui.LOCKED_COMMIT := d682dc41f58b98c9343ffbaa7d94f07e9024b3ca
+implot.LOCKED_VERSION := HEAD
+implot.LOCKED_COMMIT := 72de27832d1e6299bcc930ce01073d899d420392
 ```
 
 **Commit this file.** Everybody who clones the project, and the CI, then builds the same commits, without asking the network which commit a branch is on.
