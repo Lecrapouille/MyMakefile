@@ -40,10 +40,10 @@ myapp.BUNDLE_ID := com.example.myapp           # default: com.<project>.<name>
 
 ## 3. 🪟 Windows with MSYS2
 
-In the MINGW64 shell of [MSYS2](https://www.msys2.org):
+In the UCRT64 shell of [MSYS2](https://www.msys2.org) (MINGW64 no longer has all the packages, glfw for example):
 
 ```sh
-pacman -S mingw-w64-x86_64-toolchain mingw-w64-x86_64-make mingw-w64-x86_64-pkg-config git
+pacman -S mingw-w64-ucrt-x86_64-toolchain mingw-w64-ucrt-x86_64-make mingw-w64-ucrt-x86_64-pkgconf git
 mingw32-make
 ```
 
@@ -55,7 +55,7 @@ ifeq ($(TARGET_OS),Windows)
 endif
 ```
 
-MSYS2 exports `MINGW_PREFIX=/mingw64`: MyMakefile ignores it, since it is the folder of MSYS2 and not the prefix of a cross compiler.
+MSYS2 exports `MINGW_PREFIX=/ucrt64` (or `/mingw64`): MyMakefile ignores it, since it is the folder of MSYS2 and not the prefix of a cross compiler.
 
 ## 4. 🔀 Windows executables from Linux
 

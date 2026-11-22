@@ -5,7 +5,8 @@
 #
 # Prepare a runner of GitHub Actions for a project built with MyMakefile:
 # GNU Make 4, ccache and pkg-config on Linux, macOS and Windows (MSYS2), the
-# packages of the project, and the caches of the third parties and of ccache.
+# packages of the project, Google Test, Emscripten, and the caches of the
+# third parties and of ccache.
 #
 #   - uses: actions/checkout@v4
 #     with:
@@ -15,7 +16,8 @@
 #     with:
 #       apt: libglfw3-dev libglew-dev
 #       brew: glfw glew
-#       msys2: mingw-w64-x86_64-glfw mingw-w64-x86_64-glew
+#       msys2: glfw:p glew:p
+#       gtest: 1.17.0
 #   - run: ${{ steps.mymakefile.outputs.make }} ci
 #
 # On Windows the next steps run in MSYS2: 'shell: msys2 {0}' (for example in
@@ -32,7 +34,14 @@ inputs:
     description: Packages of Homebrew to install
     default: ''
   msys2:
-    description: Packages of MSYS2 (MINGW64) to install
+    description: >-
+      Packages of MSYS2 (UCRT64) to install, as pacboy names: 'glfw:p' for
+      mingw-w64-ucrt-x86_64-glfw, 'bc' for a package of MSYS
+    default: ''
+  gtest:
+    description: >-
+      Version of Google Test to install (for example 1.17.0), empty for none.
+      Built from its sources on Linux and macOS, the package of MSYS2 on Windows
     default: ''
   emscripten:
     description: Install Emscripten (true or false)
@@ -57,7 +66,7 @@ runs:
       shell: bash
       run: |
         sudo apt-get update
-        sudo apt-get install -y make ccache pkg-config ${{ inputs.apt }}
+        sudo apt-get install -y make ccache pkg-config cmake ${{ inputs.apt }}
 
     - name: Install on macOS
       if: runner.os == 'macOS'
@@ -66,19 +75,46 @@ runs:
         brew install make ccache pkg-config ${{ inputs.brew }}
         echo "PKG_CONFIG_PATH=$(brew --prefix)/lib/pkgconfig:$(brew --prefix)/share/pkgconfig" >> "$GITHUB_ENV"
 
+    # MSYS2 no longer ships some packages (glfw...) for MINGW64: UCRT64 has
+    # them all. pacboy writes the prefix of UCRT64 for the names ending by :p.
     - name: Install on Windows
       if: runner.os == 'Windows'
       uses: msys2/setup-msys2@v2
       with:
-        msystem: MINGW64
+        msystem: UCRT64
         update: true
-        install: >-
-          git
-          mingw-w64-x86_64-toolchain
-          mingw-w64-x86_64-make
-          mingw-w64-x86_64-pkg-config
-          mingw-w64-x86_64-ccache
+        install: git
+        pacboy: >-
+          toolchain:p
+          make:p
+          pkgconf:p
+          ccache:p
+          cmake:p
+          ${{ inputs.gtest != '' && 'gtest:p' || '' }}
           ${{ inputs.msys2 }}
+
+    - name: Cache of Google Test
+      if: inputs.gtest != '' && runner.os != 'Windows'
+      id: gtest-cache
+      uses: actions/cache@v4
+      with:
+        path: ${{ runner.temp }}/googletest
+        key: googletest-${{ runner.os }}-${{ inputs.gtest }}
+
+    - name: Install Google Test
+      if: inputs.gtest != '' && runner.os != 'Windows'
+      shell: bash
+      run: |
+        prefix="${{ runner.temp }}/googletest"
+        if [ ! -f "$prefix/lib/pkgconfig/gtest.pc" ]; then
+          curl -fsSL "https://github.com/google/googletest/archive/v${{ inputs.gtest }}.tar.gz" | tar xz -C "${{ runner.temp }}"
+          cmake -S "${{ runner.temp }}/googletest-${{ inputs.gtest }}" -B "${{ runner.temp }}/googletest-build" \
+            -DCMAKE_BUILD_TYPE=Release -DBUILD_SHARED_LIBS=OFF -DCMAKE_POSITION_INDEPENDENT_CODE=ON \
+            -DCMAKE_INSTALL_PREFIX="$prefix" -DCMAKE_INSTALL_LIBDIR=lib
+          cmake --build "${{ runner.temp }}/googletest-build" --parallel
+          cmake --install "${{ runner.temp }}/googletest-build"
+        fi
+        echo "PKG_CONFIG_PATH=$prefix/lib/pkgconfig${PKG_CONFIG_PATH:+:$PKG_CONFIG_PATH}" >> "$GITHUB_ENV"
 
     - name: Install Emscripten
       if: inputs.emscripten == 'true'
@@ -96,17 +132,19 @@ runs:
         echo "CCACHE_DIR=${{ runner.temp }}/ccache" >> "$GITHUB_ENV"
         echo "COLORS=1" >> "$GITHUB_ENV"
 
+    # A job of Emscripten has its own cache of the third parties, and each job
+    # its own ccache: they would else take the key of the first job to finish.
     - name: Cache of the third parties
       uses: actions/cache@v4
       with:
         path: |
           ~/.cache/mymakefile
           ~/AppData/Local/mymakefile
-        key: mymakefile-${{ runner.os }}-${{ hashFiles(inputs.lock) }}
+        key: mymakefile-${{ runner.os }}-${{ inputs.emscripten == 'true' && 'emscripten' || 'native' }}-${{ hashFiles(inputs.lock) }}
 
     - name: Cache of ccache
       uses: actions/cache@v4
       with:
         path: ${{ runner.temp }}/ccache
-        key: ccache-${{ runner.os }}-${{ github.sha }}
-        restore-keys: ccache-${{ runner.os }}-
+        key: ccache-${{ runner.os }}-${{ github.job }}-${{ github.sha }}
+        restore-keys: ccache-${{ runner.os }}-${{ github.job }}-

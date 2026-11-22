@@ -46,8 +46,8 @@ A project adds goals to `ci` before the `include`: `CI_GOALS := all check check-
 
 The action `.github/actions/setup` of MyMakefile prepares a runner of GitHub for it:
 
-- installs GNU Make 4, ccache and pkg-config, on Linux (apt), macOS (Homebrew) and Windows (MSYS2), plus the packages of the project;
-- installs Emscripten if asked;
+- installs GNU Make 4, ccache and pkg-config, on Linux (apt), macOS (Homebrew) and Windows (MSYS2 UCRT64), plus the packages of the project;
+- installs Google Test and Emscripten if asked;
 - restores the caches of the third parties and of ccache;
 - gives the command of make of the runner: `make`, `gmake` or `mingw32-make`, and the shell of the next steps.
 
@@ -55,7 +55,8 @@ The action `.github/actions/setup` of MyMakefile prepares a runner of GitHub for
 |-------|---------|
 | `apt` | Packages of Ubuntu |
 | `brew` | Packages of Homebrew |
-| `msys2` | Packages of MSYS2 (MINGW64) |
+| `msys2` | Packages of MSYS2 (UCRT64), as [pacboy](https://www.msys2.org/docs/package-naming/) names: `glfw:p` for `mingw-w64-ucrt-x86_64-glfw`, `bc` for a package of MSYS |
+| `gtest` | The version of Google Test to install, `1.17.0` for example: built from its sources (and cached) on Linux and macOS, the package of MSYS2 on Windows. Empty for none |
 | `emscripten` | `true` to install Emscripten |
 | `lock` | The file of the versions of the third parties, key of their cache: `external/versions.lock` by default |
 
@@ -94,7 +95,8 @@ jobs:
         with:
           apt: libglfw3-dev libglew-dev
           brew: glfw glew
-          msys2: mingw-w64-x86_64-glfw mingw-w64-x86_64-glew
+          msys2: glfw:p glew:p
+          gtest: 1.17.0
       - id: info
         run: ${{ steps.mymakefile.outputs.make }} -s ci-info >> "$GITHUB_OUTPUT"
       - run: ${{ steps.mymakefile.outputs.make }} ci
@@ -105,14 +107,64 @@ jobs:
           path: ${{ steps.info.outputs.dist_dir }}/
 ```
 
-For a web version, a job installs Emscripten (`emscripten: true`), runs `emmake make`, and publishes `bin/<name>.*` on GitHub Pages ([chapter 7](07-Installation.md)). For ExaequOS, a job runs `make` in the docker image `lecrapouille/exaequos:light` ([chapter 8](08-Platforms.md)).
+For a web version, a job installs Emscripten (`emscripten: true`), runs `emmake make`, and gives `bin/<name>.*` to GitHub Pages as an artifact: no `gh-pages` branch. In Settings > Pages, the source is *GitHub Actions*; in Settings > Environments > `github-pages`, the branch of the workflow may deploy.
+
+```yaml
+name: Web
+on:
+  push:
+    branches: [master]
+  workflow_dispatch:
+
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: true
+      - uses: ./.makefile/.github/actions/setup
+        with:
+          emscripten: true
+      - id: info
+        run: |
+          emmake make
+          emmake make -s ci-info >> "$GITHUB_OUTPUT"
+      - run: |
+          mkdir -p site
+          cp ${{ steps.info.outputs.build }}/bin/myapp.* site/
+          cp site/myapp.html site/index.html
+          touch site/.nojekyll
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: site
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4
+```
+
+The page is then at `https://<owner>.github.io/<repository>/`. For ExaequOS, a job runs `make` in the docker image `lecrapouille/exaequos:light` ([chapter 8](08-Platforms.md)).
 
 ## 4. 🗄️ Caches
 
 | Cache | Key | Saves |
 |-------|-----|-------|
-| `~/.cache/mymakefile` (`%LOCALAPPDATA%/mymakefile` on Windows) | `hashFiles('external/versions.lock')` | The fetch and the build of the third parties: they change only with the lock file |
-| ccache | the commit, restored from the last one | The objects of the project already compiled |
+| `~/.cache/mymakefile` (`%LOCALAPPDATA%/mymakefile` on Windows) | the system, native or Emscripten, and `hashFiles('external/versions.lock')` | The fetch and the build of the third parties: they change only with the lock file |
+| ccache | the system, the job and the commit, restored from the last one | The objects of the project already compiled |
 
 The action `setup` restores both. Without it, cache `~/.cache/mymakefile` with the key of the lock file.
 
